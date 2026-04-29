@@ -1,20 +1,21 @@
-"use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/cloudinary';
 
 
-export default function AddProductModal({ onClose, categories = [], storeId, onSuccess }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+export default function AddProductModal({ onClose, categories = [], storeId, onSuccess, productToEdit = null }) {
+  const [name, setName] = useState(productToEdit?.name || '');
+  const [description, setDescription] = useState(productToEdit?.description || '');
+  const [price, setPrice] = useState(productToEdit?.price || '');
+  const [stock, setStock] = useState(productToEdit?.stock_quantity || '');
+  const [categoryId, setCategoryId] = useState(productToEdit?.category_id || '');
+  const [imageUrl, setImageUrl] = useState(productToEdit?.image_url || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isEdit = !!productToEdit;
 
   const handleImageFile = async (file) => {
     if (!file) return;
@@ -40,28 +41,39 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     setLoading(true);
     setError('');
 
-    const { data, error: insertError } = await supabase
-      .from('products')
-      .insert([
-        {
-          store_id: storeId,
-          category_id: categoryId,
-          name,
-          description,
-          price: parseFloat(price),
-          stock_quantity: parseInt(stock) || 0,
-          image_url: imageUrl || null,
-          is_active: true
-        }
-      ])
-      .select()
-      .single();
+    const productData = {
+      store_id: storeId,
+      category_id: categoryId,
+      name,
+      description,
+      price: parseFloat(price),
+      stock_quantity: parseInt(stock) || 0,
+      image_url: imageUrl || null,
+      is_active: true
+    };
 
-    if (insertError) {
-      setError('Erreur lors de la création du produit.');
+    try {
+      if (isEdit) {
+        const { data, error: updateError } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', productToEdit.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        if(onSuccess) onSuccess(data);
+      } else {
+        const { data, error: insertError } = await supabase
+          .from('products')
+          .insert([productData])
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        if(onSuccess) onSuccess(data);
+      }
+    } catch (err) {
+      setError(isEdit ? 'Erreur lors de la modification.' : 'Erreur lors de la création.');
       setLoading(false);
-    } else {
-      if(onSuccess) onSuccess(data);
     }
   };
 
@@ -77,15 +89,19 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
       >
         <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Nouveau Produit</h2>
-            <p className="text-[10px] sm:text-sm text-gray-500 font-medium uppercase tracking-wider">Ajoutez une pépite à votre catalogue.</p>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              {isEdit ? 'Modifier le Produit' : 'Nouveau Produit'}
+            </h2>
+            <p className="text-[10px] sm:text-sm text-gray-500 font-medium uppercase tracking-wider">
+              {isEdit ? 'Mettez à jour les informations de votre article.' : 'Ajoutez une pépite à votre catalogue.'}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 sm:p-2.5 bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl sm:rounded-2xl transition-all">
              <X size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
         
-        <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar text-left">
            {error && (
              <div className="flex items-center gap-3 p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100">
                <AlertCircle size={18} />
@@ -141,7 +157,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
                 </label>
               </div>
              {uploadingImage && (
-               <div className="flex items-center gap-2 text-indigo-600 text-xs font-bold bg-indigo-50 p-2 rounded-lg">
+               <div className="flex items-center gap-2 text-wa-teal text-xs font-bold bg-wa-chat p-2 rounded-lg">
                  <Loader2 size={14} className="animate-spin" />
                  Téléversement en cours...
                </div>
@@ -164,11 +180,6 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
                    <option key={c.id} value={c.id}>{c.name}</option>
                  ))}
               </select>
-              {categories.length === 0 && (
-                <p className="text-[10px] sm:text-xs text-amber-600 font-bold bg-amber-50 p-3 rounded-xl border border-amber-100 uppercase tracking-tight">
-                  Aucune catégorie trouvée. Veuillez en créer une avant d&apos;ajouter un produit.
-                </p>
-              )}
             </div>
         </div>
 
@@ -180,7 +191,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
             disabled={loading || uploadingImage}
            >
              {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-             <span>{loading ? 'Création...' : 'Valider le produit'}</span>
+             <span>{loading ? (isEdit ? 'Mise à jour...' : 'Création...') : (isEdit ? 'Enregistrer les modifications' : 'Valider le produit')}</span>
            </button>
         </div>
       </div>

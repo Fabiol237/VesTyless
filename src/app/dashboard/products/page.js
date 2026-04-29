@@ -13,6 +13,7 @@ export default function ProductsPage() {
   const { store } = useAuth();
   const [products, setProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [productToEdit, setProductToEdit] = useState(null);
   const [categories, setCategories] = useState([]);
   const [catInput, setCatInput] = useState('');
   const [search, setSearch] = useState('');
@@ -74,6 +75,16 @@ export default function ProductsPage() {
     }
   };
 
+  const openAddModal = () => {
+    setProductToEdit(null);
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (product) => {
+    setProductToEdit(product);
+    setShowAddModal(true);
+  };
+
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     (p.categories?.name || '').toLowerCase().includes(search.toLowerCase())
@@ -88,7 +99,7 @@ export default function ProductsPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-[32px] border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-[32px] border border-gray-100 shadow-sm text-left">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Catalogue Produits</h1>
           <p className="text-gray-500 font-medium mt-1">Gérez et sublimez vos articles en quelques clics.</p>
@@ -99,7 +110,7 @@ export default function ProductsPage() {
             <span className="hidden sm:inline">Aide</span>
           </button>
           <button 
-            onClick={() => setShowAddModal(true)}
+            onClick={openAddModal}
             className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
           >
             <Plus size={20} />
@@ -115,7 +126,7 @@ export default function ProductsPage() {
           { label: 'Rupture de Stock', value: stats.outOfStock, icon: AlertCircle, color: 'bg-rose-500' },
           { label: 'Catégories', value: stats.categories, icon: Layers, color: 'bg-amber-500' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 text-left">
             <div className={`${stat.color} p-3 rounded-2xl text-white shadow-lg shadow-${stat.color.split('-')[1]}-200`}>
               <stat.icon size={24} />
             </div>
@@ -129,7 +140,7 @@ export default function ProductsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Category Management */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className="lg:col-span-1 space-y-4 text-left">
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
             <div>
               <h3 className="text-lg font-black text-gray-900">Catégories</h3>
@@ -178,7 +189,7 @@ export default function ProductsPage() {
 
         {/* Products Grid/List */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden text-left">
             <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center gap-3">
               <Search size={18} className="text-gray-400" />
               <input 
@@ -207,7 +218,7 @@ export default function ProductsPage() {
               ) : (
                 filteredProducts.map(p => (
                   <div key={p.id} className="p-4 hover:bg-gray-50 transition-colors group">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 text-left">
                       <div className="w-16 h-16 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden border border-gray-100 relative">
                         {p.image_url ? (
                           <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
@@ -241,13 +252,18 @@ export default function ProductsPage() {
 
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
+                          onClick={() => openEditModal(p)}
+                          className="p-2 text-wa-teal hover:bg-wa-chat rounded-xl transition-all"
+                          title="Modifier"
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        <button 
                           onClick={() => deleteProduct(p.id)}
                           className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Supprimer"
                         >
                           <Trash2 size={18} />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-all">
-                          <MoreVertical size={18} />
                         </button>
                       </div>
                     </div>
@@ -264,6 +280,7 @@ export default function ProductsPage() {
           onClose={() => setShowAddModal(false)} 
           categories={categories} 
           storeId={store?.id}
+          productToEdit={productToEdit}
           onSuccess={() => {
             fetchProducts();
             setShowAddModal(false);

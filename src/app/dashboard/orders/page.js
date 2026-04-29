@@ -276,14 +276,9 @@ export default function OrdersPage() {
                       </select>
                     </div>
                   </div>
-                  <Link
-                    href={`/track/${order.id}`}
-                    target="_blank"
-                    className="flex items-center justify-center gap-2 text-xs font-black text-gray-400 hover:text-wa-teal transition-colors group"
-                  >
-                    <span>Lien de suivi client</span>
-                    <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  <div className="flex items-center justify-center py-2">
+                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Gestion directe activée</p>
+                  </div>
                 </div>
               </div>
             </div>
