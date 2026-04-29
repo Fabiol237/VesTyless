@@ -1,0 +1,230 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.titleBlock h1 {
+  font-weight: 800;
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.titleBlock p {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.actionsBlock {
+  display: flex;
+  gap: 12px;
+}
+
+.actionBtnWhite {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.iconBlue {
+  color: #008069;
+}
+
+.actionBtnBlue {
+  background: #008069;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.categoriesCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.cardInfo h3 {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.cardInfo p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+}
+
+.catInputBlock {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.catInput {
+  flex: 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border 0.2s;
+  color: #334155;
+}
+
+.catInput:focus {
+  border-color: #008069;
+}
+
+.catEmpty {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.catList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catBadge {
+  background: var(--primary-light);
+  color: var(--primary-blue);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #dbeafe;
+}
+
+.productsTableCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.searchBlock {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  background: #f8fafc;
+  align-items: center;
+  gap: 12px;
+  margin: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.searchIcon {
+  color: #94a3b8;
+}
+
+.searchInput {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px 24px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.emptyTable {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .actionsBlock {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .actionsBlock button {
+    flex: 1;
+    min-width: 170px;
+    justify-content: center;
+  }
+
+  .catInputBlock {
+    flex-direction: column;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .titleBlock h1 {
+    font-size: 1.5rem;
+  }
+
+  .titleBlock p {
+    font-size: 0.94rem;
+  }
+
+  .categoriesCard,
+  .productsTableCard {
+    border-radius: 10px;
+  }
+
+  .categoriesCard {
+    padding: 14px;
+  }
+
+  .searchBlock {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .table th,
+  .table td,
+  .emptyTable {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

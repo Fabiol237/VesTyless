@@ -1,0 +1,130 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 800px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.header {
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.closeBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.inputBase {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #f8fafc;
+  color: #334155;
+  transition: border 0.2s;
+  width: 100%;
+}
+
+.inputBase:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.warningText {
+  color: #d97706; /* dark orange */
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.footer {
+  padding: 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f8fafc;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.cancelBtn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.saveBtn {
+  background: #2563eb;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}

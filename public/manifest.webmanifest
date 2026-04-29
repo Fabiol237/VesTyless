@@ -1,0 +1,24 @@
+{
+  "name": "Vestyle",
+  "short_name": "Vestyle",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "description": "Vestyle, votre marketplace mode et livraison multi-device, installable comme une application.",
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/vercel.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
+    }
+  ]
+}

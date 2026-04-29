@@ -1,0 +1,265 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.titleBlock h1 {
+  font-weight: 800;
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.titleBlock p {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.actionsBlock {
+  display: flex;
+  gap: 12px;
+}
+
+.actionBtnWhite {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.actionBtnBlue {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actionBtnPurple {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.iconBlue {
+  color: #2563eb;
+}
+
+.iconGray {
+  color: #94a3b8;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.iconBox {
+  background: #eff6ff;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardHeader h3 {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.cardHeader p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.formGrid {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.inputBase {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #f8fafc;
+  color: #334155;
+  transition: border 0.2s;
+  width: 100%;
+}
+
+.slugInputBlock {
+  display: flex;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.slugPrefix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  color: #64748b;
+  background: #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.inputBaseSlug {
+  border: none;
+  background: transparent;
+  padding: 12px 16px;
+  width: 100%;
+  outline: none;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.helpText {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.copyBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.urlDisplay {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.copyBtn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .actionsBlock {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .actionsBlock button {
+    flex: 1;
+    min-width: 170px;
+    justify-content: center;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .titleBlock h1 {
+    font-size: 1.5rem;
+  }
+
+  .titleBlock p {
+    font-size: 0.94rem;
+  }
+
+  .cardHeader,
+  .formGrid {
+    padding: 14px;
+  }
+
+  .cardHeader {
+    align-items: flex-start;
+  }
+
+  .slugInputBlock {
+    flex-direction: column;
+  }
+
+  .slugPrefix {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 12px;
+  }
+
+  .copyBlock {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .urlDisplay {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

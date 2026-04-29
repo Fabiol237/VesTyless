@@ -1,0 +1,276 @@
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--dash-bg);
+  color: var(--dash-text);
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 280px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--dash-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: fixed;
+  height: 100vh;
+  z-index: 50;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+}
+
+.sidebarTop {
+  padding: 24px 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 40px;
+  padding-left: 10px;
+}
+
+.logoIcon {
+  color: #10b981; /* Green exact */
+}
+
+.logoText {
+  color: #1e3a8a; /* Deep blue text for logo */
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  color: #64748b; /* Gray text */
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.navIconText {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navItem:hover {
+  background-color: #f1f5f9;
+}
+
+.navItem.active {
+  background-color: var(--primary-light);
+  color: var(--primary-blue);
+}
+
+.chevron {
+  color: var(--primary-blue);
+}
+
+/* SIDEBAR BOTTOM */
+.sidebarBottom {
+  padding: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.langToggle {
+  margin-bottom: 20px;
+}
+
+.langLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.langSwitch {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 20px;
+  padding: 4px;
+  width: max-content;
+}
+
+.langSwitch span {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.langActive {
+  background: white;
+  color: #0f172a;
+  padding: 4px 16px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.langInac {
+  color: #64748b;
+  padding: 4px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.avatar {
+  background: #e0e7ff; /* Very light indigo */
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.userName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.userPlan {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.logoutIcon {
+  color: #94a3b8;
+}
+
+/* MAIN CONTENT */
+.main {
+  flex: 1;
+  margin-left: 280px;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  padding: 48px;
+  flex: 1;
+}
+
+.supportBtn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--green);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transition: transform 0.2s;
+  z-index: 100;
+}
+
+.supportBtn:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 1024px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--dash-border);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+
+  .sidebarTop {
+    padding: 12px;
+  }
+
+  .brand {
+    margin-bottom: 12px;
+    padding-left: 0;
+  }
+
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .navItem {
+    white-space: nowrap;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+  }
+
+  .sidebarBottom {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 20px 14px 88px;
+  }
+
+  .supportBtn {
+    right: 14px;
+    bottom: 14px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .supportBtn span {
+    display: none;
+  }
+
+  .supportBtn {
+    border-radius: 999px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,71 @@
+🚀 INTEGRATION AUTOMATIQUE - INSTRUCTIONS
+
+==================================================
+✅ État actuel :
+- Connection : OK
+- Tables existantes (orders, products, stores, profiles) : ✅
+- Nouvelles tables (reviews, notifications, product_views, vendor_analytics) : ❌ À CRÉER
+
+==================================================
+📋 ÉTAPE 1 : Copier la migration SQL
+==================================================
+
+Le fichier à appliquer est situé à :
+📁 supabase/migrations/20260421194000_add_reviews_notifications_analytics.sql
+
+Tout le contenu de ce fichier doit être exécuté dans Supabase.
+
+==================================================
+📋 ÉTAPE 2 : Aller dans Supabase SQL Editor
+==================================================
+
+1. Ouvre : https://app.supabase.com/projects
+2. Clique sur le projet : qkqowrwkmipxyktjdvfg
+3. Dans le menu gauche, clique sur "SQL Editor"
+4. Clique sur "New Query"
+
+==================================================
+📋 ÉTAPE 3 : Coller et exécuter
+==================================================
+
+1. Copie TOUT le contenu du fichier migration
+2. Colle-le dans le SQL Editor Supabase
+3. Clique sur "Run" (ou Cmd+Enter)
+4. Attends le message "Success"
+
+==================================================
+✅ VÉRIFICATION APRÈS EXÉCUTION
+==================================================
+
+Après avoir exécuté la migration, lance ce script pour vérifier :
+
+  node verify_supabase.js
+
+Les 4 nouvelles tables doivent s'afficher en ✅
+
+==================================================
+🔗 LIEN DIRECT SUPABASE SQL EDITOR
+==================================================
+
+https://app.supabase.com/project/qkqowrwkmipxyktjdvfg/sql/new
+
+(Copie et ouvre ce lien directement, puis colle la migration)
+
+==================================================
+📚 Si besoin d'aide :
+==================================================
+
+Les migrations créent :
+1. reviews         → Avis produits (rating + comment)
+2. notifications   → Notifications utilisateurs
+3. product_views   → Suivi des vues produit (analytics)
+4. vendor_analytics→ Statistiques vendeur par jour
+
+Colonnes ajoutées à orders :
+- user_id
+- tracking_number
+- paid_at, shipped_at, delivered_at
+- payment_method
+- notes
+
+==================================================
