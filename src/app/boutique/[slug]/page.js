@@ -156,8 +156,22 @@ export default function Storefront({ params }) {
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-wa-teal selection:text-white font-sans overflow-x-hidden">
       
+      {/* Premium Promotion Banner */}
+      {store.custom_message && (
+        <div className="relative z-[60] bg-gray-900 text-white py-2 overflow-hidden">
+          <div className="flex animate-marquee whitespace-nowrap items-center gap-10">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-[10px] font-black uppercase tracking-widest">{store.custom_message}</span>
+                <Star size={10} className="text-wa-teal fill-wa-teal" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Premium Navigation */}
-      <nav className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-2xl z-50 border-b border-gray-100 px-4">
+      <nav className={`fixed inset-x-0 h-20 bg-white/80 backdrop-blur-2xl z-50 border-b border-gray-100 px-4 transition-all ${store.custom_message ? 'top-8' : 'top-0'}`}>
         <div className="max-w-6xl mx-auto h-full flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg transition-transform hover:rotate-3" style={{ backgroundColor: themeColor }}>

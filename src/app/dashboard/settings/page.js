@@ -4,7 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { deleteCloudinaryByUrl, uploadImage } from '@/lib/cloudinary';
 import { useRouter } from 'next/navigation';
-import { Settings, Save, Loader2, ArrowLeft } from 'lucide-react';
+import { 
+  Settings, Save, Loader2, ArrowLeft, Image as ImageIcon, 
+  Palette, Type, Megaphone, Globe, Info, CheckCircle2, 
+  Camera, Trash2, Smartphone
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function StoreSettingsPage() {
@@ -26,10 +30,11 @@ export default function StoreSettingsPage() {
     slug: '',
     logo_url: '',
     banner_url: '',
-    theme_color: '#6D28D9',
+    theme_color: '#128C7E',
     secondary_color: '#F3F4F6',
     font_family: 'Inter',
-    custom_message: ''
+    custom_message: '',
+    whatsapp_number: ''
   });
 
   useEffect(() => {
@@ -54,10 +59,11 @@ export default function StoreSettingsPage() {
           slug: data.slug || '',
           logo_url: data.logo_url || '',
           banner_url: data.banner_url || '',
-          theme_color: data.theme_color || '#6D28D9',
+          theme_color: data.theme_color || '#128C7E',
           secondary_color: data.secondary_color || '#F3F4F6',
           font_family: data.font_family || 'Inter',
-          custom_message: data.custom_message || ''
+          custom_message: data.custom_message || '',
+          whatsapp_number: data.whatsapp_number || ''
         });
       }
     }
@@ -67,11 +73,8 @@ export default function StoreSettingsPage() {
   useEffect(() => {
     return () => {
       if (saveSucceededRef.current) return;
-
       const pending = Array.from(tempUploadedUrlsRef.current);
-      pending.forEach((url) => {
-        deleteCloudinaryByUrl(url);
-      });
+      pending.forEach((url) => deleteCloudinaryByUrl(url));
     };
   }, []);
 
@@ -81,20 +84,15 @@ export default function StoreSettingsPage() {
 
   const handleFileUpload = async (fieldName, file) => {
     if (!file) return;
-
     try {
       setUploadingField(fieldName);
       const previousUrl = formData[fieldName];
       const { secureUrl } = await uploadImage(file, { folder: 'vestyle/stores' });
-      if (!secureUrl) {
-        throw new Error("Upload invalide");
-      }
-
+      if (!secureUrl) throw new Error("Upload invalide");
       if (previousUrl && previousUrl !== secureUrl && tempUploadedUrlsRef.current.has(previousUrl)) {
         await deleteCloudinaryByUrl(previousUrl);
         tempUploadedUrlsRef.current.delete(previousUrl);
       }
-
       setFormData((prev) => ({ ...prev, [fieldName]: secureUrl }));
       tempUploadedUrlsRef.current.add(secureUrl);
     } catch (err) {
@@ -107,13 +105,10 @@ export default function StoreSettingsPage() {
   const handleRemoveImage = async (fieldName) => {
     const currentUrl = formData[fieldName];
     if (!currentUrl) return;
-
-    // If it's a temporary uploaded image in this session, delete it immediately.
     if (tempUploadedUrlsRef.current.has(currentUrl)) {
       await deleteCloudinaryByUrl(currentUrl);
       tempUploadedUrlsRef.current.delete(currentUrl);
     }
-
     setFormData((prev) => ({ ...prev, [fieldName]: '' }));
   };
 
@@ -133,7 +128,8 @@ export default function StoreSettingsPage() {
       theme_color: formData.theme_color,
       secondary_color: formData.secondary_color,
       font_family: formData.font_family,
-      custom_message: formData.custom_message
+      custom_message: formData.custom_message,
+      whatsapp_number: formData.whatsapp_number
     }).eq('id', storeId);
 
     setLoading(false);
@@ -141,25 +137,12 @@ export default function StoreSettingsPage() {
       alert("Erreur lors de la mise à jour : " + error.message);
     } else {
       const cleanupTasks = [];
-      const fields = ['logo_url', 'banner_url'];
-
-      fields.forEach((fieldName) => {
+      ['logo_url', 'banner_url'].forEach((fieldName) => {
         const oldUrl = initialMedia[fieldName];
         const newUrl = formData[fieldName];
-
-        if (oldUrl && oldUrl !== newUrl) {
-          cleanupTasks.push(deleteCloudinaryByUrl(oldUrl));
-        }
+        if (oldUrl && oldUrl !== newUrl) cleanupTasks.push(deleteCloudinaryByUrl(oldUrl));
       });
-
-      const activeUrls = new Set([formData.logo_url, formData.banner_url].filter(Boolean));
-      const staleTemps = Array.from(tempUploadedUrlsRef.current).filter((url) => !activeUrls.has(url));
-      staleTemps.forEach((url) => cleanupTasks.push(deleteCloudinaryByUrl(url)));
-
-      if (cleanupTasks.length > 0) {
-        await Promise.allSettled(cleanupTasks);
-      }
-
+      if (cleanupTasks.length > 0) await Promise.allSettled(cleanupTasks);
       saveSucceededRef.current = true;
       tempUploadedUrlsRef.current.clear();
       router.push('/dashboard');
@@ -168,147 +151,207 @@ export default function StoreSettingsPage() {
 
   if (session === undefined) return <div className="min-h-screen bg-wa-bg flex justify-center items-center"><Loader2 className="animate-spin text-wa-teal" size={48} /></div>;
 
-  return (    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-4">
-      <Link href="/dashboard" className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500 hover:text-neutral-900 mb-4 sm:mb-6 font-medium transition-colors w-max">
-        <ArrowLeft size={16} /> Retour au tableau de bord
-      </Link>
-      
-      <header className="mb-6 sm:mb-10">
-        <h1 className="text-2xl sm:text-3xl font-bold text-wa-teal-dark flex items-center gap-2 sm:gap-3"><Settings size={24} className="text-wa-teal sm:w-7 sm:h-7"/> Paramètres</h1>
-        <p className="text-neutral-500 mt-1 sm:mt-2 text-xs sm:text-sm">Modifiez les informations publiques de votre espace vendeur.</p>
-      </header>
+  return (
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+      {/* Header Premium */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <Settings className="text-wa-teal" size={32} />
+            Configuration Boutique
+          </h1>
+          <p className="text-gray-500 font-medium">Sublimez l'apparence et les réglages de votre espace client.</p>
+        </div>
+        <Link href="/dashboard" className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all text-xs uppercase tracking-widest">
+          <ArrowLeft size={16} /> Retour
+        </Link>
+      </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-neutral-200 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Nom de la boutique *</label>
-            <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Lien personnalisé (Slug)</label>
-            <input type="text" name="slug" value={formData.slug} onChange={handleChange} placeholder="Ex: ma-boutique-pro" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-            <p className="text-[10px] sm:text-xs text-neutral-400 mt-1">Sera utilisé pour votre lien : /boutique/{formData.slug || 'id'}</p>
-          </div>
-
-          {storeSchema.hasCity && (
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Ville / Localisation</label>
-              <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Ex: Douala" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Colonne de Gauche : Infos de Base & Branding */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Identité Section */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-wa-chat rounded-xl text-wa-teal"><Globe size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Identité & Accès</h2>
             </div>
-          )}
 
-          {storeSchema.hasPhone && (
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Numéro de Contact</label>
-              <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="+237..." className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-            </div>
-          )}
-
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Description</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} rows="3" placeholder="Présentez votre entreprise..." className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal"></textarea>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Lien du Logo (URL)</label>
-            <input type="url" name="logo_url" value={formData.logo_url} onChange={handleChange} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-            <div className="mt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="flex-1 sm:flex-none text-center inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 text-xs sm:text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100 transition-colors">
-                Choisir un logo
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload('logo_url', e.target.files?.[0])}
-                />
-                </label>
-                {formData.logo_url && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage('logo_url')}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-xs sm:text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
-                  >
-                    Supprimer
-                  </button>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Nom de la boutique</label>
+                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
               </div>
-              {uploadingField === 'logo_url' && <p className="text-[10px] text-neutral-500 mt-2">Upload en cours...</p>}
-            </div>
-          </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Lien de la bannière (URL)</label>
-            <input type="url" name="banner_url" value={formData.banner_url} onChange={handleChange} placeholder="https://..." className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-            <div className="mt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="flex-1 sm:flex-none text-center inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 text-xs sm:text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100 transition-colors">
-                Choisir une bannière
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload('banner_url', e.target.files?.[0])}
-                />
-                </label>
-                {formData.banner_url && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage('banner_url')}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-xs sm:text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
-                  >
-                    Supprimer
-                  </button>
-                )}
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Lien (Slug)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">/boutique/</span>
+                  <input type="text" name="slug" value={formData.slug} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-24 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                </div>
               </div>
-              {uploadingField === 'banner_url' && <p className="text-[10px] text-neutral-500 mt-2">Upload en cours...</p>}
+
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Description Boutique</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all resize-none"></textarea>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Numéro WhatsApp Client</label>
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+                  <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="237655..." className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div className="md:col-span-2 pt-4 sm:pt-6 border-t border-neutral-100">
-            <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-1">Branding</h3>
-            <p className="text-[10px] sm:text-sm text-neutral-500 mb-4 sm:mb-6">Personnalisez l&apos;apparence de votre boutique.</p>
-          </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Couleur Principale</label>
-            <div className="flex gap-2 sm:gap-3 items-center">
-              <input type="color" name="theme_color" value={formData.theme_color} onChange={handleChange} className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer border-0 p-0" />
-              <input type="text" name="theme_color" value={formData.theme_color} onChange={handleChange} className="flex-1 bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 focus:outline-none focus:border-wa-teal uppercase font-mono text-xs sm:text-sm" />
+          {/* Design & Style Section */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-xl text-amber-500"><Palette size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Style & Branding</h2>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Couleur Secondaire</label>
-            <div className="flex gap-2 sm:gap-3 items-center">
-              <input type="color" name="secondary_color" value={formData.secondary_color} onChange={handleChange} className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg cursor-pointer border-0 p-0" />
-              <input type="text" name="secondary_color" value={formData.secondary_color} onChange={handleChange} className="flex-1 bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 focus:outline-none focus:border-wa-teal uppercase font-mono text-xs sm:text-sm" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Thème Visuel</label>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="relative group">
+                    <input type="color" name="theme_color" value={formData.theme_color} onChange={handleChange} className="w-16 h-16 rounded-2xl cursor-pointer border-4 border-white shadow-lg overflow-hidden" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      <CheckCircle2 className="text-white drop-shadow-md" size={24} />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-gray-900 uppercase tracking-tighter">{formData.theme_color}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Couleur Principale</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Typographie</label>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="p-3 bg-white rounded-2xl text-gray-400 shadow-sm"><Type size={24} /></div>
+                  <select name="font_family" value={formData.font_family} onChange={handleChange} className="flex-1 bg-transparent border-none outline-none font-black text-sm">
+                    <option value="Inter">Inter (Moderne)</option>
+                    <option value="'Outfit', sans-serif">Outfit (Élégant)</option>
+                    <option value="'Playfair Display', serif">Playfair (Luxe)</option>
+                    <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Police</label>
-            <select name="font_family" value={formData.font_family} onChange={handleChange} className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal">
-              <option value="Inter">Inter (Moderne)</option>
-              <option value="'Outfit', sans-serif">Outfit (Élégant)</option>
-              <option value="'Roboto', sans-serif">Roboto (Standard)</option>
-              <option value="'Playfair Display', serif">Playfair (Luxe)</option>
-              <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs sm:text-sm font-bold text-neutral-900 mb-1.5 sm:mb-2">Message de bienvenue</label>
-            <input type="text" name="custom_message" value={formData.custom_message} onChange={handleChange} placeholder="Ex: Livraison gratuite !" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-wa-teal" />
-          </div>
+          {/* Section PROMOTION (EMBELLIE) */}
+          <section className="bg-gradient-to-br from-wa-teal to-wa-teal-dark p-8 rounded-[40px] text-white shadow-xl shadow-wa-teal/20 space-y-6 text-left relative overflow-hidden group">
+             <div className="relative z-10">
+               <div className="flex items-center gap-3 mb-2">
+                 <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white"><Megaphone size={20} /></div>
+                 <h2 className="text-xl font-black">Section Promotionnelle</h2>
+               </div>
+               <p className="text-white/80 text-sm font-medium mb-6">Ce message s'affichera en haut de votre boutique pour attirer l'œil de vos clients.</p>
+               
+               <div className="space-y-4">
+                 <div className="relative">
+                   <textarea 
+                    name="custom_message" 
+                    value={formData.custom_message} 
+                    onChange={handleChange} 
+                    rows="2" 
+                    placeholder="Ex: 🎉 PROMO : -20% sur toute la collection avec le code VESTYLE !"
+                    className="w-full bg-white/10 backdrop-blur-md border-2 border-white/20 focus:border-white focus:bg-white/20 rounded-2xl px-5 py-4 text-sm font-black placeholder:text-white/40 outline-none transition-all resize-none"
+                   ></textarea>
+                 </div>
+                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
+                    <Info size={12} />
+                    <span>Apparaît comme une bannière animée sur la boutique</span>
+                 </div>
+               </div>
+             </div>
+             <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
+          </section>
         </div>
 
-        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-neutral-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
-          <Link href="/dashboard" className="px-6 py-3 rounded-xl font-bold text-neutral-600 hover:bg-neutral-100 transition-colors text-center text-sm sm:text-base order-2 sm:order-1">Annuler</Link>
-          <button disabled={loading} type="submit" className="bg-wa-green disabled:bg-neutral-300 disabled:text-neutral-500 hover:bg-wa-teal text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm text-sm sm:text-base order-1 sm:order-2">
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Mettre à jour
-          </button>
+        {/* Colonne de Droite : Médias & Sauvegarde */}
+        <div className="space-y-8">
+          
+          {/* Logo & Banner Section */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-8 text-left">
+             <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-rose-50 rounded-xl text-rose-500"><ImageIcon size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Visuels</h2>
+            </div>
+
+            {/* Logo Upload */}
+            <div className="space-y-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Logo Boutique</p>
+              <div className="relative group aspect-square max-w-[120px] mx-auto">
+                <div className="w-full h-full rounded-[32px] bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+                  {formData.logo_url ? (
+                    <img src={formData.logo_url} className="w-full h-full object-cover" alt="Logo" />
+                  ) : (
+                    <Camera className="text-gray-300" size={32} />
+                  )}
+                  {uploadingField === 'logo_url' && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="animate-spin text-wa-teal" size={24} />
+                    </div>
+                  )}
+                </div>
+                <label className="absolute -bottom-2 -right-2 p-2.5 bg-wa-teal text-white rounded-xl shadow-lg cursor-pointer hover:bg-wa-teal-dark transition-all active:scale-95">
+                  <Camera size={18} />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('logo_url', e.target.files?.[0])} />
+                </label>
+                {formData.logo_url && (
+                  <button type="button" onClick={() => handleRemoveImage('logo_url')} className="absolute -top-2 -right-2 p-2.5 bg-rose-500 text-white rounded-xl shadow-lg hover:bg-rose-600 transition-all">
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Banner Upload */}
+            <div className="space-y-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Bannière de Fond</p>
+              <div className="relative group w-full aspect-[2/1] rounded-3xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+                {formData.banner_url ? (
+                  <img src={formData.banner_url} className="w-full h-full object-cover" alt="Bannière" />
+                ) : (
+                  <ImageIcon className="text-gray-300" size={32} />
+                )}
+                <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-sm cursor-pointer">
+                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl text-xs font-black text-gray-900 uppercase tracking-widest shadow-xl">
+                    <Camera size={16} /> Changer
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('banner_url', e.target.files?.[0])} />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* Action Card */}
+          <div className="bg-gray-900 p-8 rounded-[40px] shadow-2xl space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-wa-teal">
+                <CheckCircle2 size={24} />
+              </div>
+              <p className="text-white font-black tracking-tight text-lg">Prêt à publier ?</p>
+            </div>
+            <p className="text-gray-400 text-sm font-medium leading-relaxed">Assurez-vous que vos images sont de haute qualité pour attirer plus de clients.</p>
+            <button 
+              type="submit" 
+              disabled={loading || !!uploadingField}
+              className="w-full py-4 bg-wa-teal hover:bg-wa-teal-dark disabled:bg-gray-700 text-white font-black rounded-2xl shadow-xl shadow-wa-teal/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+              Enregistrer les changements
+            </button>
+          </div>
         </div>
       </form>
     </div>

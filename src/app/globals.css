@@ -39,6 +39,17 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  animation: marquee 30s linear infinite;
+  width: max-content;
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
