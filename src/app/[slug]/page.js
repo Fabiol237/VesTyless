@@ -3,11 +3,10 @@ import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { 
   ShoppingCart, X, Trash2, Send, Loader2, Package, 
-  ExternalLink, Store, Truck, MapPin, Search, 
-  ChevronRight, Info, AlertCircle, History, Clock
+  Store, Truck, Search, History, Clock, Info, 
+  ChevronRight, Star, MapPin, Phone
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import styles from './Storefront.module.css';
 
 export default function Storefront({ params }) {
   const routeParams = useParams();
@@ -29,494 +28,363 @@ export default function Storefront({ params }) {
   const [checkoutData, setCheckoutData] = useState({
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
     customerAddress: '',
   });
   
   const [checkoutError, setCheckoutError] = useState('');
-  const [checkoutSuccess, setCheckoutSuccess] = useState('');
-  const [trackingUrl, setTrackingUrl] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const [selectedPreview, setSelectedPreview] = useState([]);
 
   // Load recent orders from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(`vestyle_orders_${slug}`);
     if (saved) {
-      try {
-        setRecentOrders(JSON.parse(saved));
-      } catch (e) {
-        console.error("Error parsing recent orders", e);
-      }
+      try { setRecentOrders(JSON.parse(saved)); } catch (e) { console.error(e); }
     }
   }, [slug]);
 
-  const saveOrderToHistory = (order) => {
-    const updated = [order, ...recentOrders].slice(0, 5);
-    setRecentOrders(updated);
-    localStorage.setItem(`vestyle_orders_${slug}`, JSON.stringify(updated));
-  };
-
   const fetchStoreData = useCallback(async () => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
-
+    if (!slug) return;
     setLoading(true);
     try {
-      const { data: storeData } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-
+      const { data: storeData } = await supabase.from('stores').select('*').eq('slug', slug).single();
       if (storeData) {
         setStore(storeData);
-        
-        // Fetch categories
-        const { data: categoriesData } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('store_id', storeData.id);
-        setCategories(categoriesData || []);
-
-        // Fetch products
-        const { data: productsData } = await supabase
-          .from('products')
-          .select('*')
-          .eq('store_id', storeData.id)
-          .eq('is_active', true);
-        
-        setProducts(productsData || []);
+        const { data: catData } = await supabase.from('categories').select('*').eq('store_id', storeData.id);
+        setCategories(catData || []);
+        const { data: prodData } = await supabase.from('products').select('*').eq('store_id', storeData.id).eq('is_active', true);
+        setProducts(prodData || []);
       }
     } catch (err) {
-      console.error("Error fetching store data:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, [slug]);
 
-  useEffect(() => {
-    fetchStoreData();
-  }, [fetchStoreData]);
-
-  // Apply branding (Font and Title)
-  useEffect(() => {
-    if (store) {
-      document.title = `${store.name} | VesTyle`;
-      if (store.font_family) {
-        document.documentElement.style.setProperty('--store-font', store.font_family);
-      }
-    }
-  }, [store]);
+  useEffect(() => { fetchStoreData(); }, [fetchStoreData]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchesCategory = activeCategory === 'all' || p.category_id === activeCategory;
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
   }, [products, activeCategory, searchQuery]);
 
   const addToCart = (product) => {
     if (product.stock_quantity <= 0) return;
-    
     setCart((prev) => {
       const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
+      if (existing) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       return [...prev, { ...product, quantity: 1 }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
+  const removeFromCart = (id) => setCart(prev => prev.filter(item => item.id !== id));
   const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  useEffect(() => {
-    setSelectedPreview(cart.slice(0, 4));
-  }, [cart]);
-
-  const handleCheckoutChange = (field, value) => {
-    setCheckoutData((prev) => ({ ...prev, [field]: value }));
-  };
-
   const checkoutWhatsApp = async () => {
-    if (isSubmittingOrder) return;
-    if (!cart.length) return;
-    if (!store?.whatsapp_number) {
-      setCheckoutError("Le vendeur n'a pas configuré son numero WhatsApp.");
-      return;
-    }
-
-    const { customerName, customerPhone, customerEmail, customerAddress } = checkoutData;
+    if (isSubmittingOrder || !cart.length) return;
+    const { customerName, customerPhone, customerAddress } = checkoutData;
 
     if (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim()) {
-      setCheckoutError('Merci de remplir votre nom, telephone et adresse de livraison.');
+      setCheckoutError('Veuillez remplir tous les champs obligatoires.');
       return;
     }
 
-    setCheckoutError('');
-    setCheckoutSuccess('');
-    setTrackingUrl('');
     setIsSubmittingOrder(true);
-
-    let createdTrackingUrl = '';
-
     try {
-      // 1. Create order in database
       const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
         store_id: store.id,
         customer_name: customerName,
-        customer_email: customerEmail,
         customer_phone: customerPhone,
         total_amount: Number(total),
         status: 'pending',
-        order_items: cart.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        })),
+        order_items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
       }).select().single();
 
       if (orderError) throw orderError;
 
-      // 2. Generate Internal Tracking URL (Shipday removed as requested)
-      createdTrackingUrl = `${window.location.origin}/track/${newOrder.id}`;
-      setTrackingUrl(createdTrackingUrl);
-
-      // 3. Save to history
-      saveOrderToHistory({
-        id: newOrder.id,
-        date: new Date().toISOString(),
-        total: total,
-        items: cart.length,
-        trackingUrl: createdTrackingUrl
-      });
-
-      // 4. Send WhatsApp Message
-      let message = `Bonjour! Voici ma commande sur *${store.name}*:\n\n`;
-      message += `👤 *Client:* ${customerName}\n`;
-      message += `📞 *Tel:* ${customerPhone}\n`;
-      if (customerEmail) message += `📧 *Email:* ${customerEmail}\n`;
-      message += `📍 *Adresse:* ${customerAddress}\n\n`;
-      message += `🛒 *Produits:*\n`;
+      // WhatsApp Message
+      let message = `*COMMANDE ${store.name.toUpperCase()}*\n`;
+      message += `--------------------------\n`;
+      message += `👤 Client: ${customerName}\n`;
+      message += `📞 Tel: ${customerPhone}\n`;
+      message += `📍 Adresse: ${customerAddress}\n\n`;
+      message += `*PANIER:*\n`;
       cart.forEach(item => {
-        message += `- ${item.name} x${item.quantity} : ${(item.price * item.quantity).toLocaleString()} FCFA\n`;
+        message += `• ${item.name} (x${item.quantity}) : ${(item.price * item.quantity).toLocaleString()} F\n`;
       });
-      message += `\n💰 *Total:* ${total.toLocaleString()} FCFA\n`;
-      message += `\nPropulsé par VesTyle`;
+      message += `\n*TOTAL: ${total.toLocaleString()} FCFA*\n`;
+      message += `--------------------------\n`;
+      message += `_Propulsé par VesTyle_`;
 
-      const encodedMessage = encodeURIComponent(message);
-      window.open(`https://wa.me/${store.whatsapp_number.replace(/\s+/g, '')}?text=${encodedMessage}`, '_blank');
-
-      setCheckoutSuccess('Commande envoyée ! Redirection WhatsApp...');
+      window.open(`https://wa.me/${store.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
       setCart([]);
-      setCheckoutData({ customerName: '', customerPhone: '', customerEmail: '', customerAddress: '' });
+      setIsCartOpen(false);
     } catch (err) {
-      console.error("Checkout error:", err);
-      setCheckoutError("Erreur lors de la création de la commande. Veuillez réessayer.");
+      setCheckoutError("Erreur lors de la validation.");
     } finally {
       setIsSubmittingOrder(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className={styles.loaderPage}>
-        <Loader2 className={styles.spin} size={48} />
-        <p>Préparation de votre expérience chez {slug}...</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 gap-4">
+      <div className="w-12 h-12 border-4 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-sm font-black uppercase tracking-widest text-gray-400">Expérience en cours...</p>
+    </div>
+  );
 
-  if (!store) {
-    return (
-      <div className={styles.errorPage}>
-        <AlertCircle size={64} color="#ef4444" />
-        <h1>Boutique introuvable</h1>
-        <p>Désolé, cette boutique n&apos;existe pas ou a été désactivée.</p>
-        <button onClick={() => window.location.href = '/'} className={styles.backBtn}>
-          Retour à l&apos;accueil
-        </button>
+  if (!store) return (
+    <div className="h-screen flex flex-col items-center justify-center p-10 text-center gap-6">
+      <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-500">
+        <Store size={48} />
       </div>
-    );
-  }
+      <div>
+        <h1 className="text-3xl font-black text-gray-900">Boutique introuvable</h1>
+        <p className="text-gray-500 mt-2">Désolé, cette adresse n'existe pas.</p>
+      </div>
+      <button onClick={() => window.location.href = '/'} className="px-8 py-4 bg-gray-900 text-white font-black rounded-2xl">Retour</button>
+    </div>
+  );
+
+  const themeColor = store.theme_color || '#128C7E';
 
   return (
-    <div 
-      className={styles.store} 
-      style={{ 
-        '--store-primary': store.theme_color,
-        '--store-secondary': store.secondary_color || '#F3F4F6',
-        fontFamily: 'var(--store-font), Inter, sans-serif'
-      }}
-    >
-      <header className={styles.header}>
-        <div className={styles.container}>
-          <div className={styles.brand}>
-            <div className={styles.logo} style={{ backgroundColor: store.theme_color }}>
-              {store.logo_url ? <img src={store.logo_url} alt={store.name} /> : store.name.charAt(0)}
+    <div className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-wa-teal selection:text-white font-sans overflow-x-hidden">
+      
+      {/* Premium Navigation */}
+      <nav className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-2xl z-50 border-b border-gray-100 px-4">
+        <div className="max-w-6xl mx-auto h-full flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg transition-transform hover:rotate-3" style={{ backgroundColor: themeColor }}>
+              {store.logo_url ? <img src={store.logo_url} className="w-full h-full object-cover rounded-2xl" alt="" /> : store.name.charAt(0)}
             </div>
-            <span>{store.name}</span>
+            <span className="text-lg font-black tracking-tighter uppercase hidden sm:block">{store.name}</span>
           </div>
 
-          <div className={styles.searchBar}>
-            <Search size={18} />
+          <div className="flex-1 max-w-md hidden md:flex items-center bg-gray-50 rounded-2xl px-4 py-2 border border-transparent focus-within:border-gray-200 focus-within:bg-white transition-all">
+            <Search size={18} className="text-gray-400" />
             <input 
               type="text" 
-              placeholder="Rechercher un produit..." 
+              placeholder="Rechercher un délice..." 
+              className="bg-transparent border-none outline-none px-3 w-full text-sm font-medium"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className={styles.actions}>
-            <button className={styles.iconBtn} onClick={() => setShowHistory(true)} title="Historique">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowHistory(true)} className="p-3 text-gray-400 hover:text-gray-900 transition-all rounded-2xl hover:bg-gray-50">
               <History size={22} />
             </button>
-            <button className={styles.cartBtn} onClick={() => setIsCartOpen(true)}>
-              <ShoppingCart size={22} />
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex items-center gap-3 px-5 py-2.5 bg-gray-900 text-white rounded-2xl shadow-xl shadow-gray-200 transition-all hover:scale-105 active:scale-95"
+            >
+              <ShoppingCart size={18} />
+              <span className="font-black text-sm hidden sm:inline">Panier</span>
               {totalItems > 0 && (
-                <span className={styles.cartBadge} style={{ backgroundColor: store.theme_color }}>
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-wa-teal rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
                   {totalItems}
                 </span>
               )}
             </button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className={styles.main}>
-        {/* Dynamic Selection Bar */}
-        <section className={styles.topSelectionBar}>
-          <div className={styles.selectionIntro}>
-            <div className={styles.selectionIcon} style={{ backgroundColor: `${store.theme_color}15`, color: store.theme_color }}>
-              <Store size={18} />
-            </div>
-            <div>
-              <strong>Votre sélection en direct</strong>
-              <p>
-                {totalItems > 0
-                  ? `${totalItems} article(s) prêts pour la commande.`
-                  : 'Parcourez la boutique et ajoutez des articles.'}
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.selectionMeta}>
-            <div className={styles.metaPill}>
-              <Truck size={16} />
-              <span>Livraison rapide garantie</span>
-            </div>
-          </div>
-
-          <div className={styles.selectionProducts}>
-            {selectedPreview.length > 0 ? (
-              selectedPreview.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={styles.selectionItem}
-                  onClick={() => setIsCartOpen(true)}
-                >
-                  <div className={styles.selectionThumb}>
-                    {item.image_url ? (
-                      <img src={item.image_url} alt={item.name} />
-                    ) : (
-                      <Package size={16} />
-                    )}
-                  </div>
-                  <div className={styles.selectionText}>
-                    <strong>{item.name}</strong>
-                    <span>{item.price.toLocaleString()} FCFA</span>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className={styles.selectionEmpty}>
-                Aucun produit sélectionné.
-              </div>
-            )}
-
-            <button
-              type="button"
-              className={styles.selectionCartButton}
-              style={{ backgroundColor: store.theme_color }}
-              onClick={() => setIsCartOpen(true)}
-            >
-              <ShoppingCart size={18} />
-              <span>{totalItems > 0 ? `Commander (${total.toLocaleString()} F)` : 'Voir le panier'}</span>
-            </button>
+      <main className="pt-20">
+        
+        {/* Dynamic Hero Section */}
+        <section className="relative w-full aspect-[21/9] sm:aspect-[3/1] max-h-[500px] overflow-hidden group">
+          <div className="absolute inset-0 bg-black/40 z-10"></div>
+          <img 
+            src={store.banner_url || "https://images.unsplash.com/photo-1550966841-3ee3ad359051?auto=format&fit=crop&q=80"} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+            alt="Hero" 
+          />
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6 text-white">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 animate-fade-in">Bienvenue chez {store.name}</span>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-2xl">{store.name}</h1>
+            <p className="text-sm md:text-lg max-w-2xl font-medium opacity-90 drop-shadow-lg leading-relaxed">{store.description || 'Découvrez nos créations uniques.'}</p>
           </div>
         </section>
 
-        {/* Hero with Banner and Custom Message */}
-        <section 
-          className={styles.hero} 
-          style={{ 
-            background: store.banner_url ? `url(${store.banner_url}) center/cover no-repeat` : `linear-gradient(135deg, ${store.theme_color} 0%, #000 100%)`,
-          }}
-        >
-          <div className={styles.heroOverlay}>
-            <h1>{store.name}</h1>
-            <p>{store.description || 'Bienvenue dans notre boutique.'}</p>
-            {store.custom_message && (
-              <div className={styles.customMsg}>
-                <Info size={16} />
-                <span>{store.custom_message}</span>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Categories Bar */}
-        <div className={styles.categoryBar}>
-          <button 
-            className={activeCategory === 'all' ? styles.active : ''} 
-            onClick={() => setActiveCategory('all')}
-            style={activeCategory === 'all' ? { backgroundColor: store.theme_color } : {}}
-          >
-            Tout
-          </button>
-          {categories.map(cat => (
+        <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+          
+          {/* Versatile Category Navigation */}
+          <div className="sticky top-20 z-40 py-4 bg-[#FDFDFD]/90 backdrop-blur-md -mx-4 px-4 border-b border-gray-50 flex items-center gap-3 overflow-x-auto no-scrollbar">
             <button 
-              key={cat.id} 
-              className={activeCategory === cat.id ? styles.active : ''} 
-              onClick={() => setActiveCategory(cat.id)}
-              style={activeCategory === cat.id ? { backgroundColor: store.theme_color } : {}}
+              onClick={() => setActiveCategory('all')}
+              className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                activeCategory === 'all' 
+                ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
+                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
-              {cat.name}
+              Tout voir
             </button>
-          ))}
-        </div>
+            {categories.map(cat => (
+              <button 
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                  activeCategory === cat.id 
+                  ? 'bg-white text-gray-900 border-2 border-gray-900 shadow-xl' 
+                  : 'text-gray-400 hover:text-gray-900'
+                }`}
+                style={activeCategory === cat.id ? { borderColor: themeColor, color: themeColor } : {}}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
 
-        {/* Products Grid */}
-        <div className={styles.productGrid}>
-          {filteredProducts.length === 0 ? (
-            <div className={styles.emptyProducts}>
-              <Package size={48} />
-              <p>Aucun produit ne correspond à votre recherche.</p>
-            </div>
-          ) : (
-            filteredProducts.map(product => (
-              <div key={product.id} className={styles.productCard} onClick={() => setSelectedProduct(product)}>
-                <div className={styles.imageBox}>
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} />
-                  ) : (
-                    <div className={styles.placeholderImg}><Package size={48} /></div>
-                  )}
-                  {product.stock_quantity <= 0 && (
-                    <div className={styles.outOfStockBadge}>ÉPUISÉ</div>
-                  )}
-                </div>
-                <div className={styles.productInfo}>
-                  <span className={styles.catName}>
-                    {categories.find(c => c.id === product.category_id)?.name || 'Produit'}
-                  </span>
-                  <h3>{product.name}</h3>
-                  <p className={styles.price}>{product.price.toLocaleString()} FCFA</p>
-                  <button 
-                    className={styles.addBtn} 
-                    style={{ backgroundColor: product.stock_quantity > 0 ? store.theme_color : '#ccc' }}
-                    disabled={product.stock_quantity <= 0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(product);
-                    }}
-                  >
-                    {product.stock_quantity > 0 ? 'Ajouter au panier' : 'Indisponible'}
-                  </button>
-                </div>
+          {/* Elegant Product Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredProducts.length === 0 ? (
+              <div className="col-span-full py-20 text-center space-y-4">
+                <Package size={64} className="mx-auto text-gray-100" />
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun article trouvé</p>
               </div>
-            ))
-          )}
+            ) : (
+              filteredProducts.map(p => (
+                <div 
+                  key={p.id} 
+                  className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-gray-100 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer"
+                  onClick={() => setSelectedProduct(p)}
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden">
+                    {p.image_url ? (
+                      <img src={p.image_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} />
+                    ) : (
+                      <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-200">
+                        <Package size={48} />
+                      </div>
+                    )}
+                    <div className="absolute top-4 right-4 flex flex-col gap-2">
+                       <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm">
+                         {categories.find(c => c.id === p.category_id)?.name || 'Nouveauté'}
+                       </span>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4 flex-1 flex flex-col">
+                    <div className="space-y-1">
+                      <h3 className="font-black text-lg tracking-tight text-gray-900 group-hover:text-wa-teal transition-colors">{p.name}</h3>
+                      <p className="text-sm text-gray-400 font-medium line-clamp-2 leading-relaxed">{p.description}</p>
+                    </div>
+                    <div className="pt-4 mt-auto flex items-center justify-between">
+                      <p className="text-xl font-black tracking-tighter" style={{ color: themeColor }}>{p.price.toLocaleString()} F</p>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); addToCart(p); }}
+                        className="w-10 h-10 bg-gray-900 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg shadow-gray-200"
+                      >
+                        <ShoppingCart size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-        {/* Sticky Floating Cart Button (Mobile) */}
-        {totalItems > 0 && (
-          <button
-            className={styles.stickyCart}
-            style={{ backgroundColor: store.theme_color }}
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingCart size={20} />
-            <span>Voir le panier · {total.toLocaleString()} FCFA</span>
-            <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '100px', padding: '2px 10px', fontSize: '0.82rem', fontWeight: 900 }}>
-              {totalItems}
-            </span>
-          </button>
-        )}
       </main>
 
-      {/* Product Details Modal */}
+      {/* Floating Action Button for Cart (Mobile) */}
+      {totalItems > 0 && (
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-8 right-8 z-50 flex items-center gap-4 bg-gray-900 text-white px-6 py-4 rounded-3xl shadow-2xl shadow-gray-900/40 hover:scale-105 active:scale-95 transition-all md:hidden"
+        >
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={20} />
+            <span className="font-black text-sm">{totalItems}</span>
+          </div>
+          <div className="h-4 w-px bg-white/20"></div>
+          <span className="font-black text-sm">{total.toLocaleString()} F</span>
+        </button>
+      )}
+
+      {/* Product Detail Modal */}
       {selectedProduct && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedProduct(null)}>
-          <div className={styles.productModal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeModal} onClick={() => setSelectedProduct(null)}><X /></button>
-            <div className={styles.modalBody}>
-              <div className={styles.modalImage}>
-                <img src={selectedProduct.image_url || '/placeholder.png'} alt={selectedProduct.name} />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedProduct(null)}></div>
+          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300">
+            <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-10 p-2 bg-white/80 rounded-full hover:bg-white shadow-lg transition-all">
+              <X size={20} />
+            </button>
+            <div className="w-full md:w-1/2 aspect-square md:aspect-auto overflow-hidden bg-gray-50">
+              <img src={selectedProduct.image_url} className="w-full h-full object-cover" alt="" />
+            </div>
+            <div className="flex-1 p-8 sm:p-12 overflow-y-auto space-y-8 text-left">
+              <div className="space-y-4">
+                <span className="px-4 py-1 bg-wa-chat text-wa-teal-dark text-[10px] font-black uppercase tracking-widest rounded-full">
+                   {categories.find(c => c.id === selectedProduct.category_id)?.name}
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-none">{selectedProduct.name}</h2>
+                <p className="text-2xl font-black text-wa-teal-dark">{selectedProduct.price.toLocaleString()} FCFA</p>
               </div>
-              <div className={styles.modalInfo}>
-                <h2>{selectedProduct.name}</h2>
-                <p className={styles.modalPrice}>{selectedProduct.price.toLocaleString()} FCFA</p>
-                <div className={styles.modalDesc}>
-                  <h4>Description</h4>
-                  <p>{selectedProduct.description || 'Aucune description disponible.'}</p>
-                </div>
-                <div className={styles.modalStock}>
-                  <Clock size={16} />
-                  <span>{selectedProduct.stock_quantity > 0 ? `En stock (${selectedProduct.stock_quantity} restants)` : 'Rupture de stock'}</span>
-                </div>
-                <button 
-                  className={styles.modalAddBtn} 
-                  style={{ backgroundColor: selectedProduct.stock_quantity > 0 ? store.theme_color : '#ccc' }}
-                  disabled={selectedProduct.stock_quantity <= 0}
-                  onClick={() => {
-                    addToCart(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  <ShoppingCart size={20} />
-                  {selectedProduct.stock_quantity > 0 ? 'Ajouter au panier' : 'Indisponible'}
-                </button>
+              
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Description du produit</p>
+                <p className="text-gray-500 font-medium leading-relaxed">{selectedProduct.description || 'Une pièce d\'exception sélectionnée avec soin par notre équipe.'}</p>
               </div>
+
+              <div className="flex items-center gap-6 py-6 border-y border-gray-50">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><Clock size={20} /></div>
+                   <div>
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Disponibilité</p>
+                     <p className="text-sm font-black text-gray-900">{selectedProduct.stock_quantity > 0 ? 'En stock' : 'Rupture'}</p>
+                   </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
+                className="w-full py-5 bg-gray-900 text-white font-black rounded-[24px] shadow-xl shadow-gray-200 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+              >
+                <ShoppingCart size={22} />
+                Ajouter au panier
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Cart Drawer */}
-      <div className={`${styles.cartDrawer} ${isCartOpen ? styles.cartOpen : ''}`}>
-        <div className={styles.drawerHeader}>
-          <h3>Mon Panier</h3>
-          <button onClick={() => setIsCartOpen(false)}><X size={24} /></button>
+      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-[110] transition-transform duration-500 flex flex-col ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-8 flex items-center justify-between border-b border-gray-50">
+          <div>
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Votre Panier</h3>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{totalItems} articles sélectionnés</p>
+          </div>
+          <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-50 rounded-xl transition-all">
+            <X size={24} />
+          </button>
         </div>
-        
-        <div className={styles.drawerBody}>
+
+        <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
           {cart.length === 0 ? (
-            <div className={styles.emptyCart}>
-              <ShoppingCart size={48} />
-              <p>Votre panier est vide</p>
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-30">
+              <ShoppingCart size={64} />
+              <p className="font-black uppercase tracking-widest text-sm">Panier Vide</p>
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className={styles.cartItem}>
-                <img src={item.image_url || '/placeholder.png'} alt={item.name} />
-                <div className={styles.itemInfo}>
-                  <h4>{item.name}</h4>
-                  <p>{item.quantity} x {item.price.toLocaleString()} FCFA</p>
+              <div key={item.id} className="flex items-center gap-4 group">
+                <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+                  <img src={item.image_url} className="w-full h-full object-cover" alt="" />
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className={styles.removeBtn}>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-black text-gray-900 truncate">{item.name}</h4>
+                  <p className="text-sm font-bold text-gray-400">{item.quantity} x {item.price.toLocaleString()} F</p>
+                </div>
+                <button onClick={() => removeFromCart(item.id)} className="p-2 text-gray-200 hover:text-rose-500 transition-all">
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -525,106 +393,80 @@ export default function Storefront({ params }) {
         </div>
 
         {cart.length > 0 && (
-          <div className={styles.drawerFooter}>
-            <div className={styles.checkoutForm}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Nom complet *</label>
-                <input
-                  className={styles.fieldInput}
-                  value={checkoutData.customerName}
-                  onChange={(e) => handleCheckoutChange('customerName', e.target.value)}
-                  placeholder="Ex: Aicha Konate"
-                />
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Téléphone *</label>
-                <input
-                  className={styles.fieldInput}
-                  value={checkoutData.customerPhone}
-                  onChange={(e) => handleCheckoutChange('customerPhone', e.target.value)}
-                  placeholder="Ex: +225 07 00 00 00 00"
-                />
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Email (optionnel)</label>
-                <input
-                  className={styles.fieldInput}
-                  type="email"
-                  value={checkoutData.customerEmail}
-                  onChange={(e) => handleCheckoutChange('customerEmail', e.target.value)}
-                  placeholder="Ex: aicha@email.com"
-                />
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Adresse de livraison *</label>
-                <textarea
-                  className={styles.fieldArea}
-                  rows={2}
-                  value={checkoutData.customerAddress}
-                  onChange={(e) => handleCheckoutChange('customerAddress', e.target.value)}
-                  placeholder="Quartier, rue, repère..."
-                />
-              </div>
+          <div className="p-8 bg-gray-50/50 space-y-6">
+            <div className="space-y-4">
+              <input 
+                placeholder="Votre nom complet" 
+                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all"
+                value={checkoutData.customerName}
+                onChange={e => setCheckoutData({...checkoutData, customerName: e.target.value})}
+              />
+              <input 
+                placeholder="Numéro de téléphone" 
+                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all"
+                value={checkoutData.customerPhone}
+                onChange={e => setCheckoutData({...checkoutData, customerPhone: e.target.value})}
+              />
+              <textarea 
+                placeholder="Adresse de livraison exacte" 
+                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all resize-none h-24"
+                value={checkoutData.customerAddress}
+                onChange={e => setCheckoutData({...checkoutData, customerAddress: e.target.value})}
+              ></textarea>
             </div>
 
-            <div className={styles.totalRow}>
-              <span>Total</span>
-              <span>{total.toLocaleString()} FCFA</span>
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Total à payer</span>
+              <span className="text-2xl font-black text-gray-900">{total.toLocaleString()} FCFA</span>
             </div>
-
-            {checkoutError && <p className={styles.checkoutError}>{checkoutError}</p>}
-            {checkoutSuccess && <p className={styles.checkoutSuccess}>{checkoutSuccess}</p>}
 
             <button 
-              className={styles.checkoutBtn} 
-              style={{ backgroundColor: '#25D366' }}
-              disabled={isSubmittingOrder}
               onClick={checkoutWhatsApp}
+              disabled={isSubmittingOrder}
+              className="w-full py-4 bg-[#25D366] text-white font-black rounded-3xl shadow-xl shadow-[#25D366]/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
             >
-              {isSubmittingOrder ? <Loader2 size={18} className={styles.spin} /> : <Send size={18} />}
-              <span>{isSubmittingOrder ? 'Traitement...' : 'Commander via WhatsApp'}</span>
+              {isSubmittingOrder ? <Loader2 className="animate-spin" /> : <Send size={20} />}
+              Commander via WhatsApp
             </button>
-            <p className={styles.checkoutHint}>Le vendeur vous recontactera sur WhatsApp.</p>
           </div>
         )}
       </div>
 
-      {/* History Drawer */}
-      <div className={`${styles.cartDrawer} ${showHistory ? styles.cartOpen : ''}`} style={{ right: showHistory ? '0' : '-400px' }}>
-        <div className={styles.drawerHeader}>
-          <h3>Historique des commandes</h3>
-          <button onClick={() => setShowHistory(false)}><X size={24} /></button>
+      <footer className="py-20 bg-gray-50 px-4 text-center space-y-4">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs">V</div>
+          <span className="text-sm font-black tracking-widest uppercase">VesTyle</span>
         </div>
-        <div className={styles.drawerBody}>
-          {recentOrders.length === 0 ? (
-            <div className={styles.emptyCart}>
-              <History size={48} />
-              <p>Aucune commande récente.</p>
-            </div>
-          ) : (
-            recentOrders.map(order => (
-              <div key={order.id} className={styles.historyItem}>
-                <div className={styles.historyMeta}>
-                  <strong>Commande #{order.id.slice(0, 8)}</strong>
-                  <span>{new Date(order.date).toLocaleDateString()}</span>
-                </div>
-                <div className={styles.historyDetails}>
-                  <span>{order.items} article(s) • {order.total.toLocaleString()} F</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {(isCartOpen || showHistory) && <div className={styles.overlay} onClick={() => { setIsCartOpen(false); setShowHistory(false); }}></div>}
-
-      <footer className={styles.footer}>
-        <p>Propulsé par <strong>VesTyle</strong> — Plateforme E-commerce & Logistique</p>
+        <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">Plateforme sécurisée — Propulsé par Google AI</p>
       </footer>
+
+      {/* History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowHistory(false)}></div>
+          <div className="relative bg-white w-full max-w-md rounded-[40px] p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">Vos Commandes</h3>
+              <button onClick={() => setShowHistory(false)}><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              {recentOrders.length === 0 ? (
+                <p className="text-center py-10 text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun historique</p>
+              ) : (
+                recentOrders.map(o => (
+                  <div key={o.id} className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-black text-gray-900">#{o.id.slice(0,8)}</p>
+                      <p className="text-[10px] font-bold text-gray-400">{new Date(o.date).toLocaleDateString()}</p>
+                    </div>
+                    <p className="text-sm font-black text-wa-teal">{o.total.toLocaleString()} F</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
