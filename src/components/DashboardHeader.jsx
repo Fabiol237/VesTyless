@@ -37,10 +37,13 @@ export default function DashboardHeader({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="p-2.5 text-gray-400 hover:text-wa-teal-dark hover:bg-wa-chat rounded-xl transition-all relative">
+          <Link 
+            href="/dashboard/notifications"
+            className="p-2.5 text-gray-400 hover:text-wa-teal-dark hover:bg-wa-chat rounded-xl transition-all relative"
+          >
             <Bell size={20} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-          </button>
+          </Link>
 
           <div className="h-8 w-[1px] bg-gray-100 mx-1 hidden sm:block"></div>
 

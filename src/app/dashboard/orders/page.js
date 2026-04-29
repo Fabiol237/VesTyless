@@ -10,7 +10,13 @@ import {
   ChevronRight, Calendar, Phone, MapPin
 } from 'lucide-react';
 
-const STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_OPTIONS = [
+  { id: 'pending', label: 'Nouvelle' },
+  { id: 'processing', label: 'En préparation' },
+  { id: 'shipped', label: 'En cours de livraison' },
+  { id: 'delivered', label: 'Livrée' },
+  { id: 'cancelled', label: 'Annulée' }
+];
 
 function normalizeStatus(s) { return (s || 'pending').toLowerCase().trim(); }
 function shortId(id) { return (id || '').slice(0, 8).toUpperCase(); }
@@ -20,11 +26,11 @@ function formatAmount(a) { return Number(a || 0).toLocaleString('fr-FR') + ' F';
 function StatusBadge({ status }) {
   const n = normalizeStatus(status);
   const map = {
-    delivered: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', icon: CheckCircle2 },
-    shipped: { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-100', icon: Calendar },
-    processing: { bg: 'bg-wa-chat', text: 'text-wa-teal-dark', border: 'border-wa-teal/10', icon: Clock },
-    cancelled: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100', icon: ShoppingCart },
-    pending: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100', icon: Loader2 },
+    delivered: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', icon: CheckCircle2, label: 'Livrée' },
+    shipped: { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-100', icon: Calendar, label: 'En route' },
+    processing: { bg: 'bg-wa-chat', text: 'text-wa-teal-dark', border: 'border-wa-teal/10', icon: Clock, label: 'Préparation' },
+    cancelled: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-100', icon: ShoppingCart, label: 'Annulée' },
+    pending: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100', icon: Loader2, label: 'Nouvelle' },
   };
   const config = map[n] || map.pending;
   const Icon = config.icon;
@@ -32,7 +38,7 @@ function StatusBadge({ status }) {
   return (
     <span className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl border ${config.bg} ${config.text} ${config.border}`}>
       <Icon size={12} className={n === 'pending' ? 'animate-spin' : ''} />
-      {status || 'En attente'}
+      {config.label}
     </span>
   );
 }
@@ -92,17 +98,19 @@ export default function OrdersPage() {
   };
 
   const sendWhatsAppToCustomer = (order) => {
-    const msg = `Bonjour ${order.customer_name} ! 🌟\nC'est la boutique ${store?.store_name}.\n\nNous avons bien reçu votre commande #${shortId(order.id)}.\nStatut actuel : ${order.status}\nTotal : ${formatAmount(order.total_amount)}\n\nMerci de votre confiance !`;
+    const statusLabel = STATUS_OPTIONS.find(s => s.id === normalizeStatus(order.status))?.label || order.status;
+    const msg = `Bonjour ${order.customer_name} ! 🌟\nC'est la boutique ${store?.store_name}.\n\nNous avons bien reçu votre commande #${shortId(order.id)}.\nStatut actuel : ${statusLabel}\nTotal : ${formatAmount(order.total_amount)}\n\nMerci de votre confiance !`;
     window.open(`https://wa.me/${order.customer_phone?.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const filteredOrders = orders.filter(o => {
     const t = searchTerm.toLowerCase();
+    const statusLabel = STATUS_OPTIONS.find(s => s.id === normalizeStatus(o.status))?.label || '';
     return (
       (o.customer_name || '').toLowerCase().includes(t) ||
       (o.customer_phone || '').includes(t) ||
       (o.id || '').toLowerCase().includes(t) ||
-      (o.status || '').toLowerCase().includes(t)
+      statusLabel.toLowerCase().includes(t)
     );
   });
 
@@ -125,7 +133,7 @@ export default function OrdersPage() {
             <DollarSign size={20} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-wa-teal-dark uppercase tracking-widest">Revenu total livré</p>
+            <p className="text-[10px] font-black text-wa-teal-dark uppercase tracking-widest">Revenu total encaissé</p>
             <p className="text-xl font-black text-wa-teal-dark">{formatAmount(stats.revenue)}</p>
           </div>
         </div>
@@ -198,7 +206,7 @@ export default function OrdersPage() {
                 <div className="flex items-center gap-2">
                   <StatusBadge status={order.status} />
                   {order.confirmed_at && (
-                    <span className="bg-emerald-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg">Confirmé</span>
+                    <span className="bg-emerald-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg">Confirmé par client</span>
                   )}
                 </div>
               </div>
@@ -255,7 +263,7 @@ export default function OrdersPage() {
                       <MapPin size={14} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Mettre à jour le statut</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Changer le statut</p>
                       <select
                         value={order.status || 'pending'}
                         onChange={e => handleStatusChange(order, e.target.value)}
@@ -263,7 +271,7 @@ export default function OrdersPage() {
                         className="w-full bg-white border-2 border-wa-teal/10 focus:border-wa-teal rounded-xl px-4 py-3 text-sm font-black text-gray-900 outline-none transition-all cursor-pointer shadow-sm"
                       >
                         {STATUS_OPTIONS.map(s => (
-                          <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                          <option key={s.id} value={s.id}>{s.label}</option>
                         ))}
                       </select>
                     </div>
