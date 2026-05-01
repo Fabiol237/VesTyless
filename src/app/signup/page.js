@@ -48,7 +48,7 @@ export default function Signup() {
           </div>
           <h2 className="text-2xl font-bold text-wa-teal-dark mb-4">Vérifiez votre email !</h2>
           <p className="text-neutral-600 mb-8 leading-relaxed">
-            Nous vous avons envoyé un lien de confirmation à l'adresse <strong>{email}</strong>. 
+            Nous vous avons envoyé un lien de confirmation à l&apos;adresse <strong>{email}</strong>. 
             Veuillez cliquer sur ce lien pour activer votre boutique avant de vous connecter.
           </p>
           <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-bold rounded-xl hover:bg-wa-teal-dark transition-colors">
@@ -75,7 +75,7 @@ export default function Signup() {
           Créer votre boutique
         </h2>
         <p className="mt-2 text-center text-sm text-neutral-600">
-          Rejoignez des milliers de vendeurs aujourd'hui.
+          Rejoignez des milliers de vendeurs aujourd&apos;hui.
         </p>
       </div>
 

@@ -71,9 +71,10 @@ export default function StoreSettingsPage() {
   }, [session]);
 
   useEffect(() => {
+    const urlsRef = tempUploadedUrlsRef.current;
     return () => {
       if (saveSucceededRef.current) return;
-      const pending = Array.from(tempUploadedUrlsRef.current);
+      const pending = Array.from(urlsRef);
       pending.forEach((url) => deleteCloudinaryByUrl(url));
     };
   }, []);
@@ -160,7 +161,7 @@ export default function StoreSettingsPage() {
             <Settings className="text-wa-teal" size={32} />
             Configuration Boutique
           </h1>
-          <p className="text-gray-500 font-medium">Sublimez l'apparence et les réglages de votre espace client.</p>
+          <p className="text-gray-500 font-medium">Sublimez l&apos;apparence et les réglages de votre espace client.</p>
         </div>
         <Link href="/dashboard" className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all text-xs uppercase tracking-widest">
           <ArrowLeft size={16} /> Retour
@@ -254,7 +255,7 @@ export default function StoreSettingsPage() {
                  <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white"><Megaphone size={20} /></div>
                  <h2 className="text-xl font-black">Section Promotionnelle</h2>
                </div>
-               <p className="text-white/80 text-sm font-medium mb-6">Ce message s'affichera en haut de votre boutique pour attirer l'œil de vos clients.</p>
+               <p className="text-white/80 text-sm font-medium mb-6">Ce message s&apos;affichera en haut de votre boutique pour attirer l&apos;œil de vos clients.</p>
                
                <div className="space-y-4">
                  <div className="relative">

@@ -54,10 +54,11 @@ export default function AddProductPage() {
   }, [storeId]);
 
   useEffect(() => {
+    const urlsRef = tempUploadedUrlsRef.current;
     return () => {
       if (saveSucceededRef.current) return;
 
-      const pending = Array.from(tempUploadedUrlsRef.current);
+      const pending = Array.from(urlsRef);
       pending.forEach((url) => {
         deleteCloudinaryByUrl(url);
       });

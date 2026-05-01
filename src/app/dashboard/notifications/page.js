@@ -32,8 +32,11 @@ export default function NotificationsPage() {
       }
     ];
 
-    setNotifications(mockNotifications);
-    setLoading(false);
+    const timer = setTimeout(() => {
+      setNotifications(mockNotifications);
+      setLoading(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [store]);
 
   const markAllRead = () => {
@@ -54,7 +57,7 @@ export default function NotificationsPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">Centre de Notifications</h1>
-            <p className="text-sm text-gray-500 font-medium">Restez informé de l'activité de votre boutique.</p>
+            <p className="text-sm text-gray-500 font-medium">Restez informé de l&apos;activité de votre boutique.</p>
           </div>
         </div>
         <button 

@@ -7,6 +7,7 @@ import {
   ChevronRight, Star, MapPin, Phone
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { publicProductsIndex } from '@/lib/meilisearch';
 
 export default function Storefront({ params }) {
   const routeParams = useParams();
@@ -24,6 +25,8 @@ export default function Storefront({ params }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [meiliResults, setMeiliResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const [checkoutData, setCheckoutData] = useState({
     customerName: '',
@@ -47,9 +50,12 @@ export default function Storefront({ params }) {
     setLoading(true);
     try {
       const { data: storeData } = await supabase.from('stores').select('*').eq('slug', slug).single();
-      if (storeData) {
-        setStore(storeData);
-        const { data: catData } = await supabase.from('categories').select('*').eq('store_id', storeData.id);
+        if (storeData) {
+          setStore(storeData);
+          // Increment store view count (fire-and-forget)
+          (async () => { try { await supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {} })();
+
+          const { data: catData } = await supabase.from('categories').select('*').eq('store_id', storeData.id);
         setCategories(catData || []);
         const { data: prodData } = await supabase.from('products').select('*').eq('store_id', storeData.id).eq('is_active', true);
         setProducts(prodData || []);
@@ -63,13 +69,49 @@ export default function Storefront({ params }) {
 
   useEffect(() => { fetchStoreData(); }, [fetchStoreData]);
 
-  const filteredProducts = useMemo(() => {
+  // Recherche Meilisearch pour la boutique
+  useEffect(() => {
+    if (!store) return;
+
+    if (searchQuery.trim() === '') {
+      setMeiliResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const performSearch = async () => {
+      setIsSearching(true);
+      try {
+        const filters = [`store_id = ${store.id}`];
+        if (activeCategory !== 'all') {
+          filters.push(`category_id = "${activeCategory}"`);
+        }
+
+        const response = await publicProductsIndex.search(searchQuery, {
+          filter: filters.join(' AND '),
+          limit: 20
+        });
+        setMeiliResults(response.hits);
+      } catch (err) {
+        console.error('Meilisearch Search Error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timer = setTimeout(performSearch, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, store, activeCategory]);
+
+  const displayProducts = useMemo(() => {
+    if (meiliResults) return meiliResults;
+    
     return products.filter(p => {
       const matchesCategory = activeCategory === 'all' || p.category_id === activeCategory;
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [products, activeCategory, searchQuery]);
+  }, [products, activeCategory, searchQuery, meiliResults]);
 
   const addToCart = (product) => {
     if (product.stock_quantity <= 0) return;
@@ -145,7 +187,7 @@ export default function Storefront({ params }) {
       </div>
       <div>
         <h1 className="text-3xl font-black text-gray-900">Boutique introuvable</h1>
-        <p className="text-gray-500 mt-2">Désolé, cette adresse n'existe pas.</p>
+        <p className="text-gray-500 mt-2">Désolé, cette adresse n&apos;existe pas.</p>
       </div>
       <button onClick={() => window.location.href = '/'} className="px-8 py-4 bg-gray-900 text-white font-black rounded-2xl">Retour</button>
     </div>
@@ -260,17 +302,26 @@ export default function Storefront({ params }) {
 
           {/* Elegant Product Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.length === 0 ? (
-              <div className="col-span-full py-20 text-center space-y-4">
-                <Package size={64} className="mx-auto text-gray-100" />
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun article trouvé</p>
-              </div>
+            {isSearching ? (
+               <div className="col-span-full py-20 text-center space-y-4">
+                 <Loader2 size={48} className="mx-auto text-wa-teal animate-spin" />
+                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Recherche en cours...</p>
+               </div>
+            ) : displayProducts.length === 0 ? (
+               <div className="col-span-full py-20 text-center space-y-4">
+                 <Package size={64} className="mx-auto text-gray-100" />
+                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun article trouvé</p>
+               </div>
             ) : (
-              filteredProducts.map(p => (
+              displayProducts.map(p => (
                 <div 
                   key={p.id} 
                   className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-gray-100 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer"
-                  onClick={() => setSelectedProduct(p)}
+                  onClick={() => {
+                    setSelectedProduct(p);
+                    // Increment product view count (fire-and-forget)
+                    (async () => { try { await supabase.rpc('increment_product_view', { prod_id: p.id }); } catch (_) {} })();
+                  }}
                 >
                   <div className="relative aspect-[4/5] overflow-hidden">
                     {p.image_url ? (

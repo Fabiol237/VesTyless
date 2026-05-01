@@ -182,7 +182,7 @@ export default function OrdersPage() {
               <ShoppingCart size={40} />
             </div>
             <h2 className="text-lg font-black text-gray-900">Aucune commande trouvée</h2>
-            <p className="text-sm text-gray-500 mt-1">Vos ventes apparaîtront ici dès qu'un client passe commande.</p>
+            <p className="text-sm text-gray-500 mt-1">Vos ventes apparaîtront ici dès qu&apos;un client passe commande.</p>
           </div>
         ) : (
           filteredOrders.map(order => (

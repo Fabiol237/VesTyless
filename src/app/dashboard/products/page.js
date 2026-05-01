@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { productsIndex } from '@/lib/meilisearch';
 import AddProductModal from './AddProductModal';
 import Image from 'next/image';
 
@@ -17,8 +18,10 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [catInput, setCatInput] = useState('');
   const [search, setSearch] = useState('');
+  const [meiliResults, setMeiliResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     if (!store) return;
@@ -47,6 +50,35 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchCategories, fetchProducts, store]);
 
+  // Recherche Meilisearch avec Debounce
+  useEffect(() => {
+    if (!store) return;
+    
+    if (search.trim() === '') {
+      setMeiliResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const performSearch = async () => {
+      setIsSearching(true);
+      try {
+        const response = await productsIndex.search(search, {
+          filter: `store_id = ${store.id}`,
+          limit: 50
+        });
+        setMeiliResults(response.hits);
+      } catch (err) {
+        console.error('Meilisearch search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timer = setTimeout(performSearch, 300);
+    return () => clearTimeout(timer);
+  }, [search, store]);
+
   const addCategory = async () => {
     if (!catInput.trim() || !store) return;
     setCategoryLoading(true);
@@ -72,6 +104,11 @@ export default function ProductsPage() {
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) {
       setProducts(products.filter(p => p.id !== id));
+      try {
+        await productsIndex.deleteDocument(id);
+      } catch (err) {
+        console.error('Meilisearch delete error:', err);
+      }
     }
   };
 
@@ -85,7 +122,7 @@ export default function ProductsPage() {
     setShowAddModal(true);
   };
 
-  const filteredProducts = products.filter(p => 
+  const displayProducts = meiliResults || products.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     (p.categories?.name || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -202,12 +239,12 @@ export default function ProductsPage() {
             </div>
 
             <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
-              {loading ? (
+              {loading || isSearching ? (
                 <div className="p-12 flex flex-col items-center justify-center text-gray-400 gap-3">
                   <Loader2 className="animate-spin" size={32} />
-                  <p className="text-sm font-bold uppercase tracking-widest">Chargement du catalogue...</p>
+                  <p className="text-sm font-bold uppercase tracking-widest">{isSearching ? 'Recherche...' : 'Chargement du catalogue...'}</p>
                 </div>
-              ) : filteredProducts.length === 0 ? (
+              ) : displayProducts.length === 0 ? (
                 <div className="p-16 flex flex-col items-center justify-center text-center">
                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-200 mb-4">
                     <Package size={40} />
@@ -216,7 +253,7 @@ export default function ProductsPage() {
                   <p className="text-sm text-gray-500 mt-1 max-w-[200px]">Commencez par ajouter votre premier article.</p>
                 </div>
               ) : (
-                filteredProducts.map(p => (
+                displayProducts.map(p => (
                   <div key={p.id} className="p-4 hover:bg-gray-50 transition-colors group">
                     <div className="flex items-center gap-4 text-left">
                       <div className="w-16 h-16 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden border border-gray-100 relative">

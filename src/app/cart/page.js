@@ -103,7 +103,7 @@ export default function CartPage() {
             href="/"
             className="flex items-center justify-center gap-2 px-8 py-3.5 bg-wa-teal text-white rounded-full font-bold shadow-sm hover:bg-wa-teal-dark transition-all"
           >
-            Retour à l'accueil
+            Retour à l&apos;accueil
           </Link>
         </div>
       </main>
@@ -152,7 +152,7 @@ export default function CartPage() {
             <div className="flex-1 flex flex-col gap-3">
               
                 {cart.map((item) => (
-                  <div>
+                  <div key={item.id}>
                     {/* Image */}
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-100">
                       {item.image_url ? (

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Store, ShoppingBag, Users, CheckCircle, AlertTriangle, ShieldCheck, Search, Filter } from 'lucide-react';
+import { Store, ShoppingBag, Users, CheckCircle, AlertTriangle, ShieldCheck, Search, Filter, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
@@ -46,6 +46,22 @@ export default function AdminDashboard() {
       setRecentStores(recentStores.map(s => s.id === storeId ? { ...s, status: newStatus } : s));
     } else {
       alert("Erreur lors de la mise à jour");
+    }
+  };
+
+  const deleteStore = async (storeId) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette boutique ? Tous ses produits seront également supprimés.")) return;
+    
+    const { error } = await supabase
+      .from('stores')
+      .delete()
+      .eq('id', storeId);
+
+    if (!error) {
+      setRecentStores(recentStores.filter(s => s.id !== storeId));
+      setStats(prev => ({ ...prev, stores: prev.stores - 1 }));
+    } else {
+      alert("Erreur lors de la suppression : " + error.message);
     }
   };
 
@@ -108,14 +124,15 @@ export default function AdminDashboard() {
               <tr className="bg-neutral-900/50 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-700">
                 <th className="px-6 py-4 font-medium">Boutique</th>
                 <th className="px-6 py-4 font-medium">Ville</th>
-                <th className="px-6 py-4 font-medium">Date création</th>
+                <th className="px-6 py-4 font-medium">Vues (24h)</th>
+                <th className="px-6 py-4 font-medium">Boost</th>
                 <th className="px-6 py-4 font-medium">Statut</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-700/50">
               {recentStores.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-8 text-center text-neutral-500 text-sm">Aucune base de données identifiée</td></tr>
+                <tr><td colSpan="6" className="px-6 py-8 text-center text-neutral-500 text-sm">Aucune base de données identifiée</td></tr>
               ) : (
                 recentStores.map((store) => (
                   <tr key={store.id} className="hover:bg-neutral-700/20 transition-colors">
@@ -131,19 +148,39 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-300">{store.city || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm text-neutral-400">{new Date(store.created_at).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-6 py-4 text-sm text-wa-teal font-black">{store.daily_views || 0}</td>
+                    <td className="px-6 py-4">
+                      <button 
+                        onClick={async () => {
+                          const { error } = await supabase.from('stores').update({ is_boosted: !store.is_boosted }).eq('id', store.id);
+                          if (!error) setRecentStores(recentStores.map(s => s.id === store.id ? { ...s, is_boosted: !s.is_boosted } : s));
+                        }}
+                        className={`p-2 rounded-lg transition-all ${store.is_boosted ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/20' : 'bg-neutral-700 text-neutral-500 hover:text-neutral-300'}`}
+                      >
+                        <Sparkles size={16} />
+                      </button>
+                    </td>
                     <td className="px-6 py-4">
                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${store.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
                          {store.status === 'approved' ? <><CheckCircle size={12}/> Approuvé</> : <><AlertTriangle size={12}/> Suspendu</>}
                        </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                       <button 
-                         onClick={() => toggleStoreStatus(store.id, store.status)} 
-                         className={`text-xs font-bold px-3 py-1.5 rounded transition-colors border ${store.status === 'approved' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
-                       >
-                         {store.status === 'approved' ? 'Suspendre' : 'Autoriser'}
-                       </button>
+                       <div className="flex items-center justify-end gap-2">
+                         <button 
+                           onClick={() => toggleStoreStatus(store.id, store.status)} 
+                           className={`text-xs font-bold px-3 py-1.5 rounded transition-colors border ${store.status === 'approved' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                         >
+                           {store.status === 'approved' ? 'Suspendre' : 'Autoriser'}
+                         </button>
+                         <button 
+                           onClick={() => deleteStore(store.id)}
+                           className="text-neutral-500 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                           title="Supprimer"
+                         >
+                           <X size={16} />
+                         </button>
+                       </div>
                     </td>
                   </tr>
                 ))

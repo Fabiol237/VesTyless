@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/cloudinary';
+import { productsIndex } from '@/lib/meilisearch';
 
 
 export default function AddProductModal({ onClose, categories = [], storeId, onSuccess, productToEdit = null }) {
@@ -53,6 +54,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     };
 
     try {
+      let savedProduct;
       if (isEdit) {
         const { data, error: updateError } = await supabase
           .from('products')
@@ -61,7 +63,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
           .select()
           .single();
         if (updateError) throw updateError;
-        if(onSuccess) onSuccess(data);
+        savedProduct = data;
       } else {
         const { data, error: insertError } = await supabase
           .from('products')
@@ -69,8 +71,17 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
           .select()
           .single();
         if (insertError) throw insertError;
-        if(onSuccess) onSuccess(data);
+        savedProduct = data;
       }
+
+      // Indexation en temps réel dans Meilisearch
+      try {
+        await productsIndex.addDocuments([savedProduct]);
+      } catch (meiliErr) {
+        console.error('Meilisearch Sync Error:', meiliErr);
+      }
+
+      if(onSuccess) onSuccess(savedProduct);
     } catch (err) {
       setError(isEdit ? 'Erreur lors de la modification.' : 'Erreur lors de la création.');
       setLoading(false);
