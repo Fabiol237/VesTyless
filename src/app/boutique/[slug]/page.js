@@ -19,6 +19,7 @@ import MapPin from 'lucide-react/dist/esm/icons/map-pin';
 import Phone from 'lucide-react/dist/esm/icons/phone';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex } from '@/lib/meilisearch';
+import Link from 'next/link';
 
 export default function Storefront({ params }) {
   const routeParams = useParams();
@@ -38,6 +39,13 @@ export default function Storefront({ params }) {
   const [showHistory, setShowHistory] = useState(false);
   const [meiliResults, setMeiliResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const [checkoutData, setCheckoutData] = useState({
     customerName: '',
@@ -229,342 +237,397 @@ export default function Storefront({ params }) {
   const themeColor = store.theme_color || '#128C7E';
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-wa-teal selection:text-white font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8F9FA] text-neutral-900 selection:bg-wa-teal selection:text-white font-sans overflow-x-hidden">
       
-      {/* Premium Promotion Banner */}
-      {store.custom_message && (
-        <div className="relative z-[60] bg-gray-900 text-white py-2 overflow-hidden">
-          <div className="flex animate-marquee whitespace-nowrap items-center gap-10">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-[10px] font-black uppercase tracking-widest">{store.custom_message}</span>
-                <Star size={10} className="text-wa-teal fill-wa-teal" />
-              </div>
-            ))}
+      {/* 1. GLASS NAVIGATION — Sticky & Intelligent */}
+      <nav className={`fixed inset-x-0 z-[100] transition-all duration-500 px-4 md:px-8 flex items-center justify-between ${isScrolled ? 'h-16 bg-white/90 backdrop-blur-xl shadow-lg border-b border-neutral-100' : 'h-24 bg-transparent'}`}>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white hover:text-neutral-900 transition-all">
+             <ChevronRight className="rotate-180" size={20} />
+          </Link>
+          <div className={`flex items-center gap-3 transition-opacity duration-300 ${isScrolled ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
+             <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white shadow-md">
+                <img src={store.logo_url || '/placeholder-store.png'} className="w-full h-full object-cover" alt="" />
+             </div>
+             <span className={`font-black tracking-tight text-sm uppercase ${isScrolled ? 'text-neutral-900' : 'text-white'}`}>{store.name}</span>
           </div>
         </div>
-      )}
 
-      {/* Premium Navigation */}
-      <nav className={`fixed inset-x-0 h-20 bg-white/80 backdrop-blur-2xl z-50 border-b border-gray-100 px-4 transition-all ${store.custom_message ? 'top-8' : 'top-0'}`}>
-        <div className="max-w-6xl mx-auto h-full flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg transition-transform hover:rotate-3" style={{ backgroundColor: themeColor }}>
-              {store.logo_url ? <img src={store.logo_url} className="w-full h-full object-cover rounded-2xl" alt="" /> : store.name.charAt(0)}
-            </div>
-            <span className="text-lg font-black tracking-tighter uppercase hidden sm:block">{store.name}</span>
-          </div>
-
-          <div className="flex-1 max-w-md hidden md:flex items-center bg-gray-50 rounded-2xl px-4 py-2 border border-transparent focus-within:border-gray-200 focus-within:bg-white transition-all">
-            <Search size={18} className="text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Rechercher un délice..." 
-              className="bg-transparent border-none outline-none px-3 w-full text-sm font-medium"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowHistory(true)} className="p-3 text-gray-400 hover:text-gray-900 transition-all rounded-2xl hover:bg-gray-50">
-              <History size={22} />
-            </button>
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-3 px-5 py-2.5 bg-gray-900 text-white rounded-2xl shadow-xl shadow-gray-200 transition-all hover:scale-105 active:scale-95"
-            >
-              <ShoppingCart size={18} />
-              <span className="font-black text-sm hidden sm:inline">Panier</span>
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 w-6 h-6 bg-wa-teal rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
-                  {totalItems}
-                </span>
-              )}
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowHistory(true)} className={`p-3 rounded-2xl transition-all ${isScrolled ? 'text-neutral-400 hover:text-neutral-900 bg-neutral-50' : 'text-white/80 hover:text-white bg-white/10 backdrop-blur-md border border-white/20'}`}>
+            <History size={20} />
+          </button>
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className={`relative flex items-center gap-3 px-6 py-2.5 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl ${isScrolled ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-900'}`}
+          >
+            <ShoppingCart size={18} />
+            <span className="hidden sm:inline">Panier</span>
+            {totalItems > 0 && (
+              <span className="absolute -top-2 -right-2 w-6 h-6 bg-wa-teal rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white text-white">
+                {totalItems}
+              </span>
+            )}
+          </button>
         </div>
       </nav>
 
-      <main className="pt-20">
+      {/* 2. DYNAMIC HERO — High Impact */}
+      <section className="relative h-[60vh] sm:h-[50vh] min-h-[400px] w-full overflow-hidden bg-neutral-900">
+        <img 
+          src={store.banner_url || "https://images.unsplash.com/photo-1550966841-3ee3ad359051?auto=format&fit=crop&q=80"} 
+          className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105" 
+          alt="Hero" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-transparent to-black/30"></div>
         
-        {/* Dynamic Hero Section */}
-        <section className="relative w-full aspect-[21/9] sm:aspect-[3/1] max-h-[500px] overflow-hidden group">
-          <div className="absolute inset-0 bg-black/40 z-10"></div>
-          <img 
-            src={store.banner_url || "https://images.unsplash.com/photo-1550966841-3ee3ad359051?auto=format&fit=crop&q=80"} 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-            alt="Hero" 
-          />
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6 text-white">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 animate-fade-in">Bienvenue chez {store.name}</span>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4 drop-shadow-2xl">{store.name}</h1>
-            <p className="text-sm md:text-lg max-w-2xl font-medium opacity-90 drop-shadow-lg leading-relaxed">{store.description || 'Découvrez nos créations uniques.'}</p>
-          </div>
-        </section>
-
-        <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
-          
-          {/* Versatile Category Navigation */}
-          <div className="sticky top-20 z-40 py-4 bg-[#FDFDFD]/90 backdrop-blur-md -mx-4 px-4 border-b border-gray-50 flex items-center gap-3 overflow-x-auto no-scrollbar">
-            <button 
-              onClick={() => setActiveCategory('all')}
-              className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                activeCategory === 'all' 
-                ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
-                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              Tout voir
-            </button>
-            {categories.map(cat => (
-              <button 
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  activeCategory === cat.id 
-                  ? 'bg-white text-gray-900 border-2 border-gray-900 shadow-xl' 
-                  : 'text-gray-400 hover:text-gray-900'
-                }`}
-                style={activeCategory === cat.id ? { borderColor: themeColor, color: themeColor } : {}}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Elegant Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {isSearching ? (
-               <div className="col-span-full py-20 text-center space-y-4">
-                 <Loader2 size={48} className="mx-auto text-wa-teal animate-spin" />
-                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Recherche en cours...</p>
-               </div>
-            ) : displayProducts.length === 0 ? (
-               <div className="col-span-full py-20 text-center space-y-4">
-                 <Package size={64} className="mx-auto text-gray-100" />
-                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun article trouvé</p>
-               </div>
-            ) : (
-              displayProducts.map(p => (
-                <div 
-                  key={p.id} 
-                  className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-gray-100 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer"
-                  onClick={() => {
-                    setSelectedProduct(p);
-                    // Increment product view count (fire-and-forget)
-                    (async () => { try { await supabase.rpc('increment_product_view', { prod_id: p.id }); } catch (_) {} })();
-                  }}
-                >
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    {p.image_url ? (
-                      <img src={p.image_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} />
-                    ) : (
-                      <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-200">
-                        <Package size={48} />
-                      </div>
-                    )}
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
-                       <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm">
-                         {categories.find(c => c.id === p.category_id)?.name || 'Nouveauté'}
-                       </span>
-                    </div>
-                  </div>
-                  <div className="p-6 space-y-4 flex-1 flex flex-col">
-                    <div className="space-y-1">
-                      <h3 className="font-black text-lg tracking-tight text-gray-900 group-hover:text-wa-teal transition-colors">{p.name}</h3>
-                      <p className="text-sm text-gray-400 font-medium line-clamp-2 leading-relaxed">{p.description}</p>
-                    </div>
-                    <div className="pt-4 mt-auto flex items-center justify-between">
-                      <p className="text-xl font-black tracking-tighter" style={{ color: themeColor }}>{p.price.toLocaleString()} F</p>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); addToCart(p); }}
-                        className="w-10 h-10 bg-gray-900 text-white rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg shadow-gray-200"
-                      >
-                        <ShoppingCart size={18} />
-                      </button>
-                    </div>
-                  </div>
+        <div className="absolute bottom-0 inset-x-0 p-6 md:p-12">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-end gap-6 md:gap-10 animate-fade-in">
+             {/* Large Store Logo with Status Ring */}
+             <div className="relative group">
+                <div className="absolute -inset-1.5 bg-gradient-to-tr from-wa-teal to-wa-green rounded-[2.5rem] blur opacity-70 animate-pulse"></div>
+                <div className="relative w-32 h-32 md:w-40 md:h-40 bg-white rounded-[2.2rem] p-1 shadow-2xl overflow-hidden">
+                   <img src={store.logo_url || '/placeholder-store.png'} className="w-full h-full object-cover rounded-[2rem]" alt={store.name} />
                 </div>
-              ))
-            )}
+                <div className="absolute bottom-2 right-2 w-6 h-6 bg-wa-green border-4 border-white rounded-full"></div>
+             </div>
+             
+             <div className="flex-1 pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                   <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-wa-teal/20">Boutique Vérifiée</span>
+                   <div className="flex items-center gap-1 text-white/80 text-xs font-bold">
+                      <Star size={14} className="text-amber-400 fill-amber-400" /> 4.9 (128 avis)
+                   </div>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-black text-neutral-900 md:text-white tracking-tight drop-shadow-sm mb-4 leading-none">{store.name}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-neutral-500 md:text-white/70 text-sm font-medium">
+                   <div className="flex items-center gap-2"><MapPin size={16} /> {store.city || 'Douala, Cameroun'}</div>
+                   <div className="flex items-center gap-2"><Phone size={16} /> {store.whatsapp_number}</div>
+                   <div className="flex items-center gap-2"><Truck size={16} /> Livraison Express</div>
+                </div>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. MAIN CONTENT FEED — Sidebar + Products */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+        <div className="flex flex-col lg:flex-row gap-12">
+          
+          {/* STICKY SIDEBAR (Desktop) / TOP BAR (Mobile) */}
+          <aside className="lg:w-64 flex-shrink-0">
+            <div className="sticky top-28 space-y-8">
+              {/* Category Nav */}
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-neutral-100">
+                <h3 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-6">Rayons</h3>
+                <div className="flex lg:flex-col gap-2 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+                  <button 
+                    onClick={() => setActiveCategory('all')}
+                    className={`flex-shrink-0 lg:w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm transition-all ${activeCategory === 'all' ? 'bg-wa-teal/10 text-wa-teal' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'}`}
+                  >
+                    Tout explorer
+                  </button>
+                  {categories.map(cat => (
+                    <button 
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`flex-shrink-0 lg:w-full text-left px-5 py-3.5 rounded-2xl font-black text-sm transition-all ${activeCategory === cat.id ? 'bg-wa-teal/10 text-wa-teal' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'}`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Search in Store */}
+              <div className="relative group">
+                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                 <input 
+                   type="text" 
+                   placeholder="Chercher ici..." 
+                   className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-neutral-100 text-sm font-medium focus:ring-2 focus:ring-wa-teal/20 outline-none transition-all shadow-sm group-hover:shadow-md"
+                   value={searchQuery}
+                   onChange={e => setSearchQuery(e.target.value)}
+                 />
+              </div>
+            </div>
+          </aside>
+
+          {/* PRODUCT FEED */}
+          <div className="flex-1 space-y-10">
+             <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-neutral-900">
+                   {activeCategory === 'all' ? 'Sélection du moment' : categories.find(c => c.id === activeCategory)?.name}
+                </h2>
+                <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{displayProducts.length} ARTICLES</div>
+             </div>
+
+             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                {isSearching ? (
+                   <div className="col-span-full py-20 flex flex-col items-center gap-4">
+                      <div className="w-12 h-12 border-4 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">Analyse du stock...</p>
+                   </div>
+                ) : displayProducts.length === 0 ? (
+                   <div className="col-span-full py-20 flex flex-col items-center text-center space-y-6">
+                      <div className="w-24 h-24 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-300">
+                         <Package size={48} />
+                      </div>
+                      <div className="space-y-2">
+                         <p className="text-xl font-black text-neutral-800">Aucun produit ici</p>
+                         <p className="text-neutral-500 font-medium max-w-xs">Nous n&apos;avons pas trouvé d&apos;articles correspondant à votre sélection.</p>
+                      </div>
+                      <button onClick={() => { setActiveCategory('all'); setSearchQuery(''); }} className="text-wa-teal font-black text-sm uppercase tracking-widest">Voir tout le catalogue</button>
+                   </div>
+                ) : (
+                   displayProducts.map((p, idx) => (
+                      <ProductCard key={p.id} p={p} idx={idx} addToCart={addToCart} setSelectedProduct={setSelectedProduct} themeColor={themeColor} />
+                   ))
+                )}
+             </div>
           </div>
         </div>
       </main>
 
-      {/* Floating Action Button for Cart (Mobile) */}
+      {/* 4. MODALS & UI — Premium Layers */}
+      <ProductModal product={selectedProduct} isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} addToCart={addToCart} themeColor={themeColor} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} removeFromCart={removeFromCart} total={total} totalItems={totalItems} checkoutData={checkoutData} setCheckoutData={setCheckoutData} isSubmitting={isSubmittingOrder} onCheckout={checkoutWhatsApp} themeColor={themeColor} />
+      <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} orders={recentOrders} />
+
+      {/* Floating Cart Button (Mobile) */}
       {totalItems > 0 && (
-        <button 
-          onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-8 right-8 z-50 flex items-center gap-4 bg-gray-900 text-white px-6 py-4 rounded-3xl shadow-2xl shadow-gray-900/40 hover:scale-105 active:scale-95 transition-all md:hidden"
-        >
-          <div className="flex items-center gap-2">
-            <ShoppingCart size={20} />
-            <span className="font-black text-sm">{totalItems}</span>
-          </div>
-          <div className="h-4 w-px bg-white/20"></div>
-          <span className="font-black text-sm">{total.toLocaleString()} F</span>
-        </button>
+         <button 
+           onClick={() => setIsCartOpen(true)}
+           className="fixed bottom-8 right-8 z-[90] flex items-center gap-4 bg-neutral-900 text-white px-8 py-5 rounded-[2.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all md:hidden"
+         >
+           <ShoppingCart size={24} />
+           <div className="flex flex-col items-start leading-none">
+              <span className="text-[10px] font-black text-white/50 uppercase mb-1">{totalItems} Articles</span>
+              <span className="text-lg font-black">{total.toLocaleString()} F</span>
+           </div>
+         </button>
       )}
 
-      {/* Product Detail Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setSelectedProduct(null)}></div>
-          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300">
-            <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-10 p-2 bg-white/80 rounded-full hover:bg-white shadow-lg transition-all">
-              <X size={20} />
-            </button>
-            <div className="w-full md:w-1/2 aspect-square md:aspect-auto overflow-hidden bg-gray-50">
-              <img src={selectedProduct.image_url} className="w-full h-full object-cover" alt="" />
+      <footer className="py-20 bg-neutral-900 text-white px-4 text-center mt-20">
+         <div className="max-w-4xl mx-auto space-y-8 opacity-80">
+            <div className="flex items-center justify-center gap-2">
+               <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center font-black text-lg">V</div>
+               <span className="text-xl font-black tracking-[0.2em] uppercase">VesTyle</span>
             </div>
-            <div className="flex-1 p-8 sm:p-12 overflow-y-auto space-y-8 text-left">
-              <div className="space-y-4">
-                <span className="px-4 py-1 bg-wa-chat text-wa-teal-dark text-[10px] font-black uppercase tracking-widest rounded-full">
-                   {categories.find(c => c.id === selectedProduct.category_id)?.name}
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-none">{selectedProduct.name}</h2>
-                <p className="text-2xl font-black text-wa-teal-dark">{selectedProduct.price.toLocaleString()} FCFA</p>
-              </div>
-              
-              <div className="space-y-3">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Description du produit</p>
-                <p className="text-gray-500 font-medium leading-relaxed">{selectedProduct.description || 'Une pièce d\'exception sélectionnée avec soin par notre équipe.'}</p>
-              </div>
-
-              <div className="flex items-center gap-6 py-6 border-y border-gray-50">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><Clock size={20} /></div>
-                   <div>
-                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Disponibilité</p>
-                     <p className="text-sm font-black text-gray-900">{selectedProduct.stock_quantity > 0 ? 'En stock' : 'Rupture'}</p>
-                   </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
-                className="w-full py-5 bg-gray-900 text-white font-black rounded-[24px] shadow-xl shadow-gray-200 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
-              >
-                <ShoppingCart size={22} />
-                Ajouter au panier
-              </button>
+            <p className="text-sm font-medium text-white/50 max-w-md mx-auto">Propulsé par VesTyle — La solution SaaS leader pour les boutiques et restaurants premium au Cameroun.</p>
+            <div className="pt-8 border-t border-white/10 text-[10px] font-black uppercase tracking-[0.4em] text-white/30">
+               © 2026 VesTyle Technology
             </div>
+         </div>
+      </footer>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// SUB-COMPONENTS — Isolated for Performance
+// ═══════════════════════════════════════════
+
+function ProductCard({ p, idx, addToCart, setSelectedProduct, themeColor }) {
+  return (
+    <div 
+      className="group flex flex-col bg-white rounded-[2.5rem] overflow-hidden border border-neutral-100 hover:shadow-2xl hover:shadow-wa-teal/5 transition-all duration-500 animate-fade-in"
+      style={{ animationDelay: `${idx * 50}ms` }}
+    >
+      <div className="relative aspect-[4/5] overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(p)}>
+        <img src={p.image_url || '/placeholder-product.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
+        {/* Badges */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
+           {p.is_promo && (
+              <span className="px-3 py-1 bg-orange-500 text-white text-[10px] font-black rounded-lg shadow-lg">PROMO</span>
+           )}
+           {p.is_boosted && (
+              <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black rounded-lg shadow-lg flex items-center gap-1"><Zap size={10} /> À LA UNE</span>
+           )}
+        </div>
+
+        <button 
+          onClick={(e) => { e.stopPropagation(); addToCart(p); }}
+          className="absolute bottom-4 right-4 w-12 h-12 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-xl translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-wa-teal hover:text-white"
+        >
+          <ShoppingCart size={22} />
+        </button>
+      </div>
+
+      <div className="p-7 space-y-4 flex-1 flex flex-col">
+        <div className="space-y-1 cursor-pointer" onClick={() => setSelectedProduct(p)}>
+          <h3 className="font-black text-lg tracking-tight text-neutral-900 group-hover:text-wa-teal transition-colors line-clamp-1">{p.name}</h3>
+          <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">{p.categories?.name || 'Collection'}</p>
+        </div>
+        <div className="pt-4 mt-auto border-t border-neutral-50 flex items-center justify-between">
+          <div className="flex flex-col">
+             {p.old_price && <span className="text-[10px] text-neutral-400 font-bold line-through">{p.old_price.toLocaleString()} F</span>}
+             <span className="text-xl font-black tracking-tighter" style={{ color: themeColor }}>{Number(p.price).toLocaleString()} F</span>
+          </div>
+          <div className="flex items-center gap-1">
+             <Star size={12} className="text-amber-400 fill-amber-400" />
+             <span className="text-[10px] font-black text-neutral-400">4.9</span>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
 
-      {/* Cart Drawer */}
-      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-[110] transition-transform duration-500 flex flex-col ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="p-8 flex items-center justify-between border-b border-gray-50">
-          <div>
-            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Votre Panier</h3>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{totalItems} articles sélectionnés</p>
+function ProductModal({ product, isOpen, onClose, addToCart, themeColor }) {
+  if (!isOpen || !product) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-xl" onClick={onClose}></div>
+      <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300">
+        <button onClick={onClose} className="absolute top-6 right-6 z-10 p-3 bg-white/80 rounded-full hover:bg-white shadow-lg transition-all"><X size={24} /></button>
+        <div className="w-full md:w-1/2 aspect-square md:aspect-auto overflow-hidden">
+          <img src={product.image_url} className="w-full h-full object-cover" alt="" />
+        </div>
+        <div className="flex-1 p-8 md:p-16 overflow-y-auto space-y-10">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+               <span className="px-4 py-1.5 bg-neutral-100 text-neutral-500 text-[10px] font-black uppercase tracking-widest rounded-full">Détails de l&apos;article</span>
+               {product.is_active && <span className="flex items-center gap-1.5 text-wa-green text-[10px] font-black uppercase tracking-widest"><div className="w-2 h-2 bg-wa-green rounded-full animate-pulse"></div> En Stock</span>}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tighter leading-none">{product.name}</h2>
+            <p className="text-3xl font-black tracking-tight" style={{ color: themeColor }}>{Number(product.price).toLocaleString()} FCFA</p>
           </div>
-          <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-50 rounded-xl transition-all">
-            <X size={24} />
+          <div className="space-y-4">
+            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em]">Description</p>
+            <p className="text-neutral-500 font-medium leading-relaxed text-lg">{product.description || 'Un produit d&apos;exception sélectionné pour vous.'}</p>
+          </div>
+          <div className="flex items-center gap-6 py-8 border-y border-neutral-100">
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><Package size={24} /></div>
+                <div>
+                   <p className="text-[10px] font-bold text-neutral-400 uppercase">Qualité</p>
+                   <p className="text-sm font-black text-neutral-900">Garantie</p>
+                </div>
+             </div>
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><Truck size={24} /></div>
+                <div>
+                   <p className="text-[10px] font-bold text-neutral-400 uppercase">Livraison</p>
+                   <p className="text-sm font-black text-neutral-900">24/48h</p>
+                </div>
+             </div>
+          </div>
+          <button 
+            onClick={() => { addToCart(product); onClose(); }}
+            className="w-full py-6 bg-neutral-900 text-white font-black rounded-3xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
+          >
+            <ShoppingCart size={24} />
+            Ajouter au panier
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CartDrawer({ isOpen, onClose, cart, removeFromCart, total, totalItems, checkoutData, setCheckoutData, isSubmitting, onCheckout, themeColor }) {
+  return (
+    <>
+      {isOpen && <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}></div>}
+      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-[160] transition-transform duration-500 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-8 flex items-center justify-between border-b border-neutral-50 bg-neutral-50/50">
+          <div>
+            <h3 className="text-2xl font-black text-neutral-900 tracking-tight">Votre Panier</h3>
+            <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest mt-1">{totalItems} articles</p>
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm"><X size={24} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-30">
-              <ShoppingCart size={64} />
-              <p className="font-black uppercase tracking-widest text-sm">Panier Vide</p>
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-30">
+              <div className="w-32 h-32 bg-neutral-100 rounded-full flex items-center justify-center"><ShoppingCart size={64} /></div>
+              <p className="font-black uppercase tracking-widest text-sm">Le panier est vide</p>
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex items-center gap-4 group">
-                <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+              <div key={item.id} className="flex items-center gap-5 group">
+                <div className="w-24 h-24 bg-neutral-50 rounded-[1.5rem] overflow-hidden flex-shrink-0 border border-neutral-100">
                   <img src={item.image_url} className="w-full h-full object-cover" alt="" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-black text-gray-900 truncate">{item.name}</h4>
-                  <p className="text-sm font-bold text-gray-400">{item.quantity} x {item.price.toLocaleString()} F</p>
+                  <h4 className="font-black text-neutral-900 truncate leading-tight mb-1">{item.name}</h4>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-tighter mb-2">{item.quantity} x {Number(item.price).toLocaleString()} F</p>
+                  <button onClick={() => removeFromCart(item.id)} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600 transition-colors">Supprimer</button>
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className="p-2 text-gray-200 hover:text-rose-500 transition-all">
-                  <Trash2 size={18} />
-                </button>
+                <div className="font-black text-sm">{(item.price * item.quantity).toLocaleString()} F</div>
               </div>
             ))
           )}
         </div>
 
         {cart.length > 0 && (
-          <div className="p-8 bg-gray-50/50 space-y-6">
+          <div className="p-8 bg-neutral-50 border-t border-neutral-100 space-y-8">
             <div className="space-y-4">
-              <input 
-                placeholder="Votre nom complet" 
-                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all"
-                value={checkoutData.customerName}
-                onChange={e => setCheckoutData({...checkoutData, customerName: e.target.value})}
-              />
-              <input 
-                placeholder="Numéro de téléphone" 
-                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all"
-                value={checkoutData.customerPhone}
-                onChange={e => setCheckoutData({...checkoutData, customerPhone: e.target.value})}
-              />
-              <textarea 
-                placeholder="Adresse de livraison exacte" 
-                className="w-full px-5 py-3.5 bg-white border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:border-wa-teal transition-all resize-none h-24"
-                value={checkoutData.customerAddress}
-                onChange={e => setCheckoutData({...checkoutData, customerAddress: e.target.value})}
-              ></textarea>
+              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest px-2">Informations de livraison</p>
+              <div className="space-y-2">
+                <input placeholder="Nom complet" className="w-full px-6 py-4 bg-white border border-neutral-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-wa-teal/20 transition-all" value={checkoutData.customerName} onChange={e => setCheckoutData({...checkoutData, customerName: e.target.value})} />
+                <input placeholder="Téléphone (WhatsApp)" className="w-full px-6 py-4 bg-white border border-neutral-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-wa-teal/20 transition-all" value={checkoutData.customerPhone} onChange={e => setCheckoutData({...checkoutData, customerPhone: e.target.value})} />
+                <textarea placeholder="Quartier / Précisions livraison" className="w-full px-6 py-4 bg-white border border-neutral-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-wa-teal/20 transition-all resize-none h-24" value={checkoutData.customerAddress} onChange={e => setCheckoutData({...checkoutData, customerAddress: e.target.value})}></textarea>
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Total à payer</span>
-              <span className="text-2xl font-black text-gray-900">{total.toLocaleString()} FCFA</span>
+            <div className="flex items-center justify-between border-t border-neutral-200 pt-6">
+              <span className="text-xs font-black text-neutral-400 uppercase tracking-widest">Total de la commande</span>
+              <span className="text-3xl font-black text-neutral-900">{total.toLocaleString()} F</span>
             </div>
 
             <button 
-              onClick={checkoutWhatsApp}
-              disabled={isSubmittingOrder}
-              className="w-full py-4 bg-[#25D366] text-white font-black rounded-3xl shadow-xl shadow-[#25D366]/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+              onClick={onCheckout}
+              disabled={isSubmitting}
+              className="w-full py-5 bg-[#25D366] text-white font-black rounded-[2rem] shadow-xl shadow-[#25D366]/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-lg"
             >
-              {isSubmittingOrder ? <Loader2 className="animate-spin" /> : <Send size={20} />}
-              Commander via WhatsApp
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <Send size={24} />}
+              Envoyer la commande
             </button>
           </div>
         )}
       </div>
+    </>
+  );
+}
 
-      <footer className="py-20 bg-gray-50 px-4 text-center space-y-4">
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs">V</div>
-          <span className="text-sm font-black tracking-widest uppercase">VesTyle</span>
+function HistoryModal({ isOpen, onClose, orders }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-xl" onClick={onClose}></div>
+      <div className="relative bg-white w-full max-w-md rounded-[3rem] p-8 md:p-12 space-y-8 animate-in fade-in zoom-in duration-300">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-black text-neutral-900 tracking-tight">Historique</h3>
+          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-xl transition-all"><X size={24} /></button>
         </div>
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">Plateforme sécurisée — Propulsé par Google AI</p>
-      </footer>
-
-      {/* History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowHistory(false)}></div>
-          <div className="relative bg-white w-full max-w-md rounded-[40px] p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black text-gray-900 tracking-tight">Vos Commandes</h3>
-              <button onClick={() => setShowHistory(false)}><X size={20} /></button>
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+          {orders.length === 0 ? (
+            <div className="text-center py-10 opacity-30">
+               <History size={48} className="mx-auto mb-4" />
+               <p className="font-black uppercase tracking-widest text-xs">Aucune commande</p>
             </div>
-            <div className="space-y-4">
-              {recentOrders.length === 0 ? (
-                <p className="text-center py-10 text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun historique</p>
-              ) : (
-                recentOrders.map(o => (
-                  <div key={o.id} className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-black text-gray-900">#{o.id.slice(0,8)}</p>
-                      <p className="text-[10px] font-bold text-gray-400">{new Date(o.date).toLocaleDateString()}</p>
-                    </div>
-                    <p className="text-sm font-black text-wa-teal">{o.total.toLocaleString()} F</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          ) : (
+            orders.map(o => (
+              <div key={o.id} className="p-5 bg-neutral-50 rounded-2xl flex items-center justify-between border border-neutral-100">
+                <div>
+                  <p className="text-xs font-black text-neutral-900 tracking-tighter">#{o.id.slice(0,8).toUpperCase()}</p>
+                  <p className="text-[10px] font-bold text-neutral-400 mt-1">{new Date(o.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-wa-teal">{o.total.toLocaleString()} F</p>
+                  <span className="text-[8px] font-black bg-wa-chat text-wa-teal-dark px-2 py-0.5 rounded-full uppercase">Terminé</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+        <button onClick={onClose} className="w-full py-4 bg-neutral-900 text-white font-black rounded-2xl">Fermer</button>
+      </div>
     </div>
   );
 }
