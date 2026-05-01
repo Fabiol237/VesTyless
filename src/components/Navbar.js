@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Menu, X, ArrowRight, Search as SearchIcon, Store, LogOut, Package } from 'lucide-react';
+import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
+import Menu from 'lucide-react/dist/esm/icons/menu';
+import X from 'lucide-react/dist/esm/icons/x';
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import SearchIcon from 'lucide-react/dist/esm/icons/search';
+import Store from 'lucide-react/dist/esm/icons/store';
+import LogOut from 'lucide-react/dist/esm/icons/log-out';
+import Package from 'lucide-react/dist/esm/icons/package';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 
