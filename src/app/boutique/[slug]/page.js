@@ -1,22 +1,11 @@
 'use client';
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
-import X from 'lucide-react/dist/esm/icons/x';
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
-import Send from 'lucide-react/dist/esm/icons/send';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import Package from 'lucide-react/dist/esm/icons/package';
-import Store from 'lucide-react/dist/esm/icons/store';
-import Truck from 'lucide-react/dist/esm/icons/truck';
-import Search from 'lucide-react/dist/esm/icons/search';
-import History from 'lucide-react/dist/esm/icons/history';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Info from 'lucide-react/dist/esm/icons/info';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import Star from 'lucide-react/dist/esm/icons/star';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import Phone from 'lucide-react/dist/esm/icons/phone';
+import { 
+  ShoppingCart, X, Trash2, Send, Loader2, Package, 
+  Store, Truck, Search, History, Clock, Info, 
+  ChevronRight, Star, MapPin, Phone
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex } from '@/lib/meilisearch';
 import Link from 'next/link';

@@ -2,16 +2,11 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ClientDiscovery from '@/components/ClientDiscovery';
-import ShoppingBag from 'lucide-react/dist/esm/icons/shopping-bag';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Star from 'lucide-react/dist/esm/icons/star';
-import MapPin from 'lucide-react/dist/esm/icons/map-pin';
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Store from 'lucide-react/dist/esm/icons/store';
+import { 
+  ShoppingBag, Search, Sparkles, Star, MapPin, ArrowRight,
+  TrendingUp, ShieldCheck, Zap, Layers, Smartphone,
+  Menu, X, ChevronRight, Package, Store, Clock
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {

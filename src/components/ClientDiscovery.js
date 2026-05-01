@@ -1,14 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import ShoppingBag from 'lucide-react/dist/esm/icons/shopping-bag';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Store from 'lucide-react/dist/esm/icons/store';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
-import X from 'lucide-react/dist/esm/icons/x';
-import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Star from 'lucide-react/dist/esm/icons/star';
+import { ShoppingBag, Search, Store, Sparkles, ChevronRight, X, SlidersHorizontal, Zap, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
