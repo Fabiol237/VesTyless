@@ -106,11 +106,33 @@ export default function Storefront({ params }) {
   const displayProducts = useMemo(() => {
     if (meiliResults) return meiliResults;
     
-    return products.filter(p => {
-      const matchesCategory = activeCategory === 'all' || p.category_id === activeCategory;
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+    const terms = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) {
+      return products.filter(p => activeCategory === 'all' || p.category_id === activeCategory);
+    }
+
+    const scoredProducts = products.map(p => {
+      const pName = (p.name || '').toLowerCase();
+      const pDesc = (p.description || '').toLowerCase();
+      const fullText = `${pName} ${pDesc}`;
+      
+      let score = 0;
+      terms.forEach(t => {
+        if (fullText.includes(t)) score += 1;
+        else if (t.length > 3) {
+          const p1 = t.substring(0, t.length - 1);
+          const p2 = t.substring(1);
+          if (fullText.includes(p1) || fullText.includes(p2)) score += 0.5;
+        }
+      });
+      return { product: p, score };
+    }).filter(item => {
+      const matchesCategory = activeCategory === 'all' || item.product.category_id === activeCategory;
+      return item.score > 0 && matchesCategory;
     });
+
+    scoredProducts.sort((a, b) => b.score - a.score);
+    return scoredProducts.map(item => item.product);
   }, [products, activeCategory, searchQuery, meiliResults]);
 
   const addToCart = (product) => {
