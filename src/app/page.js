@@ -2,7 +2,11 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ClientDiscovery from '@/components/ClientDiscovery';
-import { Store, ShieldCheck, Zap, Smartphone, Sparkles, TrendingUp, Star, MapPin, ArrowRight } from 'lucide-react';
+import { 
+  ShoppingBag, Search, Sparkles, Star, MapPin, ArrowRight,
+  TrendingUp, ShieldCheck, Zap, Layers, Smartphone,
+  Menu, X, ChevronRight, Package, Store, Clock
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
