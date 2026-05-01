@@ -32,7 +32,7 @@ export default function Home() {
               </div>
               
               <h1 className="text-5xl sm:text-7xl lg:text-[5.5rem] font-black text-neutral-900 leading-[1.05] tracking-tight">
-                L'excellence<br />
+                L&apos;excellence<br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-wa-teal to-emerald-400">
                   à portée de clic.
                 </span>

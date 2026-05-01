@@ -385,7 +385,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
 function ProductCard({ item, idx, trackProductView }) {
   // Use DB rating if available, otherwise default fallback
   const rating = item.rating || 4.5;
-  const reviewsCount = item.reviews_count || Math.floor(Math.random() * 50) + 10;
+  const reviewsCount = item.reviews_count || 0;
   const discount = item.discount_percentage || 0;
 
   return (
