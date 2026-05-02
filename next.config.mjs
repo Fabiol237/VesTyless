@@ -12,9 +12,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    optimizePackageImports: ['lucide-react'],
-  },
+  transpilePackages: ['lucide-react'],
 };
 
 export default nextConfig;
