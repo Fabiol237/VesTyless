@@ -1,9 +1,37 @@
 'use client';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { ShoppingBag, Search, Store, Sparkles, ChevronRight, X, SlidersHorizontal, Zap, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
+
+// Bulletproof SVG Icons
+const ShoppingBagIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+);
+const SearchIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+);
+const StoreIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7"/></svg>
+);
+const SparklesIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3 1.91 5.81L19 12l-5.09 3.19L12 21l-1.91-5.81L5 12l5.09-3.19L12 3Z"/></svg>
+);
+const ChevronRightIcon = ({ size = 18, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+);
+const XIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+);
+const SlidersHorizontalIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+);
+const ZapIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+);
+const StarIcon = ({ size = 14, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+);
 
 // Helper to safely call RPC without crashing if not a promise
 async function safeRpc(fn) {
@@ -236,7 +264,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
           <div className="absolute -inset-0.5 bg-gradient-to-r from-wa-teal to-wa-green rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
           <div className="relative bg-white px-4 py-3 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-3">
             <div className="flex-1 relative flex items-center">
-              <Search className={`absolute left-3 transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />
+              <SearchIcon className={`absolute left-3 transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />
               <input
                 type="text"
                 placeholder="Chercher le meilleur de Douala..."
@@ -254,7 +282,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
               onClick={() => setShowFilters(!showFilters)}
               className={`p-3 rounded-xl transition-all ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
             >
-              <SlidersHorizontal size={20} />
+              <SlidersHorizontalIcon size={20} />
             </button>
           </div>
         </div>
@@ -285,7 +313,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
           {meiliResults.stores.length > 0 && (
             <section className="animate-fade-in">
               <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Store size={14} /> Boutiques trouvées
+                <StoreIcon size={14} /> Boutiques trouvées
               </h2>
               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
                 {meiliResults.stores.map(store => (
@@ -303,7 +331,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
           {/* Section Produits dans la recherche */}
           <section className="animate-fade-in">
             <h2 className="text-sm font-black text-neutral-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-              <ShoppingBag size={16} /> Produits trouvés ({filteredProducts.length})
+              <ShoppingBagIcon size={16} /> Produits trouvés ({filteredProducts.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((item, idx) => (
@@ -408,7 +436,7 @@ function ProductCard({ item, idx, trackProductView }) {
           )}
           {item.is_boosted && (
             <div className="bg-wa-teal text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1">
-              <Sparkles size={10} /> SPONSORISÉ
+              <SparklesIcon size={10} /> SPONSORISÉ
             </div>
           )}
         </div>
@@ -416,7 +444,7 @@ function ProductCard({ item, idx, trackProductView }) {
         {/* Floating Quick Action */}
         <div className="absolute bottom-3 right-3 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
            <div className="w-10 h-10 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-xl hover:bg-wa-teal hover:text-white transition-colors">
-             <ChevronRight size={20} />
+             <ChevronRightIcon size={20} />
            </div>
         </div>
       </div>
@@ -437,7 +465,7 @@ function ProductCard({ item, idx, trackProductView }) {
           
           <div className="flex items-center gap-1 mt-2">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} size={12} className={i < Math.floor(rating) ? 'text-amber-400 fill-amber-400' : 'text-neutral-200'} />
+              <StarIcon key={i} size={12} className={i < Math.floor(rating) ? 'text-amber-400 fill-amber-400' : 'text-neutral-200'} />
             ))}
             <span className="text-[10px] font-bold text-neutral-400 ml-1">({reviewsCount})</span>
           </div>
@@ -454,7 +482,7 @@ function ProductCard({ item, idx, trackProductView }) {
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-500 text-[10px] font-bold">
-              <Zap size={12} className="text-orange-500" /> Populaire
+              <ZapIcon size={12} className="text-orange-500" /> Populaire
             </div>
           </div>
         </div>

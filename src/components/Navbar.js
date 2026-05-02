@@ -2,11 +2,31 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  ShoppingCart, Menu, X, ArrowRight, Search as SearchIcon, Store, LogOut, Package 
-} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+
+// Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
+const ShoppingCartIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+);
+const MenuIcon = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x1="20" y1="12" y2="12"/><line x1="4" x1="20" y1="6" y2="6"/><line x1="4" x1="20" y1="18" y2="18"/></svg>
+);
+const XIcon = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+);
+const SearchIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+);
+const StoreIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7"/></svg>
+);
+const LogOutIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+);
+const ArrowRightIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+);
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -63,7 +83,7 @@ export default function Navbar() {
         {/* Right: DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-4 text-white">
           <Link href="/cart" className="relative p-2 hover:bg-white/10 rounded-full transition-colors">
-            <ShoppingCart size={22} />
+            <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
               <span className="absolute -top-1 -right-1 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full shadow-sm">
                 {totalCartItems}
@@ -74,10 +94,10 @@ export default function Navbar() {
           {session ? (
             <div className="flex items-center gap-2 pl-2">
                <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord vendeur">
-                  <Store size={20} />
+                  <StoreIcon size={20} />
                </Link>
                <button onClick={() => signOut()} className="p-2 hover:bg-white/10 rounded-full text-white/80 transition-colors" title="Déconnexion">
-                  <LogOut size={20} />
+                  <LogOutIcon size={20} />
                </button>
             </div>
           ) : (
@@ -92,7 +112,7 @@ export default function Navbar() {
         {/* Right: MOBILE TOGGLE */}
         <div className="flex md:hidden items-center gap-3 z-50 text-white">
            <Link href="/cart" className="relative p-2">
-            <ShoppingCart size={22} />
+            <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
               <span className="absolute 0 right-0 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                 {totalCartItems}
@@ -103,7 +123,7 @@ export default function Navbar() {
             className="p-2 focus:outline-none" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
           </button>
         </div>
 
@@ -126,12 +146,12 @@ export default function Navbar() {
         </form>
 
         <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRight size={16} className="text-neutral-400" /></Link>
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRightIcon size={16} className="text-neutral-400" /></Link>
           
           {session ? (
              <>
-                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100 text-wa-teal">Tableau de Bord Vendeur <Store size={18} /></Link>
-                <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-3 text-red-500 text-left">Déconnexion <LogOut size={18} /></button>
+                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100 text-wa-teal">Tableau de Bord Vendeur <StoreIcon size={18} /></Link>
+                <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-3 text-red-500 text-left">Déconnexion <LogOutIcon size={18} /></button>
              </>
           ) : (
              <div className="mt-4 flex flex-col">

@@ -2,12 +2,50 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ClientDiscovery from '@/components/ClientDiscovery';
-import { 
-  ShoppingBag, Search, Sparkles, Star, MapPin, ArrowRight,
-  TrendingUp, ShieldCheck, Zap, Layers, Smartphone,
-  Menu, X, ChevronRight, Package, Store, Clock
-} from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { publicProductsIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
+
+// Bulletproof SVG Icons
+const ShoppingBagIcon = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+);
+const SearchIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+);
+const SparklesIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3 1.91 5.81L19 12l-5.09 3.19L12 21l-1.91-5.81L5 12l5.09-3.19L12 3Z"/></svg>
+);
+const StarIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+);
+const MapPinIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+);
+const ArrowRightIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+);
+const ZapIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+);
+const StoreIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7"/></svg>
+);
+const TrendingUpIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+);
+const ShieldCheckIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+);
+const LayersIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.1 6.3a2 2 0 0 0 0 3.67L11.17 14.1a2 2 0 0 0 1.66 0l9.07-4.12a2 2 0 0 0 0-3.67z"/><path d="m2.1 14.74 9.07 4.12a2 2 0 0 0 1.66 0l9.07-4.12"/><path d="m2.1 19.16 9.07 4.12a2 2 0 0 0 1.66 0l9.07-4.12"/></svg>
+);
+const SmartphoneIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+);
+const ChevronRightIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+);
 
 export default function Home() {
   return (
@@ -50,18 +88,18 @@ export default function Home() {
                 <a href="#explore" className="group relative w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-neutral-900 text-white rounded-[2rem] font-black text-lg overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-neutral-900/20">
                   <span className="absolute inset-0 bg-gradient-to-r from-wa-teal to-wa-green opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <span className="relative z-10 flex items-center gap-2">
-                    Explorer le catalogue <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    Explorer le catalogue <ArrowRightIcon size={20} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </a>
                 <Link href="/signup" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-neutral-100 text-neutral-600 rounded-[2rem] font-black text-lg hover:border-wa-teal hover:text-wa-teal transition-all">
-                  <Store size={20} /> Devenir Vendeur
+                  <StoreIcon size={20} /> Devenir Vendeur
                 </Link>
               </div>
               
               {/* Trust Indicators */}
               <div className="pt-8 flex items-center gap-6 text-sm font-bold text-neutral-400">
-                <div className="flex items-center gap-2"><ShieldCheck size={18} className="text-wa-green" /> Paiement Sécurisé</div>
-                <div className="flex items-center gap-2"><Zap size={18} className="text-orange-400" /> Livraison Flash</div>
+                <div className="flex items-center gap-2"><ShieldCheckIcon size={18} className="text-wa-green" /> Paiement Sécurisé</div>
+                <div className="flex items-center gap-2"><ZapIcon size={18} className="text-orange-400" /> Livraison Flash</div>
               </div>
             </div>
 
@@ -96,7 +134,7 @@ export default function Home() {
                  <div>
                    <p className="font-black text-neutral-900 text-sm">Zoko Store</p>
                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-500">
-                     <Star size={12} fill="currentColor" /> 4.9 (128 avis)
+                     <StarIcon size={12} fill="currentColor" /> 4.9 (128 avis)
                    </div>
                  </div>
               </div>
@@ -104,7 +142,7 @@ export default function Home() {
               {/* Floating Element 2: Sales notification */}
               <div className="absolute bottom-32 -right-12 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl z-30 flex items-center gap-4 animate-bounce-slow border border-white" style={{ animationDelay: '1.5s' }}>
                  <div className="w-10 h-10 bg-wa-green/20 text-wa-green rounded-full flex items-center justify-center">
-                   <TrendingUp size={18} />
+                   <TrendingUpIcon size={18} />
                  </div>
                  <div>
                    <p className="font-bold text-neutral-900 text-xs">Nouvelle commande</p>

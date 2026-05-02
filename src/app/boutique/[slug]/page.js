@@ -1,14 +1,56 @@
 'use client';
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { 
-  ShoppingCart, X, Trash2, Send, Loader2, Package, 
-  Store, Truck, Search, History, Clock, Info, 
-  ChevronRight, Star, MapPin, Phone
-} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
+
+// Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
+const ShoppingCartIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+);
+const XIcon = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+);
+const Trash2Icon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+);
+const SendIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+);
+const Loader2Icon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+);
+const PackageIcon = ({ size = 48, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.27 6.96 8.73 5.05 8.73-5.05"/><path d="M12 22.08V12"/></svg>
+);
+const TruckIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="19" cy="18" r="2"/><path d="M21 18v-3a2 2 0 0 0-2-2h-5"/><polyline points="10 13 10 11 15 11 15 13"/><path d="M17 13h4l1 2v3h-2"/></svg>
+);
+const SearchIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+);
+const HistoryIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+);
+const ClockIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+const ChevronRightIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+);
+const StarIcon = ({ size = 14, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+);
+const MapPinIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+);
+const PhoneIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+);
+const ZapIcon = ({ size = 10 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+);
 
 export default function Storefront({ params }) {
   const routeParams = useParams();
@@ -213,7 +255,7 @@ export default function Storefront({ params }) {
   if (!store) return (
     <div className="h-screen flex flex-col items-center justify-center p-10 text-center gap-6">
       <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-500">
-        <Store size={48} />
+        <PackageIcon size={48} />
       </div>
       <div>
         <h1 className="text-3xl font-black text-gray-900">Boutique introuvable</h1>
@@ -232,7 +274,7 @@ export default function Storefront({ params }) {
       <nav className={`fixed inset-x-0 z-[100] transition-all duration-500 px-4 md:px-8 flex items-center justify-between ${isScrolled ? 'h-16 bg-white/90 backdrop-blur-xl shadow-lg border-b border-neutral-100' : 'h-24 bg-transparent'}`}>
         <div className="flex items-center gap-4">
           <Link href="/" className="p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white hover:bg-white hover:text-neutral-900 transition-all">
-             <ChevronRight className="rotate-180" size={20} />
+             <ChevronRightIcon className="rotate-180" size={20} />
           </Link>
           <div className={`flex items-center gap-3 transition-opacity duration-300 ${isScrolled ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
              <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white shadow-md">
@@ -244,13 +286,13 @@ export default function Storefront({ params }) {
 
         <div className="flex items-center gap-3">
           <button onClick={() => setShowHistory(true)} className={`p-3 rounded-2xl transition-all ${isScrolled ? 'text-neutral-400 hover:text-neutral-900 bg-neutral-50' : 'text-white/80 hover:text-white bg-white/10 backdrop-blur-md border border-white/20'}`}>
-            <History size={20} />
+            <HistoryIcon size={20} />
           </button>
           <button 
             onClick={() => setIsCartOpen(true)}
             className={`relative flex items-center gap-3 px-6 py-2.5 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl ${isScrolled ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-900'}`}
           >
-            <ShoppingCart size={18} />
+            <ShoppingCartIcon size={18} />
             <span className="hidden sm:inline">Panier</span>
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 w-6 h-6 bg-wa-teal rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white text-white">
@@ -285,14 +327,14 @@ export default function Storefront({ params }) {
                 <div className="flex items-center gap-3 mb-2">
                    <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-wa-teal/20">Boutique Vérifiée</span>
                    <div className="flex items-center gap-1 text-white/80 text-xs font-bold">
-                      <Star size={14} className="text-amber-400 fill-amber-400" /> 4.9 (128 avis)
+                      <StarIcon size={14} className="text-amber-400 fill-amber-400" /> 4.9 (128 avis)
                    </div>
                 </div>
                 <h1 className="text-4xl md:text-6xl font-black text-neutral-900 md:text-white tracking-tight drop-shadow-sm mb-4 leading-none">{store.name}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-neutral-500 md:text-white/70 text-sm font-medium">
-                   <div className="flex items-center gap-2"><MapPin size={16} /> {store.city || 'Douala, Cameroun'}</div>
-                   <div className="flex items-center gap-2"><Phone size={16} /> {store.whatsapp_number}</div>
-                   <div className="flex items-center gap-2"><Truck size={16} /> Livraison Express</div>
+                   <div className="flex items-center gap-2"><MapPinIcon size={16} /> {store.city || 'Douala, Cameroun'}</div>
+                   <div className="flex items-center gap-2"><PhoneIcon size={16} /> {store.whatsapp_number}</div>
+                   <div className="flex items-center gap-2"><TruckIcon size={16} /> Livraison Express</div>
                 </div>
              </div>
           </div>
@@ -330,7 +372,7 @@ export default function Storefront({ params }) {
 
               {/* Search in Store */}
               <div className="relative group">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                 <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
                  <input 
                    type="text" 
                    placeholder="Chercher ici..." 
@@ -360,7 +402,7 @@ export default function Storefront({ params }) {
                 ) : displayProducts.length === 0 ? (
                    <div className="col-span-full py-20 flex flex-col items-center text-center space-y-6">
                       <div className="w-24 h-24 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-300">
-                         <Package size={48} />
+                         <PackageIcon size={48} />
                       </div>
                       <div className="space-y-2">
                          <p className="text-xl font-black text-neutral-800">Aucun produit ici</p>
@@ -389,7 +431,7 @@ export default function Storefront({ params }) {
            onClick={() => setIsCartOpen(true)}
            className="fixed bottom-8 right-8 z-[90] flex items-center gap-4 bg-neutral-900 text-white px-8 py-5 rounded-[2.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all md:hidden"
          >
-           <ShoppingCart size={24} />
+           <ShoppingCartIcon size={24} />
            <div className="flex flex-col items-start leading-none">
               <span className="text-[10px] font-black text-white/50 uppercase mb-1">{totalItems} Articles</span>
               <span className="text-lg font-black">{total.toLocaleString()} F</span>
@@ -433,7 +475,7 @@ function ProductCard({ p, idx, addToCart, setSelectedProduct, themeColor }) {
               <span className="px-3 py-1 bg-orange-500 text-white text-[10px] font-black rounded-lg shadow-lg">PROMO</span>
            )}
            {p.is_boosted && (
-              <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black rounded-lg shadow-lg flex items-center gap-1"><Zap size={10} /> À LA UNE</span>
+              <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black rounded-lg shadow-lg flex items-center gap-1"><ZapIcon size={10} /> À LA UNE</span>
            )}
         </div>
 
@@ -441,7 +483,7 @@ function ProductCard({ p, idx, addToCart, setSelectedProduct, themeColor }) {
           onClick={(e) => { e.stopPropagation(); addToCart(p); }}
           className="absolute bottom-4 right-4 w-12 h-12 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-xl translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-wa-teal hover:text-white"
         >
-          <ShoppingCart size={22} />
+          <ShoppingCartIcon size={22} />
         </button>
       </div>
 
@@ -456,7 +498,7 @@ function ProductCard({ p, idx, addToCart, setSelectedProduct, themeColor }) {
              <span className="text-xl font-black tracking-tighter" style={{ color: themeColor }}>{Number(p.price).toLocaleString()} F</span>
           </div>
           <div className="flex items-center gap-1">
-             <Star size={12} className="text-amber-400 fill-amber-400" />
+             <StarIcon size={12} className="text-amber-400 fill-amber-400" />
              <span className="text-[10px] font-black text-neutral-400">4.9</span>
           </div>
         </div>
@@ -471,7 +513,7 @@ function ProductModal({ product, isOpen, onClose, addToCart, themeColor }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-xl" onClick={onClose}></div>
       <div className="relative bg-white w-full max-w-5xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300">
-        <button onClick={onClose} className="absolute top-6 right-6 z-10 p-3 bg-white/80 rounded-full hover:bg-white shadow-lg transition-all"><X size={24} /></button>
+        <button onClick={onClose} className="absolute top-6 right-6 z-10 p-3 bg-white/80 rounded-full hover:bg-white shadow-lg transition-all"><XIcon size={24} /></button>
         <div className="w-full md:w-1/2 aspect-square md:aspect-auto overflow-hidden">
           <img src={product.image_url} className="w-full h-full object-cover" alt="" />
         </div>
@@ -490,14 +532,14 @@ function ProductModal({ product, isOpen, onClose, addToCart, themeColor }) {
           </div>
           <div className="flex items-center gap-6 py-8 border-y border-neutral-100">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><Package size={24} /></div>
+                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><PackageIcon size={24} /></div>
                 <div>
                    <p className="text-[10px] font-bold text-neutral-400 uppercase">Qualité</p>
                    <p className="text-sm font-black text-neutral-900">Garantie</p>
                 </div>
              </div>
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><Truck size={24} /></div>
+                <div className="w-12 h-12 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-400"><TruckIcon size={24} /></div>
                 <div>
                    <p className="text-[10px] font-bold text-neutral-400 uppercase">Livraison</p>
                    <p className="text-sm font-black text-neutral-900">24/48h</p>
@@ -508,7 +550,7 @@ function ProductModal({ product, isOpen, onClose, addToCart, themeColor }) {
             onClick={() => { addToCart(product); onClose(); }}
             className="w-full py-6 bg-neutral-900 text-white font-black rounded-3xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
           >
-            <ShoppingCart size={24} />
+            <ShoppingCartIcon size={24} />
             Ajouter au panier
           </button>
         </div>
@@ -527,13 +569,13 @@ function CartDrawer({ isOpen, onClose, cart, removeFromCart, total, totalItems, 
             <h3 className="text-2xl font-black text-neutral-900 tracking-tight">Votre Panier</h3>
             <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest mt-1">{totalItems} articles</p>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm"><X size={24} /></button>
+          <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm"><XIcon size={24} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-30">
-              <div className="w-32 h-32 bg-neutral-100 rounded-full flex items-center justify-center"><ShoppingCart size={64} /></div>
+              <div className="w-32 h-32 bg-neutral-100 rounded-full flex items-center justify-center"><ShoppingCartIcon size={64} /></div>
               <p className="font-black uppercase tracking-widest text-sm">Le panier est vide</p>
             </div>
           ) : (
@@ -574,7 +616,7 @@ function CartDrawer({ isOpen, onClose, cart, removeFromCart, total, totalItems, 
               disabled={isSubmitting}
               className="w-full py-5 bg-[#25D366] text-white font-black rounded-[2rem] shadow-xl shadow-[#25D366]/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-lg"
             >
-              {isSubmitting ? <Loader2 className="animate-spin" /> : <Send size={24} />}
+              {isSubmitting ? <Loader2Icon className="animate-spin" /> : <SendIcon size={24} />}
               Envoyer la commande
             </button>
           </div>
