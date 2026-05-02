@@ -1,111 +1,78 @@
-const CACHE_VERSION = "vestyle-pwa-v1";
-const SHELL_CACHE = `${CACHE_VERSION}-shell`;
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
-const OFFLINE_URL = "/offline";
-const APP_SHELL = ["/", OFFLINE_URL, "/manifest.webmanifest", "/favicon.ico", "/next.svg", "/vercel.svg"];
+const CACHE_NAME = 'vestyle-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/boutiques',
+  '/offline',
+  '/favicon.ico',
+];
 
-self.addEventListener("install", (event) => {
+// Install: cache static shell
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .catch(() => undefined)
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    }).then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener("activate", (event) => {
+// Activate: clean old caches
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => ![SHELL_CACHE, RUNTIME_CACHE].includes(key))
-            .map((key) => caches.delete(key))
-        )
-      )
-      .then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-function isStaticAsset(request, url) {
-  if (request.method !== "GET") {
-    return false;
-  }
+// Fetch: Network-first for API/dynamic, Cache-first for assets
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
 
-  if (url.origin !== self.location.origin) {
-    return false;
-  }
-
+  // Always network-first for API calls & Supabase
   if (
-    request.destination === "style" ||
-    request.destination === "script" ||
-    request.destination === "image" ||
-    request.destination === "font"
+    url.pathname.startsWith('/api/') ||
+    url.hostname.includes('supabase') ||
+    url.hostname.includes('meilisearch') ||
+    event.request.method !== 'GET'
   ) {
-    return true;
+    return event.respondWith(fetch(event.request));
   }
 
-  return (
-    url.pathname.startsWith("/_next/static/") ||
-    /\.(?:js|css|png|jpg|jpeg|gif|webp|svg|ico|woff2?)$/i.test(url.pathname)
+  // Cache-first for Next.js static assets
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/_next/image') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.webp')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for pages
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => cached || caches.match('/offline'));
+
+      return cached || fetchPromise;
+    })
   );
-}
-
-async function cacheFirst(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  const response = await fetch(request);
-  if (response && response.ok) {
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, response.clone());
-  }
-
-  return response;
-}
-
-async function networkFirstNavigation(request) {
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    const offlineResponse = await caches.match(OFFLINE_URL);
-    if (offlineResponse) {
-      return offlineResponse;
-    }
-
-    return Response.redirect(OFFLINE_URL, 302);
-  }
-}
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-
-  if (request.method !== "GET") {
-    return;
-  }
-
-  const url = new URL(request.url);
-
-  if (request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(request));
-    return;
-  }
-
-  if (isStaticAsset(request, url)) {
-    event.respondWith(cacheFirst(request));
-  }
 });

@@ -5,27 +5,29 @@ import PwaRegistry from '@/components/PwaRegistry';
 
 export const metadata = {
   title: {
-    default: 'Vestyle',
-    template: '%s | Vestyle',
+    default: 'VesTyle — Le Marketplace du Cameroun',
+    template: '%s | VesTyle',
   },
-  description:
-    'Vestyle est une expérience shopping multi-device pour découvrir des boutiques, commander et suivre vos livraisons.',
-  applicationName: 'Vestyle',
-  manifest: '/manifest.webmanifest',
+  description: 'Découvrez les meilleures boutiques et produits du Cameroun. Commandez en ligne ou hors-ligne avec VesTyle.',
+  applicationName: 'VesTyle',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'Vestyle',
+    statusBarStyle: 'black-translucent',
+    title: 'VesTyle',
   },
-  formatDetection: {
-    telephone: false,
+  formatDetection: { telephone: false },
+  openGraph: {
+    title: 'VesTyle',
+    description: 'Le marketplace premium du Cameroun',
+    type: 'website',
   },
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0f172a',
+  themeColor: '#111B21',
 };
 
 export default function RootLayout({ children }) {
