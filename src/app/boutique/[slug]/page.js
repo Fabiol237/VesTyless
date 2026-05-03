@@ -4,6 +4,8 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
+import { useDistance } from '@/hooks/useDistance';
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -86,6 +88,12 @@ export default function Storefront({ params }) {
   
   const [checkoutError, setCheckoutError] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  
+  const { formatDistance, requestLocation, userLocation } = useDistance();
+
+  useEffect(() => {
+    if (!userLocation) requestLocation();
+  }, [userLocation, requestLocation]);
 
   // Load recent orders from localStorage
   useEffect(() => {
@@ -332,8 +340,14 @@ export default function Storefront({ params }) {
                 </div>
                 <h1 className="text-4xl md:text-6xl font-black text-neutral-900 md:text-white tracking-tight drop-shadow-sm mb-4 leading-none">{store.name}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-neutral-500 md:text-white/70 text-sm font-medium">
-                   <div className="flex items-center gap-2"><MapPinIcon size={16} /> {store.city || 'Douala, Cameroun'}</div>
-                   <div className="flex items-center gap-2"><PhoneIcon size={16} /> {store.whatsapp_number}</div>
+                   <div className="flex items-center gap-2">
+                       <MapPinIcon size={16} /> 
+                       {store.latitude && store.longitude && formatDistance ? (
+                         <span className="font-black text-wa-teal md:text-wa-teal-light">À {formatDistance(store.latitude, store.longitude)} - </span>
+                       ) : ''}
+                       {store.city || 'Douala, Cameroun'}
+                    </div>
+                    <div className="flex items-center gap-2"><PhoneIcon size={16} /> {store.whatsapp_number}</div>
                    <div className="flex items-center gap-2"><TruckIcon size={16} /> Livraison Express</div>
                 </div>
              </div>
@@ -376,10 +390,17 @@ export default function Storefront({ params }) {
                  <input 
                    type="text" 
                    placeholder="Chercher ici..." 
-                   className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-neutral-100 text-sm font-medium focus:ring-2 focus:ring-wa-teal/20 outline-none transition-all shadow-sm group-hover:shadow-md"
+                   className="w-full pl-12 pr-12 py-4 bg-white rounded-2xl border border-neutral-100 text-sm font-medium focus:ring-2 focus:ring-wa-teal/20 outline-none transition-all shadow-sm group-hover:shadow-md"
                    value={searchQuery}
                    onChange={e => setSearchQuery(e.target.value)}
                  />
+                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                   <VoiceSearchButton 
+                     onInterimResult={(text) => setSearchQuery(text)}
+                     onResult={(text) => setSearchQuery(text)} 
+                     className="p-1" 
+                   />
+                 </div>
               </div>
             </div>
           </aside>

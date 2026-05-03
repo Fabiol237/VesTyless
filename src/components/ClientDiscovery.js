@@ -3,6 +3,9 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
+import { useDistance } from '@/hooks/useDistance';
+import { MapPin } from 'lucide-react';
 
 // Bulletproof SVG Icons
 const ShoppingBagIcon = ({ size = 20 }) => (
@@ -50,6 +53,13 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState('boost'); // 'boost', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
+  
+  const { formatDistance, requestLocation, userLocation } = useDistance();
+  
+  // Ask for location quietly once
+  useEffect(() => {
+    if (!userLocation) requestLocation();
+  }, [userLocation, requestLocation]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,7 +71,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
         .select(`
           id, name, price, image_url, created_at, category_id, is_active,
           is_boosted, is_promo, daily_views,
-          stores ( id, name, slug, logo_url ),
+          stores ( id, name, slug, logo_url, latitude, longitude ),
           categories ( name )
         `)
         .eq('is_active', true)
@@ -85,7 +95,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
       if (activeStoreIds.length > 0) {
         const { data: sd, error: storeErr } = await supabase
           .from('stores')
-          .select('id, name, slug, logo_url, city, is_boosted, daily_views')
+          .select('id, name, slug, logo_url, city, is_boosted, daily_views, latitude, longitude')
           .in('id', activeStoreIds)
           .order('is_boosted', { ascending: false })
           .order('daily_views', { ascending: false });
@@ -268,15 +278,20 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
               <input
                 type="text"
                 placeholder="Chercher le meilleur de Douala..."
-                className="w-full pl-10 pr-10 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
+                className="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
-              {isSearching && (
-                <div className="absolute right-3">
+              <div className="absolute right-3 flex items-center gap-2">
+                {isSearching && (
                   <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
+                )}
+                <VoiceSearchButton 
+                  onInterimResult={(text) => setSearchQuery(text)}
+                  onResult={(text) => setSearchQuery(text)} 
+                  className="p-1"
+                />
+              </div>
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -335,7 +350,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((item, idx) => (
-                <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} />
+                <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} formatDistance={formatDistance} />
               ))}
             </div>
           </section>
@@ -398,7 +413,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProducts.map((item, idx) => (
-                  <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} />
+                  <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} formatDistance={formatDistance} />
                 ))}
               </div>
             </div>
@@ -410,7 +425,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
 }
 
 // Sub-component for Product Cards with Animations
-function ProductCard({ item, idx, trackProductView }) {
+function ProductCard({ item, idx, trackProductView, formatDistance }) {
   // Use DB rating if available, otherwise default fallback
   const rating = item.rating || 4.5;
   const reviewsCount = item.reviews_count || 0;
@@ -452,12 +467,17 @@ function ProductCard({ item, idx, trackProductView }) {
       <div className="p-5 flex flex-col flex-1 justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded-full overflow-hidden bg-neutral-100 border border-neutral-200">
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-neutral-100 border border-neutral-200 flex-shrink-0">
               <img src={item.stores?.logo_url || '/placeholder-store.png'} className="w-full h-full object-cover" alt="" />
             </div>
-            <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider truncate">
+            <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider truncate flex-1">
               {item.stores?.name || item.store_name}
             </div>
+            {formatDistance && item.stores?.latitude && (
+              <div className="text-[10px] font-black text-wa-teal bg-wa-teal/10 px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
+                <MapPin size={10} /> {formatDistance(item.stores.latitude, item.stores.longitude)}
+              </div>
+            )}
           </div>
           <h3 className="text-base font-black text-neutral-900 group-hover:text-wa-teal transition-colors line-clamp-2 leading-tight">
             {item.name}

@@ -5,11 +5,19 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase';
 import { Store, MapPin, ChevronRight, Search } from 'lucide-react';
 import Link from 'next/link';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
+import { useDistance } from '@/hooks/useDistance';
 
 export default function BoutiquesPage() {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  
+  const { formatDistance, requestLocation, userLocation } = useDistance();
+
+  useEffect(() => {
+    if (!userLocation) requestLocation();
+  }, [userLocation, requestLocation]);
 
   useEffect(() => {
     async function fetchStores() {
@@ -40,10 +48,17 @@ export default function BoutiquesPage() {
           <input 
             type="text" 
             placeholder="Rechercher une boutique par son nom..." 
-            className="w-full pl-12 pr-4 py-4 bg-white rounded-3xl shadow-sm border-none focus:ring-2 focus:ring-wa-teal/20 text-neutral-900 font-bold transition-all"
+            className="w-full pl-12 pr-12 py-4 bg-white rounded-3xl shadow-sm border-none focus:ring-2 focus:ring-wa-teal/20 text-neutral-900 font-bold transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+             <VoiceSearchButton 
+               onInterimResult={(text) => setSearch(text)}
+               onResult={(text) => setSearch(text)} 
+               className="p-1" 
+             />
+          </div>
         </div>
 
         {loading ? (
@@ -80,7 +95,11 @@ export default function BoutiquesPage() {
                 <div className="mt-auto w-full flex items-center justify-between pt-6 border-t border-neutral-50">
                    <div className="flex items-center gap-1.5 text-neutral-400">
                       <MapPin size={14} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Douala, CM</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                         {store.latitude && store.longitude && formatDistance ? (
+                           <span className="text-wa-teal">À {formatDistance(store.latitude, store.longitude)}</span>
+                         ) : store.city || "Douala, CM"}
+                      </span>
                    </div>
                    <div className="p-2 bg-wa-chat text-wa-teal rounded-xl group-hover:bg-wa-teal group-hover:text-white transition-colors">
                       <ChevronRight size={18} />

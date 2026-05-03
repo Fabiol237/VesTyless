@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -73,11 +74,21 @@ export default function Navbar() {
              placeholder="Rechercher..." 
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-12 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
+             className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
            />
-           <button type="submit" className="absolute right-2 top-1.5 bottom-1.5 flex items-center justify-center text-white/80 hover:text-white transition-colors">
-              <SearchIcon size={18} />
-           </button>
+           <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
+             <VoiceSearchButton 
+               onInterimResult={(text) => setSearchQuery(text)}
+               onResult={(text) => {
+                 setSearchQuery(text);
+                 router.push(`/search?q=${encodeURIComponent(text.trim())}`);
+               }} 
+               className="p-1 text-white/80 hover:text-white transition-colors"
+             />
+             <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
+                <SearchIcon size={18} />
+             </button>
+           </div>
         </form>
 
         {/* Right: DESKTOP NAV */}
@@ -138,11 +149,22 @@ export default function Navbar() {
              placeholder="Rechercher..." 
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-neutral-100 text-neutral-900 rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-wa-teal"
+             className="w-full bg-neutral-100 text-neutral-900 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-wa-teal"
            />
-           <button type="submit" className="absolute right-3 top-3 text-neutral-500">
-              <SearchIcon size={20} />
-           </button>
+           <div className="absolute right-2 top-2 bottom-2 flex items-center gap-1">
+             <VoiceSearchButton 
+               onInterimResult={(text) => setSearchQuery(text)}
+               onResult={(text) => {
+                 setSearchQuery(text);
+                 router.push(`/search?q=${encodeURIComponent(text.trim())}`);
+                 setIsMobileMenuOpen(false);
+               }} 
+               className="p-1.5 text-neutral-500 hover:text-wa-teal transition-colors"
+             />
+             <button type="submit" className="p-1.5 text-neutral-500">
+                <SearchIcon size={20} />
+             </button>
+           </div>
         </form>
 
         <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">

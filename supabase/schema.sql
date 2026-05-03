@@ -65,6 +65,9 @@ begin
   if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='secondary_color') then
     alter table stores add column secondary_color text default '#F3F4F6';
   end if;
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='store_code') then
+    alter table stores add column store_code varchar(5) unique;
+  end if;
   if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='banner_url') then
     alter table stores add column banner_url text;
   end if;
@@ -199,6 +202,63 @@ create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- ============================================================
+-- STORE CODE: Unique permanent 5-digit code, assigned at INSERT
+-- NEVER changes, NEVER duplicated (enforced by UNIQUE constraint)
+-- ============================================================
+create or replace function public.generate_store_code()
+returns trigger as $$
+declare
+  new_code varchar(5);
+  attempts integer := 0;
+begin
+  -- Only assign if this is an INSERT and no code is pre-set
+  if TG_OP = 'INSERT' and new.store_code is null then
+    loop
+      attempts := attempts + 1;
+      if attempts > 1000 then
+        raise exception 'Could not generate a unique store_code after 1000 attempts';
+      end if;
+      -- Random 5-digit code with leading zeros preserved
+      new_code := lpad((floor(random() * 100000))::int::text, 5, '0');
+      -- Exit loop as soon as code is not in use
+      exit when not exists (
+        select 1 from public.stores where store_code = new_code
+      );
+    end loop;
+    new.store_code := new_code;
+  end if;
+  -- On UPDATE: always keep the existing code (ignore any attempt to change it)
+  if TG_OP = 'UPDATE' then
+    new.store_code := old.store_code;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Attach trigger for INSERT and UPDATE
+drop trigger if exists ensure_store_code on public.stores;
+create trigger ensure_store_code
+  before insert or update on public.stores
+  for each row execute procedure public.generate_store_code();
+
+-- Backfill missing store codes
+do $$
+declare
+  store_record record;
+  new_code varchar(5);
+  code_exists boolean;
+begin
+  for store_record in select id from public.stores where store_code is null loop
+    loop
+      new_code := lpad(floor(random() * 100000)::text, 5, '0');
+      select exists(select 1 from public.stores where store_code = new_code) into code_exists;
+      exit when not code_exists;
+    end loop;
+    update public.stores set store_code = new_code where id = store_record.id;
+  end loop;
+end $$;
+
 -- 6. REALTIME
 do $$
 begin
@@ -208,4 +268,16 @@ begin
     if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'orders') then
         alter publication supabase_realtime add table orders;
     end if;
+end $$;
+
+-- 7. GPS COORDINATES
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='latitude') then
+    alter table stores add column latitude numeric;
+  end if;
+
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='longitude') then
+    alter table stores add column longitude numeric;
+  end if;
 end $$;

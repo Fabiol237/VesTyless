@@ -16,18 +16,19 @@
     "@tailwindcss/postcss": "^4.2.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
+    "lucide-react": "^0.477.0",
     "meilisearch": "^0.58.0",
     "next": "15.1.7",
-    "pg": "^8.20.0",
+    "qrcode.react": "^4.2.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "lucide-react": "^0.477.0",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "pg": "^8.20.0",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2"
   }

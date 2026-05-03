@@ -2,13 +2,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, Search, HelpCircle, Trash2, Package, Layers, 
-  TrendingUp, AlertCircle, Loader2, Edit3, MoreVertical
+  TrendingUp, AlertCircle, Loader2, Edit3, MoreVertical, QrCode, X
 } from 'lucide-react';
+import { getProductQrUrl } from '@/lib/qrcode';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { productsIndex } from '@/lib/meilisearch';
 import AddProductModal from './AddProductModal';
 import Image from 'next/image';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
 
 export default function ProductsPage() {
   const { store } = useAuth();
@@ -22,6 +24,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [qrModalProduct, setQrModalProduct] = useState(null);
 
   const fetchCategories = useCallback(async () => {
     if (!store) return;
@@ -232,9 +235,14 @@ export default function ProductsPage() {
               <input 
                 type="text" 
                 placeholder="Chercher par nom ou catégorie..." 
-                className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400"
+                className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400 flex-1"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+              />
+              <VoiceSearchButton 
+                onInterimResult={(text) => setSearch(text)}
+                onResult={(text) => setSearch(text)} 
+                className="p-1"
               />
             </div>
 
@@ -289,6 +297,13 @@ export default function ProductsPage() {
 
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
+                          onClick={() => setQrModalProduct(p)}
+                          className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
+                          title="Voir QR Code"
+                        >
+                          <QrCode size={18} />
+                        </button>
+                        <button 
                           onClick={() => openEditModal(p)}
                           className="p-2 text-wa-teal hover:bg-wa-chat rounded-xl transition-all"
                           title="Modifier"
@@ -311,6 +326,35 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {qrModalProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden relative">
+            <button 
+              onClick={() => setQrModalProduct(null)}
+              className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors"
+            >
+              <X size={16} />
+            </button>
+            <div className="p-8 text-center">
+              <h3 className="text-xl font-black text-gray-900 mb-1">QR Code</h3>
+              <p className="text-sm font-medium text-gray-500 mb-6 truncate">{qrModalProduct.name}</p>
+              
+              <div className="bg-gray-50 p-4 rounded-3xl inline-block border border-gray-100 shadow-inner">
+                <img 
+                  src={getProductQrUrl(qrModalProduct.id, store?.slug, 300)} 
+                  alt={`QR Code for ${qrModalProduct.name}`}
+                  className="w-48 h-48 rounded-xl object-contain"
+                />
+              </div>
+              
+              <p className="text-xs text-gray-400 mt-6 font-medium px-4">
+                Vos clients peuvent scanner ce code pour accéder directement à ce produit.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <AddProductModal 

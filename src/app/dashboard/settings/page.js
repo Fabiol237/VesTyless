@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation';
 import { 
   Settings, Save, Loader2, ArrowLeft, Image as ImageIcon, 
   Palette, Type, Megaphone, Globe, Info, CheckCircle2, 
-  Camera, Trash2, Smartphone
+  Camera, Trash2, Smartphone, MapPin, Navigation
 } from 'lucide-react';
 import Link from 'next/link';
+import { useDistance } from '@/hooks/useDistance';
 
 export default function StoreSettingsPage() {
   const { session } = useAuth();
@@ -34,8 +35,23 @@ export default function StoreSettingsPage() {
     secondary_color: '#F3F4F6',
     font_family: 'Inter',
     custom_message: '',
-    whatsapp_number: ''
+    whatsapp_number: '',
+    latitude: '',
+    longitude: ''
   });
+  
+  const { requestLocation, userLocation, isLocating, error: gpsError } = useDistance();
+
+  // Watch for gps updates
+  useEffect(() => {
+    if (userLocation) {
+      setFormData(prev => ({
+        ...prev,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      }));
+    }
+  }, [userLocation]);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -63,7 +79,9 @@ export default function StoreSettingsPage() {
           secondary_color: data.secondary_color || '#F3F4F6',
           font_family: data.font_family || 'Inter',
           custom_message: data.custom_message || '',
-          whatsapp_number: data.whatsapp_number || ''
+          whatsapp_number: data.whatsapp_number || '',
+          latitude: data.latitude || '',
+          longitude: data.longitude || ''
         });
       }
     }
@@ -130,7 +148,9 @@ export default function StoreSettingsPage() {
       secondary_color: formData.secondary_color,
       font_family: formData.font_family,
       custom_message: formData.custom_message,
-      whatsapp_number: formData.whatsapp_number
+      whatsapp_number: formData.whatsapp_number,
+      latitude: formData.latitude || null,
+      longitude: formData.longitude || null
     }).eq('id', storeId);
 
     setLoading(false);
@@ -206,6 +226,32 @@ export default function StoreSettingsPage() {
                   <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="237655..." className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
                 </div>
               </div>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-50 rounded-xl text-blue-500"><MapPin size={20} /></div>
+                <h3 className="text-lg font-black text-gray-900">Localisation GPS</h3>
+              </div>
+              <p className="text-sm text-gray-500 font-medium mb-4">Permet à vos clients de voir à quelle distance ils se trouvent de votre boutique.</p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  type="button" 
+                  onClick={requestLocation}
+                  disabled={isLocating}
+                  className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50"
+                >
+                  {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+                  Capturer ma position actuelle
+                </button>
+                <div className="flex-1 grid grid-cols-2 gap-4">
+                  <input type="text" readOnly placeholder="Latitude" value={formData.latitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-500 outline-none" />
+                  <input type="text" readOnly placeholder="Longitude" value={formData.longitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-500 outline-none" />
+                </div>
+              </div>
+              {gpsError && <p className="mt-3 text-xs font-bold text-red-500">{gpsError}</p>}
+              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14}/> Coordonnées enregistrées</p>}
             </div>
           </section>
 

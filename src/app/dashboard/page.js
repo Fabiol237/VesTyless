@@ -168,7 +168,15 @@ export default function SellerDashboard() {
                 <Zap size={12} className="text-wa-teal" />
                 {realtimeEnabled ? 'Données en temps réel' : 'Mode démo'}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{store?.name || 'Votre boutique'}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{store?.name || 'Votre boutique'}</h1>
+                {store?.store_code && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 shadow-sm" title="Code Boutique">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Code:</span>
+                    <span className="text-lg font-black text-white tracking-widest">{store.store_code}</span>
+                  </div>
+                )}
+              </div>
               <p className="text-white/60 text-sm mt-1">
                 {orders.length} commande{orders.length !== 1 ? 's' : ''} · {products.length} produit{products.length !== 1 ? 's' : ''}
               </p>

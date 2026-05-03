@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import VoiceSearchButton from '@/components/VoiceSearchButton';
 
 // ── SVG Icons ──────────────────────────────────────────────
 const SearchIcon = ({ size = 20, className = '' }) => (
@@ -93,8 +94,20 @@ export default function Home() {
 
       {/* ═══ HERO — WhatsApp Style ══════════════════════════════ */}
       <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-[#111B21] px-4 pt-24 pb-12">
+        
+        {/* Image de fond (Dragon Kali / Custom) */}
+        <div className="absolute inset-0 w-full h-full z-0">
+          <img 
+            src="/hero-bg.jpg" 
+            alt="Background" 
+            className="w-full h-full object-cover opacity-30 mix-blend-lighten" 
+            onError={(e) => e.target.style.display = 'none'}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#111B21]/80 via-[#111B21]/50 to-[#111B21]"></div>
+        </div>
+
         {/* Animated background bubbles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="absolute rounded-full opacity-10 animate-bounce-slow"
               style={{
@@ -137,6 +150,16 @@ export default function Home() {
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Chercher un produit, une boutique..."
               className="flex-1 py-5 px-4 text-neutral-900 text-lg font-medium bg-transparent border-none outline-none placeholder:text-neutral-400"
+            />
+            <VoiceSearchButton 
+              onInterimResult={(text) => setSearchQuery(text)}
+              onResult={(text) => {
+                setSearchQuery(text);
+                if (text.trim()) {
+                  window.location.href = `/search?q=${encodeURIComponent(text.trim())}`;
+                }
+              }} 
+              className="p-3 mr-1 hover:text-[#25D366]"
             />
             <button type="submit" className="m-2 px-8 py-3 bg-[#25D366] text-white font-black rounded-2xl hover:bg-[#128C7E] transition-colors shadow-lg shadow-[#25D366]/30 text-sm uppercase tracking-wide whitespace-nowrap">
               Chercher
