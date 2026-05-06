@@ -4,26 +4,31 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState(() => {
-    try {
-      if (typeof window === 'undefined') return [];
-      const savedCart = localStorage.getItem('vestyle_cart');
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch (e) {
-      console.error('Failed to parse cart:', e);
-      return [];
-    }
-  });
+  const [cart, setCart] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load cart from localStorage on mount
   useEffect(() => {
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('vestyle_cart', JSON.stringify(cart));
+      const savedCart = localStorage.getItem('vestyle_cart');
+      if (savedCart) {
+        setCart(JSON.parse(savedCart));
       }
+    } catch (e) {
+      console.error('Failed to parse cart:', e);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save cart to localStorage on changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem('vestyle_cart', JSON.stringify(cart));
     } catch (e) {
       console.error('Failed to persist cart:', e);
     }
-  }, [cart]);
+  }, [cart, isLoaded]);
 
   const addToCart = (product) => {
     setCart(current => {

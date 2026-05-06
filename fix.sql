@@ -1,1 +1,0 @@
-﻿ALTER TABLE public.orders ALTER COLUMN store_id DROP NOT NULL; ALTER TABLE public.orders ALTER COLUMN customer_name DROP NOT NULL; ALTER TABLE public.orders ALTER COLUMN customer_phone DROP NOT NULL; ALTER TABLE public.orders ALTER COLUMN order_items DROP NOT NULL; NOTIFY pgrst, 'reload schema';

@@ -5,7 +5,9 @@ import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
 import { useDistance } from '@/hooks/useDistance';
-import { MapPin } from 'lucide-react';
+const MapPinIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+);
 
 // Bulletproof SVG Icons
 const ShoppingBagIcon = ({ size = 20 }) => (
@@ -41,7 +43,7 @@ async function safeRpc(fn) {
   try { await fn; } catch (_) {}
 }
 
-export default function ClientDiscovery({ initialSearchQuery = '' }) {
+export default function ClientDiscovery({ initialSearchQuery = '', initialProximity = false }) {
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -51,10 +53,10 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
   // Filters & Sorting
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('boost'); // 'boost', 'newest', 'price_asc', 'price_desc'
+  const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
   
-  const { formatDistance, requestLocation, userLocation } = useDistance();
+  const { formatDistance, getDistanceKm, requestLocation, userLocation } = useDistance();
   
   // Ask for location quietly once
   useEffect(() => {
@@ -241,6 +243,15 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
       case 'price_asc': result.sort((a, b) => a.price - b.price); break;
       case 'price_desc': result.sort((a, b) => b.price - a.price); break;
       case 'newest': result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); break;
+      case 'distance':
+        if (userLocation) {
+          result.sort((a, b) => {
+            const distA = getDistanceKm(a.stores?.latitude, a.stores?.longitude) || Infinity;
+            const distB = getDistanceKm(b.stores?.latitude, b.stores?.longitude) || Infinity;
+            return distA - distB;
+          });
+        }
+        break;
       default:
         result.sort((a, b) => {
           if (a.is_boosted !== b.is_boosted) return b.is_boosted ? 1 : -1;
@@ -249,7 +260,7 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
         });
     }
     return result;
-  }, [products, searchQuery, activeCategory, sortBy, meiliResults.products]);
+  }, [products, searchQuery, activeCategory, sortBy, meiliResults.products, userLocation, getDistanceKm]);
 
   // Handle scroll reveal
   // IntersectionObserver removed to prevent elements staying invisible.
@@ -314,6 +325,14 @@ export default function ClientDiscovery({ initialSearchQuery = '' }) {
                   {cat === 'all' ? 'TOUT' : cat.toUpperCase()}
                 </button>
               ))}
+            </div>
+
+            <div className="pt-2 border-t border-neutral-50 flex flex-wrap gap-2">
+              <span className="text-[10px] font-black text-neutral-400 w-full mb-1 uppercase tracking-widest">Trier par</span>
+              <button onClick={() => setSortBy('boost')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'boost' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Suggérés</button>
+              <button onClick={() => setSortBy('distance')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'distance' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>À proximité 📍</button>
+              <button onClick={() => setSortBy('newest')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'newest' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Nouveautés</button>
+              <button onClick={() => setSortBy('price_asc')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'price_asc' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Prix croissant</button>
             </div>
           </div>
         )}
@@ -475,7 +494,7 @@ function ProductCard({ item, idx, trackProductView, formatDistance }) {
             </div>
             {formatDistance && item.stores?.latitude && (
               <div className="text-[10px] font-black text-wa-teal bg-wa-teal/10 px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
-                <MapPin size={10} /> {formatDistance(item.stores.latitude, item.stores.longitude)}
+                <MapPinIcon size={10} /> {formatDistance(item.stores.latitude, item.stores.longitude)}
               </div>
             )}
           </div>

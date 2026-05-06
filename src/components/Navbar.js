@@ -8,25 +8,25 @@ import VoiceSearchButton from '@/components/VoiceSearchButton';
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></svg>
 );
 const MenuIcon = ({ size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x1="20" y1="12" y2="12"/><line x1="4" x1="20" y1="6" y2="6"/><line x1="4" x1="20" y1="18" y2="18"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
 );
 const XIcon = ({ size = 24 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
 );
 const SearchIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
 );
 const StoreIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" /><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" /><path d="M2 7h20" /><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7" /></svg>
 );
 const LogOutIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
 );
 const ArrowRightIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
 );
 
 export default function Navbar() {
@@ -47,7 +47,7 @@ export default function Navbar() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if(searchQuery.trim()) {
+    if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsMobileMenuOpen(false);
     }
@@ -56,7 +56,7 @@ export default function Navbar() {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 bg-wa-teal py-3 shadow-md`}>
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex items-center justify-between">
-        
+
         {/* Left: LOGO */}
         <Link href="/" className="flex items-center gap-2 group z-50">
           <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -66,29 +66,29 @@ export default function Navbar() {
             Vestyle
           </span>
         </Link>
-        
+
         {/* Center: SEARCH (Desktop) */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
-           <input 
-             type="text" 
-             placeholder="Rechercher..." 
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
-           />
-           <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
-             <VoiceSearchButton 
-               onInterimResult={(text) => setSearchQuery(text)}
-               onResult={(text) => {
-                 setSearchQuery(text);
-                 router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-               }} 
-               className="p-1 text-white/80 hover:text-white transition-colors"
-             />
-             <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
-                <SearchIcon size={18} />
-             </button>
-           </div>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
+          />
+          <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
+            <VoiceSearchButton
+              onInterimResult={(text) => setSearchQuery(text)}
+              onResult={(text) => {
+                setSearchQuery(text);
+                router.push(`/search?q=${encodeURIComponent(text.trim())}`);
+              }}
+              className="p-1 text-white/80 hover:text-white transition-colors"
+            />
+            <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
+              <SearchIcon size={18} />
+            </button>
+          </div>
         </form>
 
         {/* Right: DESKTOP NAV */}
@@ -101,28 +101,28 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          
+
           {session ? (
             <div className="flex items-center gap-2 pl-2">
-               <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord vendeur">
-                  <StoreIcon size={20} />
-               </Link>
-               <button onClick={() => signOut()} className="p-2 hover:bg-white/10 rounded-full text-white/80 transition-colors" title="Déconnexion">
-                  <LogOutIcon size={20} />
-               </button>
+              <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord vendeur">
+                <StoreIcon size={20} />
+              </Link>
+              <button onClick={() => signOut()} className="p-2 hover:bg-white/10 rounded-full text-white/80 transition-colors" title="Déconnexion">
+                <LogOutIcon size={20} />
+              </button>
             </div>
           ) : (
-             <div className="flex items-center gap-2 pl-2">
-               <Link href="/login" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
-                 Vendeur
-               </Link>
-             </div>
+            <div className="flex items-center gap-2 pl-2">
+              <Link href="/login" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+                Vendeur
+              </Link>
+            </div>
           )}
         </nav>
 
         {/* Right: MOBILE TOGGLE */}
         <div className="flex md:hidden items-center gap-3 z-50 text-white">
-           <Link href="/cart" className="relative p-2">
+          <Link href="/cart" className="relative p-2">
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
               <span className="absolute 0 right-0 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
@@ -130,8 +130,8 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          <button 
-            className="p-2 focus:outline-none" 
+          <button
+            className="p-2 focus:outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
@@ -139,46 +139,46 @@ export default function Navbar() {
         </div>
 
       </div>
-      
+
       {/* MOBILE MENU */}
       <div className={`md:hidden fixed inset-0 bg-white z-40 flex flex-col transition-transform duration-200 pt-20 px-4 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-         
-         <form onSubmit={handleSearch} className="relative mb-6">
-           <input 
-             type="text" 
-             placeholder="Rechercher..." 
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-neutral-100 text-neutral-900 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-wa-teal"
-           />
-           <div className="absolute right-2 top-2 bottom-2 flex items-center gap-1">
-             <VoiceSearchButton 
-               onInterimResult={(text) => setSearchQuery(text)}
-               onResult={(text) => {
-                 setSearchQuery(text);
-                 router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-                 setIsMobileMenuOpen(false);
-               }} 
-               className="p-1.5 text-neutral-500 hover:text-wa-teal transition-colors"
-             />
-             <button type="submit" className="p-1.5 text-neutral-500">
-                <SearchIcon size={20} />
-             </button>
-           </div>
+
+        <form onSubmit={handleSearch} className="relative mb-6">
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-neutral-100 text-neutral-900 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-wa-teal"
+          />
+          <div className="absolute right-2 top-2 bottom-2 flex items-center gap-1">
+            <VoiceSearchButton
+              onInterimResult={(text) => setSearchQuery(text)}
+              onResult={(text) => {
+                setSearchQuery(text);
+                router.push(`/search?q=${encodeURIComponent(text.trim())}`);
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-1.5 text-neutral-500 hover:text-wa-teal transition-colors"
+            />
+            <button type="submit" className="p-1.5 text-neutral-500">
+              <SearchIcon size={20} />
+            </button>
+          </div>
         </form>
 
         <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRightIcon size={16} className="text-neutral-400" /></Link>
-          
+
           {session ? (
-             <>
-                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100 text-wa-teal">Tableau de Bord Vendeur <StoreIcon size={18} /></Link>
-                <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-3 text-red-500 text-left">Déconnexion <LogOutIcon size={18} /></button>
-             </>
+            <>
+              <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100 text-wa-teal">Tableau de Bord Vendeur <StoreIcon size={18} /></Link>
+              <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-3 text-red-500 text-left">Déconnexion <LogOutIcon size={18} /></button>
+            </>
           ) : (
-             <div className="mt-4 flex flex-col">
-               <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full bg-wa-teal text-white py-3 rounded-lg text-center font-medium">Connexion Vendeur</Link>
-             </div>
+            <div className="mt-4 flex flex-col">
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full bg-wa-teal text-white py-3 rounded-lg text-center font-medium">Connexion Vendeur</Link>
+            </div>
           )}
         </nav>
       </div>

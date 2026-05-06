@@ -3,65 +3,58 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Store, ShoppingBag, Users, CheckCircle, AlertTriangle, ShieldCheck, Search, Filter, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
+import { toggleStoreStatusAction, toggleStoreBoostAction, deleteStoreAction, getAdminStatsAction, searchStoresAction } from './actions';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ stores: 0, products: 0, users: 0 });
   const [recentStores, setRecentStores] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     async function loadAdminData() {
-      // Pas de simulation : Compter les éléments dans la base
-      const { count: storeCount } = await supabase.from('stores').select('*', { count: 'exact', head: true });
-      const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+      // Statistiques globales directes depuis le Server Action sécurisé
+      const statsData = await getAdminStatsAction();
+      setStats(statsData);
 
-      setStats({ 
-        stores: storeCount || 0,
-        products: productCount || 0,
-        users: 0 // Si table profile existait
-      });
-
-      const { data: storesData } = await supabase
-        .from('stores')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      setRecentStores(storesData || []);
+      // Chargement initial des boutiques
+      const { data } = await searchStoresAction('');
+      setRecentStores(data || []);
       setLoading(false);
     }
-
     loadAdminData();
   }, []);
 
-  const toggleStoreStatus = async (storeId, currentStatus) => {
-    // Mutation Active : Super Admin désactive ou active
-    const newStatus = currentStatus === 'approved' ? 'pending' : 'approved';
-    const { error } = await supabase
-      .from('stores')
-      .update({ status: newStatus })
-      .eq('id', storeId);
+  // Algorithme de recherche en temps réel
+  useEffect(() => {
+    if (loading) return;
+    const delayDebounceFn = setTimeout(async () => {
+      const { data } = await searchStoresAction(searchQuery);
+      setRecentStores(data || []);
+    }, 400); // 400ms debounce pour optimiser les requêtes DB
 
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, loading]);
+
+  const toggleStoreStatus = async (storeId, currentVerified) => {
+    const { error } = await toggleStoreStatusAction(storeId, currentVerified);
     if (!error) {
-      setRecentStores(recentStores.map(s => s.id === storeId ? { ...s, status: newStatus } : s));
+      setRecentStores(recentStores.map(s => s.id === storeId ? { ...s, verified: !currentVerified } : s));
     } else {
-      alert("Erreur lors de la mise à jour");
+      alert("Erreur lors de la mise à jour: " + error);
     }
   };
 
   const deleteStore = async (storeId) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer définitivement cette boutique ? Tous ses produits seront également supprimés.")) return;
     
-    const { error } = await supabase
-      .from('stores')
-      .delete()
-      .eq('id', storeId);
-
+    const { error } = await deleteStoreAction(storeId);
     if (!error) {
       setRecentStores(recentStores.filter(s => s.id !== storeId));
       setStats(prev => ({ ...prev, stores: prev.stores - 1 }));
     } else {
-      alert("Erreur lors de la suppression : " + error.message);
+      alert("Erreur lors de la suppression : " + error);
     }
   };
 
@@ -70,9 +63,9 @@ export default function AdminDashboard() {
   }
 
   const statCards = [
-    { title: "Boutiques Totales", value: stats.stores, icon: Store, trend: "+12% ce mois" },
-    { title: "Produits en ligne", value: stats.products, icon: ShoppingBag, trend: "+34% ce mois" },
-    { title: "Utilisateurs (Clients)", value: "N/A", icon: Users, trend: "Stable" },
+    { title: "Boutiques Totales", value: stats.stores, icon: Store, trend: "Opérationnel" },
+    { title: "Produits en ligne", value: stats.products, icon: ShoppingBag, trend: "Opérationnel" },
+    { title: "Utilisateurs (Clients)", value: stats.users, icon: Users, trend: "Sécurisé" },
   ];
 
   return (
@@ -86,7 +79,13 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-3">
            <div className="relative">
              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-             <input type="text" placeholder="Chercher ID, Nom..." className="bg-neutral-800 border border-neutral-700 text-sm text-neutral-300 rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-wa-teal transition-colors w-full md:w-64" />
+             <input 
+               type="text" 
+               placeholder="Rechercher par Nom, Ville ou Code..." 
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="bg-neutral-800 border border-neutral-700 text-sm text-neutral-300 rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-wa-teal transition-colors w-full md:w-64" 
+             />
            </div>
         </div>
       </header>
@@ -152,8 +151,9 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4">
                       <button 
                         onClick={async () => {
-                          const { error } = await supabase.from('stores').update({ is_boosted: !store.is_boosted }).eq('id', store.id);
+                          const { error } = await toggleStoreBoostAction(store.id, store.is_boosted);
                           if (!error) setRecentStores(recentStores.map(s => s.id === store.id ? { ...s, is_boosted: !s.is_boosted } : s));
+                          else alert("Erreur: " + error);
                         }}
                         className={`p-2 rounded-lg transition-all ${store.is_boosted ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/20' : 'bg-neutral-700 text-neutral-500 hover:text-neutral-300'}`}
                       >
@@ -161,17 +161,17 @@ export default function AdminDashboard() {
                       </button>
                     </td>
                     <td className="px-6 py-4">
-                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${store.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                         {store.status === 'approved' ? <><CheckCircle size={12}/> Approuvé</> : <><AlertTriangle size={12}/> Suspendu</>}
+                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${store.verified ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                         {store.verified ? <><CheckCircle size={12}/> Vérifié</> : <><AlertTriangle size={12}/> Non vérifié</>}
                        </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                        <div className="flex items-center justify-end gap-2">
                          <button 
-                           onClick={() => toggleStoreStatus(store.id, store.status)} 
-                           className={`text-xs font-bold px-3 py-1.5 rounded transition-colors border ${store.status === 'approved' ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                           onClick={() => toggleStoreStatus(store.id, store.verified)} 
+                           className={`text-xs font-bold px-3 py-1.5 rounded transition-colors border ${store.verified ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
                          >
-                           {store.status === 'approved' ? 'Suspendre' : 'Autoriser'}
+                           {store.verified ? 'Suspendre' : 'Autoriser'}
                          </button>
                          <button 
                            onClick={() => deleteStore(store.id)}

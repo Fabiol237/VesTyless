@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { deleteCloudinaryByUrl, uploadImage } from '@/lib/cloudinary';
 import { useRouter } from 'next/navigation';
-import { 
-  Settings, Save, Loader2, ArrowLeft, Image as ImageIcon, 
-  Palette, Type, Megaphone, Globe, Info, CheckCircle2, 
-  Camera, Trash2, Smartphone, MapPin, Navigation
+import {
+  Settings, Save, Loader2, ArrowLeft, Image as ImageIcon,
+  Palette, Type, Megaphone, Globe, Info, CheckCircle2,
+  Camera, Trash2, Smartphone, MapPin, Navigation, Bot
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
@@ -15,14 +15,16 @@ import { useDistance } from '@/hooks/useDistance';
 export default function StoreSettingsPage() {
   const { session } = useAuth();
   const router = useRouter();
-  
+
   const [storeId, setStoreId] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [uploadingField, setUploadingField] = useState('');
   const [storeSchema, setStoreSchema] = useState({ hasCity: false, hasPhone: false });
   const [initialMedia, setInitialMedia] = useState({ logo_url: '', banner_url: '' });
   const tempUploadedUrlsRef = useRef(new Set());
-  const saveSucceededRef = useRef(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const saveTimeoutRef = useRef(null);
+  const pendingChangesRef = useRef({});
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,21 +39,66 @@ export default function StoreSettingsPage() {
     custom_message: '',
     whatsapp_number: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    ai_enabled: false,
+    ai_name: 'Assistant VesTyle',
+    ai_prompt: 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.'
   });
-  
+
   const { requestLocation, userLocation, isLocating, error: gpsError } = useDistance();
+
+  // === API #6 : CONTACT PICKER API ===
+  const pickContact = async () => {
+    if (!('contacts' in navigator && 'ContactsManager' in window)) {
+      alert('L\'API Contacts n\'est pas disponible sur ce navigateur/appareil (Android Chrome requis).');
+      return;
+    }
+    try {
+      const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+      if (contacts.length > 0) {
+        const contact = contacts[0];
+        const phone = contact.tel?.[0]?.replace(/\s/g, '') || '';
+        handleChange({ target: { name: 'whatsapp_number', value: phone } });
+      }
+    } catch (err) {
+      console.error('Contact Picker error:', err);
+    }
+  };
+
+  const updateStore = async (fieldsToUpdate) => {
+    if (!storeId) return;
+    setAutoSaveStatus('saving');
+
+    // Assurez-vous qu'on ne met à jour que les champs qui existent dans le schéma
+    const validFields = { ...fieldsToUpdate };
+    if (!storeSchema.hasCity) delete validFields.city;
+    if (!storeSchema.hasPhone) delete validFields.phone;
+
+    const { error } = await supabase.from('stores').update(validFields).eq('id', storeId);
+
+    if (error) {
+      console.error("Erreur de sauvegarde:", error);
+      setAutoSaveStatus('error');
+    } else {
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    }
+  };
 
   // Watch for gps updates
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && storeId) {
       setFormData(prev => ({
         ...prev,
         latitude: userLocation.latitude,
         longitude: userLocation.longitude
       }));
+      updateStore({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      });
     }
-  }, [userLocation]);
+  }, [userLocation, storeId]);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -81,24 +128,28 @@ export default function StoreSettingsPage() {
           custom_message: data.custom_message || '',
           whatsapp_number: data.whatsapp_number || '',
           latitude: data.latitude || '',
-          longitude: data.longitude || ''
+          longitude: data.longitude || '',
+          ai_enabled: data.ai_enabled || false,
+          ai_name: data.ai_name || 'Assistant VesTyle',
+          ai_prompt: data.ai_prompt || 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.'
         });
       }
     }
     fetchStore();
   }, [session]);
 
-  useEffect(() => {
-    const urlsRef = tempUploadedUrlsRef.current;
-    return () => {
-      if (saveSucceededRef.current) return;
-      const pending = Array.from(urlsRef);
-      pending.forEach((url) => deleteCloudinaryByUrl(url));
-    };
-  }, []);
-
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    const finalValue = type === 'checkbox' ? checked : value;
+
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
+    pendingChangesRef.current[name] = finalValue;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      updateStore({ ...pendingChangesRef.current });
+      pendingChangesRef.current = {};
+    }, 1000);
   };
 
   const handleFileUpload = async (fieldName, file) => {
@@ -114,6 +165,9 @@ export default function StoreSettingsPage() {
       }
       setFormData((prev) => ({ ...prev, [fieldName]: secureUrl }));
       tempUploadedUrlsRef.current.add(secureUrl);
+
+      // Auto-save the new image
+      updateStore({ [fieldName]: secureUrl });
     } catch (err) {
       alert("Erreur upload image: " + (err?.message || "Impossible de televerser l'image"));
     } finally {
@@ -128,46 +182,8 @@ export default function StoreSettingsPage() {
       await deleteCloudinaryByUrl(currentUrl);
       tempUploadedUrlsRef.current.delete(currentUrl);
     }
-    setFormData((prev) => ({ ...prev, [fieldName]: '' }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!storeId) return;
-    
-    setLoading(true);
-    const { error } = await supabase.from('stores').update({
-      name: formData.name,
-      description: formData.description,
-      ...(storeSchema.hasCity ? { city: formData.city } : {}),
-      ...(storeSchema.hasPhone ? { phone: formData.phone } : {}),
-      slug: formData.slug,
-      logo_url: formData.logo_url,
-      banner_url: formData.banner_url,
-      theme_color: formData.theme_color,
-      secondary_color: formData.secondary_color,
-      font_family: formData.font_family,
-      custom_message: formData.custom_message,
-      whatsapp_number: formData.whatsapp_number,
-      latitude: formData.latitude || null,
-      longitude: formData.longitude || null
-    }).eq('id', storeId);
-
-    setLoading(false);
-    if (error) {
-      alert("Erreur lors de la mise à jour : " + error.message);
-    } else {
-      const cleanupTasks = [];
-      ['logo_url', 'banner_url'].forEach((fieldName) => {
-        const oldUrl = initialMedia[fieldName];
-        const newUrl = formData[fieldName];
-        if (oldUrl && oldUrl !== newUrl) cleanupTasks.push(deleteCloudinaryByUrl(oldUrl));
-      });
-      if (cleanupTasks.length > 0) await Promise.allSettled(cleanupTasks);
-      saveSucceededRef.current = true;
-      tempUploadedUrlsRef.current.clear();
-      router.push('/dashboard');
-    }
+    setFormData((prev) => ({ ...prev, [fieldName]: null }));
+    updateStore({ [fieldName]: null });
   };
 
   if (session === undefined) return <div className="min-h-screen bg-wa-bg flex justify-center items-center"><Loader2 className="animate-spin text-wa-teal" size={48} /></div>;
@@ -188,11 +204,11 @@ export default function StoreSettingsPage() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
         {/* Colonne de Gauche : Infos de Base & Branding */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Identité Section */}
           <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
             <div className="flex items-center gap-3 mb-2">
@@ -221,10 +237,23 @@ export default function StoreSettingsPage() {
 
               <div className="space-y-2">
                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Numéro WhatsApp Client</label>
-                <div className="relative">
-                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
-                  <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="237655..." className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                <div className="flex gap-2 items-center">
+                  <div className="relative flex-1">
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+                    <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="237655..." className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                  </div>
+                  {/* API #6 : CONTACT PICKER */}
+                  <button
+                    type="button"
+                    onClick={pickContact}
+                    title="Importer depuis mes contacts"
+                    className="flex-shrink-0 p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition-all font-bold text-xs flex items-center gap-2"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span className="hidden sm:inline">Contacts</span>
+                  </button>
                 </div>
+                <p className="text-[10px] text-gray-400 ml-1">Sur Android Chrome : importez directement depuis votre répertoire téléphonique.</p>
               </div>
             </div>
 
@@ -234,10 +263,10 @@ export default function StoreSettingsPage() {
                 <h3 className="text-lg font-black text-gray-900">Localisation GPS</h3>
               </div>
               <p className="text-sm text-gray-500 font-medium mb-4">Permet à vos clients de voir à quelle distance ils se trouvent de votre boutique.</p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={requestLocation}
                   disabled={isLocating}
                   className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50"
@@ -251,7 +280,48 @@ export default function StoreSettingsPage() {
                 </div>
               </div>
               {gpsError && <p className="mt-3 text-xs font-bold text-red-500">{gpsError}</p>}
-              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14}/> Coordonnées enregistrées</p>}
+              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> Coordonnées enregistrées</p>}
+            </div>
+          </section>
+
+          {/* AI Secretary Section */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5 text-indigo-500 pointer-events-none">
+              <Bot size={120} />
+            </div>
+            <div className="flex items-center gap-3 mb-2 relative z-10">
+              <div className="p-2 bg-indigo-50 rounded-xl text-indigo-500"><Bot size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Secrétaire IA (WebLLM)</h2>
+            </div>
+            <p className="text-sm text-gray-500 font-medium mb-6 relative z-10">Configurez votre assistant virtuel autonome. Il répondra à vos clients directement depuis leur navigateur via Llama 3.2.</p>
+
+            <div className="space-y-6 relative z-10">
+              <label className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors">
+                <div className="relative">
+                  <input type="checkbox" name="ai_enabled" checked={formData.ai_enabled} onChange={handleChange} className="sr-only" />
+                  <div className={`block w-14 h-8 rounded-full transition-colors ${formData.ai_enabled ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${formData.ai_enabled ? 'translate-x-6' : ''}`}></div>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Activer la Secrétaire IA</p>
+                  <p className="text-xs text-gray-500">Un widget de discussion apparaîtra sur votre boutique.</p>
+                </div>
+              </label>
+
+              {formData.ai_enabled && (
+                <div className="grid grid-cols-1 gap-6 animate-fade-in">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Nom de l'Assistant</label>
+                    <input type="text" name="ai_name" value={formData.ai_name} onChange={handleChange} placeholder="Ex: Sophie (Assistant VesTyle)" className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Prompt Système (Comportement)</label>
+                    <textarea name="ai_prompt" value={formData.ai_prompt} onChange={handleChange} rows="4" placeholder="Instructions pour l'IA..." className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-medium outline-none transition-all resize-none"></textarea>
+                    <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-1"><Info size={12} /> Décrivez comment l'IA doit s'adresser à vos clients et quelles règles elle doit respecter.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -296,40 +366,40 @@ export default function StoreSettingsPage() {
 
           {/* Section PROMOTION (EMBELLIE) */}
           <section className="bg-gradient-to-br from-wa-teal to-wa-teal-dark p-8 rounded-[40px] text-white shadow-xl shadow-wa-teal/20 space-y-6 text-left relative overflow-hidden group">
-             <div className="relative z-10">
-               <div className="flex items-center gap-3 mb-2">
-                 <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white"><Megaphone size={20} /></div>
-                 <h2 className="text-xl font-black">Section Promotionnelle</h2>
-               </div>
-               <p className="text-white/80 text-sm font-medium mb-6">Ce message s&apos;affichera en haut de votre boutique pour attirer l&apos;œil de vos clients.</p>
-               
-               <div className="space-y-4">
-                 <div className="relative">
-                   <textarea 
-                    name="custom_message" 
-                    value={formData.custom_message} 
-                    onChange={handleChange} 
-                    rows="2" 
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white"><Megaphone size={20} /></div>
+                <h2 className="text-xl font-black">Section Promotionnelle</h2>
+              </div>
+              <p className="text-white/80 text-sm font-medium mb-6">Ce message s&apos;affichera en haut de votre boutique pour attirer l&apos;œil de vos clients.</p>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <textarea
+                    name="custom_message"
+                    value={formData.custom_message}
+                    onChange={handleChange}
+                    rows="2"
                     placeholder="Ex: 🎉 PROMO : -20% sur toute la collection avec le code VESTYLE !"
                     className="w-full bg-white/10 backdrop-blur-md border-2 border-white/20 focus:border-white focus:bg-white/20 rounded-2xl px-5 py-4 text-sm font-black placeholder:text-white/40 outline-none transition-all resize-none"
-                   ></textarea>
-                 </div>
-                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
-                    <Info size={12} />
-                    <span>Apparaît comme une bannière animée sur la boutique</span>
-                 </div>
-               </div>
-             </div>
-             <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
+                  ></textarea>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
+                  <Info size={12} />
+                  <span>Apparaît comme une bannière animée sur la boutique</span>
+                </div>
+              </div>
+            </div>
+            <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
           </section>
         </div>
 
         {/* Colonne de Droite : Médias & Sauvegarde */}
         <div className="space-y-8">
-          
+
           {/* Logo & Banner Section */}
           <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-8 text-left">
-             <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-rose-50 rounded-xl text-rose-500"><ImageIcon size={20} /></div>
               <h2 className="text-xl font-black text-gray-900">Visuels</h2>
             </div>
@@ -381,23 +451,22 @@ export default function StoreSettingsPage() {
             </div>
           </section>
 
-          {/* Action Card */}
+          {/* Action Card (Auto-Save Indicator) */}
           <div className="bg-gray-900 p-8 rounded-[40px] shadow-2xl space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-wa-teal">
                 <CheckCircle2 size={24} />
               </div>
-              <p className="text-white font-black tracking-tight text-lg">Prêt à publier ?</p>
+              <p className="text-white font-black tracking-tight text-lg">Mode Direct (En ligne)</p>
             </div>
-            <p className="text-gray-400 text-sm font-medium leading-relaxed">Assurez-vous que vos images sont de haute qualité pour attirer plus de clients.</p>
-            <button 
-              type="submit" 
-              disabled={loading || !!uploadingField}
-              className="w-full py-4 bg-wa-teal hover:bg-wa-teal-dark disabled:bg-gray-700 text-white font-black rounded-2xl shadow-xl shadow-wa-teal/20 transition-all active:scale-95 flex items-center justify-center gap-3"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-              Enregistrer les changements
-            </button>
+            <p className="text-gray-400 text-sm font-medium leading-relaxed">Vos modifications sont automatiquement enregistrées et publiées en temps réel.</p>
+
+            <div className="w-full py-4 bg-gray-800 text-gray-400 font-black rounded-2xl shadow-inner flex items-center justify-center gap-3 transition-all h-14">
+              {autoSaveStatus === 'saving' && <><Loader2 className="animate-spin text-wa-teal" size={20} /> <span className="text-wa-teal">Enregistrement...</span></>}
+              {autoSaveStatus === 'saved' && <><CheckCircle2 className="text-emerald-500" size={20} /> <span className="text-emerald-500">Sauvegardé</span></>}
+              {autoSaveStatus === 'error' && <span className="text-rose-500">Erreur de sauvegarde</span>}
+              {autoSaveStatus === 'idle' && <><Settings size={20} /> <span className="opacity-70">Prêt</span></>}
+            </div>
           </div>
         </div>
       </form>

@@ -1,13 +1,14 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ClientDiscovery from '@/components/ClientDiscovery';
-import { Suspense } from 'react';
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
+  const proximity = searchParams.get('proximity') === 'true';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -16,12 +17,19 @@ function SearchResults() {
           Résultats pour &quot;{query}&quot;
         </h1>
       </div>
-      <ClientDiscovery initialSearchQuery={query} />
+      <ClientDiscovery initialSearchQuery={query} initialProximity={proximity} />
     </div>
   );
 }
 
 export default function SearchPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-wa-bg flex flex-col"></div>;
+  }
+
   return (
     <main className="min-h-screen bg-wa-bg flex flex-col">
       <Navbar />
