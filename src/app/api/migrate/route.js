@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+export const dynamic = 'force-dynamic';
 
 // Use admin client (service role gives full DDL access)
 const supabaseAdmin = createClient(
