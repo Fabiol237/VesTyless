@@ -23,9 +23,6 @@ import { CreateMLCEngine } from '@mlc-ai/web-llm';
 
 export default function StoreAIChat({ store, products }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [engine, setEngine] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState({ text: '', ratio: 0 });
   const [messages, setMessages] = useState([
     { role: 'assistant', content: `Bonjour ! Je suis ${store.ai_name}, l'assistant de ${store.name}. Comment puis-je vous aider aujourd'hui ?` }
   ]);
@@ -39,73 +36,55 @@ export default function StoreAIChat({ store, products }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const initEngine = async () => {
-    if (engine) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const selectedModel = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
-      
-      const newEngine = await CreateMLCEngine(
-        selectedModel,
-        { 
-          initProgressCallback: (info) => {
-            setProgress({ text: info.text, ratio: info.progress });
-          } 
-        }
-      );
-      setEngine(newEngine);
-    } catch (err) {
-      console.error("WebLLM Error:", err);
-      setError("Votre navigateur ne supporte pas WebGPU ou une erreur s'est produite lors du chargement de l'IA.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleOpen = () => {
     setIsOpen(true);
-    if (!engine && !loading && !error) {
-      initEngine();
-    }
   };
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !engine || isTyping) return;
+    if (!input.trim() || isTyping) return;
 
     const userMsg = { role: 'user', content: input.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
+    setError(null);
 
     try {
       // Construction du contexte
-      const productList = products.slice(0, 20).map(p => `- ${p.name} (${p.price} FCFA)`).join('\n');
+      const productList = products.slice(0, 15).map(p => `- ${p.name} (${p.price} FCFA)`).join('\n');
       const systemPrompt = {
         role: 'system',
-        content: `Tu es ${store.ai_name}, un assistant virtuel pour la boutique ${store.name}. 
-${store.ai_prompt}
-Voici la description de la boutique: ${store.description}.
-Voici quelques produits disponibles :
+        content: `Tu es ${store.ai_name}, un assistant virtuel premium pour la boutique ${store.name}. 
+${store.ai_prompt || ''}
+Description de la boutique: ${store.description || ''}.
+Produits disponibles :
 ${productList}
-Règles :
-- Parle en français.
-- Sois concis (max 3 phrases par réponse).
-- Si on demande d'acheter, dis de cliquer sur "Ajouter au panier" sur la page.
-- N'invente pas de produits qui ne sont pas dans la liste.`
+Règles strictes :
+- Réponds toujours en français.
+- Sois poli, élégant et concis.
+- N'invente jamais de produits.
+- Guide le client vers le panier pour acheter.`
       };
 
-      const history = messages.map(m => ({ role: m.role, content: m.content }));
+      const history = messages.slice(-5).map(m => ({ role: m.role, content: m.content }));
       
-      const reply = await engine.chat.completions.create({
-        messages: [systemPrompt, ...history, userMsg]
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [systemPrompt, ...history, userMsg]
+        })
       });
 
-      setMessages(prev => [...prev, { role: 'assistant', content: reply.choices[0].message.content }]);
+      const data = await response.json();
+      
+      if (data.error) throw new Error(data.error);
+
+      setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
     } catch (err) {
-      console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, j'ai rencontré un problème pour générer ma réponse." }]);
+      console.error("Chat Error:", err);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, j'ai rencontré une petite difficulté technique. Pourriez-vous reformuler ?" }]);
     } finally {
       setIsTyping(false);
     }
@@ -118,96 +97,84 @@ Règles :
       {/* Floating Button */}
       <button 
         onClick={handleOpen}
-        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[85] bg-indigo-600 text-white p-4 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:scale-110 active:scale-95 transition-all group"
+        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[85] bg-wa-teal text-white p-4 rounded-full shadow-[0_0_20px_rgba(18,140,126,0.4)] hover:scale-110 active:scale-95 transition-all group"
       >
         <BotIcon size={28} className="group-hover:animate-bounce" />
         <span className="absolute -top-1 -right-1 flex h-4 w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-indigo-500 border-2 border-white"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-wa-teal border-2 border-white"></span>
         </span>
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 md:bottom-28 md:right-8 z-[100] w-[350px] sm:w-[400px] h-[550px] max-h-[80vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-24 right-6 md:bottom-28 md:right-8 z-[100] w-[350px] sm:w-[400px] h-[550px] max-h-[80vh] bg-white rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 border border-slate-100">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 p-4 flex items-center justify-between text-white shrink-0">
+          <div className="bg-gradient-to-br from-wa-teal to-emerald-800 p-5 flex items-center justify-between text-white shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <BotIcon size={20} />
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
+                <BotIcon size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-sm">{store.ai_name}</h3>
-                <p className="text-[10px] text-indigo-200 flex items-center gap-1"><SparklesIcon size={10}/> Propulsé par Llama 3.2</p>
+                <h3 className="font-black text-sm tracking-tight">{store.ai_name}</h3>
+                <p className="text-[10px] text-emerald-200 font-bold uppercase tracking-widest flex items-center gap-1">
+                  <SparklesIcon size={10}/> Expert IA Boutique
+                </p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><XIcon size={20} /></button>
+            <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-xl transition-colors">
+              <XIcon size={20} />
+            </button>
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
-            {loading ? (
-              <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                <Loader2Icon className="animate-spin text-indigo-600" size={32} />
-                <div>
-                  <p className="font-bold text-slate-700 text-sm">Chargement du cerveau IA...</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-[250px] mx-auto">La première fois, cela peut prendre 1 à 2 minutes. Les données restent dans votre navigateur.</p>
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/50">
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] p-4 rounded-2xl text-sm shadow-sm ${
+                  m.role === 'user' 
+                    ? 'bg-wa-teal text-white rounded-br-sm font-medium' 
+                    : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm leading-relaxed'
+                }`}>
+                  {m.content}
                 </div>
-                {progress.ratio > 0 && (
-                  <div className="w-3/4 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-600 transition-all duration-300" style={{ width: `${progress.ratio * 100}%` }}></div>
-                  </div>
-                )}
-                <p className="text-[10px] text-slate-400 truncate w-64">{progress.text}</p>
               </div>
-            ) : error ? (
-              <div className="h-full flex flex-col items-center justify-center text-center space-y-4 p-4">
-                <AlertCircleIcon className="text-red-500" size={32} />
-                <p className="text-sm font-bold text-slate-700">{error}</p>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-slate-100 p-4 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-wa-teal rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-wa-teal rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-1.5 h-1.5 bg-wa-teal rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
               </div>
-            ) : (
-              <>
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${m.role === 'user' ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-white border border-slate-100 text-slate-700 rounded-bl-sm'}`}>
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-slate-100 p-4 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-white border-t border-slate-100 shrink-0">
-            <form onSubmit={sendMessage} className="relative flex items-center">
+          <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+            <form onSubmit={sendMessage} className="relative flex items-center gap-2">
               <input 
                 type="text" 
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                disabled={loading || !!error || isTyping}
-                placeholder="Posez une question..."
-                className="w-full bg-slate-100 rounded-full py-3 pl-4 pr-12 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
+                disabled={isTyping}
+                placeholder="Posez votre question..."
+                className="flex-1 bg-slate-100 rounded-2xl py-4 px-5 text-sm outline-none focus:ring-2 focus:ring-wa-teal/20 transition-all disabled:opacity-50 font-medium"
               />
               <button 
                 type="submit" 
-                disabled={loading || !!error || isTyping || !input.trim()}
-                className="absolute right-1 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                disabled={isTyping || !input.trim()}
+                className="w-12 h-12 bg-wa-teal text-white rounded-2xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-wa-teal/20 active:scale-95"
               >
-                <SendIcon size={16} className="-ml-0.5" />
+                <SendIcon size={18} />
               </button>
             </form>
+            <p className="text-[9px] text-center text-slate-400 mt-3 font-bold uppercase tracking-widest opacity-60">
+              Propulsé par VesTyle AI • Hugging Face
+            </p>
           </div>
         </div>
       )}

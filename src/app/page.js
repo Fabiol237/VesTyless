@@ -4,25 +4,26 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
+import SearchAutocomplete from '@/components/SearchAutocomplete';
+import ClientDiscovery from '@/components/ClientDiscovery';
+import { normalizeStr } from '@/lib/searchUtils';
 import Link from 'next/link';
 import { Search, MapPin, MessageCircle, ShoppingBag, ArrowRight, Hash, Loader2 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
 
-// ── Main Component ────────────────────────────────────────
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [codeQuery, setCodeQuery] = useState('');
   const [codeResult, setCodeResult] = useState(null);
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState('');
-  const [featuredStores, setFeaturedStores] = useState([]);
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [activeTab, setActiveTab] = useState('products');
   const [locationStatus, setLocationStatus] = useState('');
-  const searchRef = useRef(null);
   const router = useRouter();
-  const { requestLocation, userLocation, isLocating: isGpsLocating, getDistanceKm, formatDistance, error: gpsError } = useDistance();
+  const { requestLocation, userLocation, isLocating: isGpsLocating, formatDistance } = useDistance();
+  
+  const [suggestions, setSuggestions] = useState([]);
+  const [trendingTags, setTrendingTags] = useState([]);
 
   const [mounted, setMounted] = useState(false);
   const { scrollY } = useScroll();
@@ -31,26 +32,30 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    loadFeatured();
+    fetchSuggestions();
   }, []);
 
-  async function loadFeatured() {
-    const [{ data: stores }, { data: products }] = await Promise.all([
-      supabase.from('stores')
-        .select('id,name,slug,logo_url,city,store_code,latitude,longitude')
-        .eq('is_active', true)
-        .order('is_boosted', { ascending: false })
-        .order('daily_views', { ascending: false })
-        .limit(12),
-      supabase.from('products')
-        .select('id,name,price,image_url,store_id,stores(name,slug,latitude,longitude)')
-        .eq('is_active', true)
-        .order('is_boosted', { ascending: false })
-        .order('daily_views', { ascending: false })
-        .limit(20),
-    ]);
-    setFeaturedStores(stores || []);
-    setFeaturedProducts(products || []);
+  async function fetchSuggestions() {
+    try {
+      const [cats, strs, prods] = await Promise.all([
+        supabase.from('categories').select('name').limit(10),
+        supabase.from('stores').select('name, city').eq('is_active', true).order('is_boosted', { ascending: false }).limit(10),
+        supabase.from('products').select('name').eq('is_active', true).order('daily_views', { ascending: false }).limit(15)
+      ]);
+
+      const items = [];
+      if (cats.data) cats.data.forEach(c => items.push({ label: c.name, value: c.name, type: 'Catégorie', emoji: '🏷️' }));
+      if (strs.data) strs.data.forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city }));
+      if (prods.data) prods.data.forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️' }));
+      
+      setSuggestions(items);
+      
+      // Randomly pick some trending tags
+      const tags = [...new Set([...(cats.data || []).map(c => c.name), 'Nouveautés', 'Promos'])].slice(0, 5);
+      setTrendingTags(tags);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+    }
   }
 
   async function handleCodeSearch(e) {
@@ -71,39 +76,14 @@ export default function Home() {
 
   function handleSearch(e) {
     e.preventDefault();
-    const query = searchQuery.trim();
-    if (query) {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    } else {
-      router.push('/search');
-    }
+    // On laisse ClientDiscovery réagir au changement de searchQuery
   }
 
   useEffect(() => {
-    if (userLocation && featuredStores.length > 0) {
+    if (userLocation) {
       setLocationStatus('📍 À proximité');
-      
-      // Trier les boutiques par distance
-      const sortedStores = [...featuredStores].sort((a, b) => {
-        const dA = getDistanceKm(a.latitude, a.longitude) || Infinity;
-        const dB = getDistanceKm(b.latitude, b.longitude) || Infinity;
-        return dA - dB;
-      });
-      setFeaturedStores(sortedStores);
-
-      // Trier les produits par distance de leur boutique
-      const sortedProds = [...featuredProducts].sort((a, b) => {
-        const dA = getDistanceKm(a.stores?.latitude, a.stores?.longitude) || Infinity;
-        const dB = getDistanceKm(b.stores?.latitude, b.stores?.longitude) || Infinity;
-        return dA - dB;
-      });
-      setFeaturedProducts(sortedProds);
     }
-  }, [userLocation, getDistanceKm]);
-
-  function handleLocateMe() {
-    requestLocation();
-  }
+  }, [userLocation]);
 
   if (!mounted) {
     return <div className="min-h-screen font-sans bg-[#FDFCFB]"></div>;
@@ -151,41 +131,54 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
             className="w-full max-w-3xl z-20"
           >
-            <form onSubmit={handleSearch} className="bg-white/95 backdrop-blur-lg p-2 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center border border-white/50">
-              <div className="flex-1 flex items-center px-4 w-full border-b md:border-b-0 md:border-r border-gray-200 py-3 relative">
-                <Search className="text-emerald-600 mr-3 w-5 h-5 flex-shrink-0" />
-                <input 
-                  ref={searchRef}
-                  type="text" 
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={locationStatus || "Que recherchez-vous ?"} 
-                  className="w-full outline-none text-slate-800 bg-transparent placeholder-slate-400 font-medium"
-                />
-                <button 
-                  type="button"
-                  onClick={handleLocateMe}
-                  className="absolute right-12 p-2 text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors flex items-center gap-1"
-                  title="Autour de moi"
-                >
-                  {isGpsLocating ? <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div> : <MapPin size={20} />}
-                </button>
-                <VoiceSearchButton 
-                  onInterimResult={(text) => setSearchQuery(text)}
-                  onResult={(text) => {
-                    if (text.trim()) router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-                  }} 
-                  className="absolute right-2 p-2 text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors"
-                />
-              </div>
-              
-              <button type="submit" className="w-full md:w-auto bg-emerald-800 text-white px-10 py-4 rounded-xl font-bold hover:bg-emerald-900 transition-all shadow-md mt-2 md:mt-0 md:ml-2 active:scale-95">
+            <form onSubmit={handleSearch} className="bg-white p-1.5 rounded-[22px] shadow-2xl flex flex-col md:flex-row items-center border border-white/50 w-full group focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
+              <SearchAutocomplete
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onSelect={(s) => setSearchQuery(s.value)}
+                suggestions={suggestions} 
+                placeholder={locationStatus || "Que recherchez-vous ?"}
+                className="flex-1 w-full"
+                inputClassName="w-full outline-none text-slate-800 bg-transparent placeholder-slate-400 font-semibold py-4 pl-12 pr-28 text-base"
+                dropdownOffset="mt-4"
+                leftIcon={<Search className="text-emerald-600 w-5 h-5 opacity-70" />}
+              >
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center bg-slate-50/80 backdrop-blur-sm rounded-full p-1.5 border border-slate-100 z-30 shadow-sm">
+                  <button 
+                    type="button"
+                    onClick={() => requestLocation()}
+                    className="p-2 text-emerald-600 hover:bg-white hover:text-emerald-700 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                    title="Autour de moi"
+                  >
+                    {isGpsLocating ? <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div> : <MapPin size={22} />}
+                  </button>
+                  <div className="w-px h-6 bg-slate-200 mx-1.5 opacity-60"></div>
+                  <VoiceSearchButton 
+                    onInterimResult={(text) => setSearchQuery(text)}
+                    onResult={(text) => setSearchQuery(text)} 
+                    className="p-2 text-emerald-600 hover:bg-white hover:text-emerald-700 rounded-full transition-all active:scale-90 flex items-center justify-center"
+                  />
+                </div>
+              </SearchAutocomplete>
+              <button type="submit" className="w-full md:w-auto bg-emerald-800 text-white px-10 py-4 rounded-[18px] font-black hover:bg-emerald-900 transition-all shadow-lg mt-2 md:mt-0 md:ml-2 active:scale-95 text-sm uppercase tracking-wider">
                 Explorer
               </button>
             </form>
+
+            {/* Trending Tags */}
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {trendingTags.map((tag, i) => (
+                <button 
+                  key={tag} 
+                  onClick={() => setSearchQuery(tag)}
+                  className="px-4 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 rounded-full text-xs text-white font-medium transition-all"
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
           </motion.div>
           
-          {/* Indicateur de scroll animé */}
           <motion.div 
             animate={{ y: [0, 10, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
@@ -202,7 +195,6 @@ export default function Home() {
             {/* ═══ DIRECT ACCESS CARD ════════════ */}
             <section className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl border border-emerald-50 p-8 md:p-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100 rounded-full blur-3xl opacity-40 -mr-20 -mt-20"></div>
-              
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                 <div className="flex-1 w-full">
                   <div className="flex items-center gap-3 mb-4">
@@ -214,7 +206,6 @@ export default function Home() {
                       <p className="text-sm text-slate-500 font-medium tracking-wide">Code boutique à 5 chiffres</p>
                     </div>
                   </div>
-
                   <form onSubmit={handleCodeSearch} className="flex flex-col sm:flex-row gap-4 mt-6">
                     <input
                       type="text"
@@ -228,7 +219,6 @@ export default function Home() {
                       {codeLoading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Accéder'}
                     </button>
                   </form>
-
                   {codeError && <p className="mt-4 text-red-500 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-100">{codeError}</p>}
                 </div>
 
@@ -249,167 +239,11 @@ export default function Home() {
               </div>
             </section>
 
-            {/* ═══ REAL STORES AROUND ME (Auto-sorted if GPS on) ════════ */}
-            <section>
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <h3 className="text-3xl font-serif mb-2 text-slate-900">Boutiques Recommandées</h3>
-                  <p className="text-slate-500 font-medium">Découvrez les pépites de votre ville</p>
-                </div>
-                <Link href="/boutiques" className="text-emerald-600 font-bold border-b-2 border-emerald-600 pb-1 hover:text-emerald-800 hover:border-emerald-800 transition-colors hidden md:block">Explorer</Link>
-              </div>
-
-              <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar scroll-smooth">
-                {featuredStores.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/boutique/${s.slug}`}
-                    className="flex-shrink-0 w-72 bg-white rounded-3xl p-6 shadow-lg border border-emerald-50 hover:shadow-2xl transition-all duration-500 group"
-                  >
-                    <div className="relative w-full aspect-video bg-slate-50 rounded-2xl overflow-hidden mb-6">
-                      {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" /> : <div className="w-full h-full flex items-center justify-center text-emerald-700 font-serif font-bold text-4xl">{s.name[0]}</div>}
-                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black text-emerald-800 shadow-sm border border-white/50">
-                        {s.city || 'DOUALA'}
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-serif font-bold text-xl text-slate-900">{s.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                           {userLocation && s.latitude && (
-                             <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                               <MapPin size={10} /> {formatDistance(s.latitude, s.longitude)}
-                             </span>
-                           )}
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {s.store_code}</span>
-                        </div>
-                      </div>
-                      <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                        <ArrowRight size={20} />
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* ═══ TABS & GRIDS ════════════════════════════════════ */}
-            <section>
-              <div className="flex justify-center mb-10">
-                <div className="inline-flex bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-emerald-100/50 p-1.5">
-                  {[
-                    { key: 'products', label: 'Collections Récentes' },
-                    { key: 'stores', label: 'Boutiques de Prestige' },
-                  ].map(tab => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`px-8 py-3 text-sm font-bold rounded-full transition-all duration-300 ${activeTab === tab.key ? 'bg-emerald-900 text-white shadow-md' : 'text-slate-600 hover:text-emerald-800 hover:bg-white/50'}`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {activeTab === 'products' && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-                  {featuredProducts.length === 0 ? (
-                    [...Array(8)].map((_, i) => (
-                      <div key={i} className="bg-white border border-emerald-50 rounded-2xl overflow-hidden animate-pulse shadow-sm">
-                        <div className="aspect-[4/5] bg-slate-100" />
-                        <div className="p-5 space-y-3">
-                          <div className="h-3 bg-slate-100 rounded w-1/3" />
-                          <div className="h-4 bg-slate-200 rounded w-3/4" />
-                          <div className="h-5 bg-slate-200 rounded w-1/2 mt-4" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    featuredProducts.map((p) => (
-                      <Link
-                        key={p.id}
-                        href={`/boutique/${p.stores?.slug}?product=${p.id}`}
-                        className="bg-white border border-emerald-50 rounded-2xl overflow-hidden flex flex-col hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 active:scale-[0.98] group"
-                        prefetch
-                      >
-                        <div className="relative aspect-[4/5] bg-slate-50 overflow-hidden">
-                          {p.image_url
-                            ? <img src={p.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} loading="lazy" />
-                            : <div className="w-full h-full flex items-center justify-center text-slate-300"><ShoppingBag size={40} strokeWidth={1} /></div>
-                          }
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        </div>
-                        <div className="p-5 flex-1 flex flex-col justify-between bg-white relative z-10">
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest truncate">{p.stores?.name}</p>
-                              {userLocation && p.stores?.latitude && (
-                                <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <MapPin size={8} /> {formatDistance(p.stores.latitude, p.stores.longitude)}
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="font-serif text-slate-900 text-lg leading-snug line-clamp-2">{p.name}</h3>
-                          </div>
-                          <div className="mt-4 flex items-center justify-between">
-                            <span className="font-bold text-emerald-900 text-lg">{Number(p.price).toLocaleString()} F</span>
-                            <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-sm">
-                              <MessageCircle size={14} />
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'stores' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredStores.length === 0 ? (
-                    [...Array(6)].map((_, i) => (
-                      <div key={i} className="bg-white border border-emerald-50 rounded-2xl p-6 flex items-center gap-5 animate-pulse shadow-sm">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full" />
-                        <div className="flex-1 space-y-3">
-                          <div className="h-5 bg-slate-200 rounded w-2/3" />
-                          <div className="h-3 bg-slate-100 rounded w-1/3" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    featuredStores.map((s) => (
-                      <Link
-                        key={s.id}
-                        href={`/boutique/${s.slug}`}
-                        className="bg-white border border-emerald-50 rounded-2xl p-6 flex items-center gap-5 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-300 active:scale-[0.98] group"
-                        prefetch
-                      >
-                        <div className="w-16 h-16 rounded-full border-2 border-emerald-50 overflow-hidden bg-slate-50 flex-shrink-0 group-hover:border-emerald-200 transition-colors">
-                          {s.logo_url ? <img src={s.logo_url} className="w-full h-full object-cover" alt="" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-emerald-700 font-serif font-bold text-2xl">{s.name[0]}</div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-serif font-bold text-slate-900 text-lg truncate group-hover:text-emerald-700 transition-colors">{s.name}</h3>
-                          <div className="flex items-center gap-1.5 text-slate-500 mt-1 font-medium">
-                            <MapPin size={14} className="text-emerald-400" />
-                            <span className="text-sm">{s.city || 'Cameroun'}</span>
-                          </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                          <ArrowRight size={16} />
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              )}
-
-              <div className="text-center pt-10">
-                <Link href={activeTab === 'products' ? '/search' : '/boutiques'} className="inline-flex items-center justify-center py-4 px-10 bg-white border border-emerald-100 text-emerald-800 font-bold rounded-full shadow-md hover:shadow-lg hover:border-emerald-200 active:scale-95 transition-all text-sm tracking-wide">
-                  Explorer tout l'annuaire
-                </Link>
-              </div>
-            </section>
+            {/* ═══ REAL-TIME DISCOVERY ════════════════════════════════════ */}
+            <ClientDiscovery 
+              externalSearchQuery={searchQuery} 
+              onExternalSearchChange={setSearchQuery} 
+            />
           </div>
         </div>
 

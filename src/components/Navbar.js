@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -28,11 +29,15 @@ const LogOutIcon = ({ size = 20 }) => (
 const ArrowRightIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
 );
+const UserIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+);
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { addSearch } = useUserPreferences();
   const { session, signOut } = useAuth();
   const { cart } = useCart();
   const router = useRouter();
@@ -48,6 +53,7 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      addSearch(searchQuery.trim());
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsMobileMenuOpen(false);
     }
@@ -102,6 +108,13 @@ export default function Navbar() {
             )}
           </Link>
 
+          <Link 
+            href="/profile"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <UserIcon size={22} />
+          </Link>
+
           {session ? (
             <div className="flex items-center gap-2 pl-2">
               <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord vendeur">
@@ -130,6 +143,9 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+          <button onClick={() => router.push('/profile')} className="p-2">
+            <UserIcon size={22} />
+          </button>
           <button
             className="p-2 focus:outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

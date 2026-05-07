@@ -20,11 +20,13 @@ async function handleUpload(formData) {
     return NextResponse.json({ error: 'Fichier manquant' }, { status: 400 });
   }
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  // Trim to avoid whitespace issues in .env
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
   if (!cloudName || !apiKey || !apiSecret) {
+    console.error('Cloudinary Configuration Missing:', { cloudName: !!cloudName, apiKey: !!apiKey, apiSecret: !!apiSecret });
     return NextResponse.json({ error: 'Configuration Cloudinary manquante' }, { status: 500 });
   }
 
@@ -36,7 +38,8 @@ async function handleUpload(formData) {
   const signature = signParams(paramsToSign, apiSecret);
 
   const uploadForm = new FormData();
-  uploadForm.append('file', file);
+  // Ensure we pass a filename to Cloudinary (some environments need this for Blobs)
+  uploadForm.append('file', file, file.name || `upload_${Date.now()}.jpg`);
   uploadForm.append('api_key', apiKey);
   uploadForm.append('timestamp', String(timestamp));
   uploadForm.append('folder', folder);
@@ -49,6 +52,7 @@ async function handleUpload(formData) {
 
   const cloudinaryData = await cloudinaryRes.json();
   if (!cloudinaryRes.ok) {
+    console.error('Cloudinary Upload Error Details:', cloudinaryData);
     return NextResponse.json({ error: cloudinaryData?.error?.message || 'Echec upload Cloudinary' }, { status: 400 });
   }
 
@@ -63,9 +67,9 @@ async function handleDelete(publicId) {
     return NextResponse.json({ error: 'publicId manquant' }, { status: 400 });
   }
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
   if (!cloudName || !apiKey || !apiSecret) {
     return NextResponse.json({ error: 'Configuration Cloudinary manquante' }, { status: 500 });
@@ -94,6 +98,7 @@ async function handleDelete(publicId) {
 
   const cloudinaryData = await cloudinaryRes.json();
   if (!cloudinaryRes.ok) {
+    console.error('Cloudinary Delete Error Details:', cloudinaryData);
     return NextResponse.json({ error: cloudinaryData?.error?.message || 'Echec suppression Cloudinary' }, { status: 400 });
   }
 

@@ -5,6 +5,15 @@ import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
 import { useDistance } from '@/hooks/useDistance';
+import SearchAutocomplete from '@/components/SearchAutocomplete';
+import { normalizeStr } from '@/lib/searchUtils';
+import ProductCard from '@/components/ProductCard';
+import dynamic from 'next/dynamic';
+
+const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-[400px] bg-neutral-100 animate-pulse rounded-3xl flex items-center justify-center text-xs font-black uppercase tracking-widest text-neutral-400 text-center p-8">Initialisation de la carte satellite...</div>
+});
 const MapPinIcon = ({ size = 16, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
 );
@@ -43,7 +52,12 @@ async function safeRpc(fn) {
   try { await fn; } catch (_) {}
 }
 
-export default function ClientDiscovery({ initialSearchQuery = '', initialProximity = false }) {
+export default function ClientDiscovery({ 
+  initialSearchQuery = '', 
+  initialProximity = false,
+  externalSearchQuery = null,
+  onExternalSearchChange = null
+}) {
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -51,11 +65,24 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
   const [error, setError] = useState(null);
 
   // Filters & Sorting
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [internalSearchQuery, setInternalSearchQuery] = useState(initialSearchQuery);
+  const searchQuery = externalSearchQuery !== null ? externalSearchQuery : internalSearchQuery;
+  const setSearchQuery = onExternalSearchChange || setInternalSearchQuery;
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
+
+  // Suggestions pour l'autocomplétion de la recherche principale
+  const mainSuggestions = useMemo(() => {
+    const items = [];
+    categories.forEach(c => items.push({ label: c.name || c, value: c.name || c, type: 'Catégorie', emoji: '🏷️' }));
+    stores.slice(0, 20).forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city || '' }));
+    products.slice(0, 40).forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️', sublabel: p.stores?.name || '' }));
+    // Dédoublonner par label
+    return [...new Map(items.map(i => [normalizeStr(i.label), i])).values()];
+  }, [products, stores, categories]);
   
   const { formatDistance, getDistanceKm, requestLocation, userLocation } = useDistance();
   
@@ -285,31 +312,40 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-wa-teal to-wa-green rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
           <div className="relative bg-white px-4 py-3 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-3">
-            <div className="flex-1 relative flex items-center">
-              <SearchIcon className={`absolute left-3 transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />
-              <input
-                type="text"
-                placeholder="Chercher le meilleur de Douala..."
-                className="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
+            <SearchAutocomplete
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSelect={(s) => setSearchQuery(s.value)}
+              suggestions={mainSuggestions}
+              placeholder="Chercher le meilleur de Douala..."
+              className="flex-1"
+              inputClassName="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
+              dropdownOffset="mt-3"
+              leftIcon={<SearchIcon className={`transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />}
+            >
               <div className="absolute right-3 flex items-center gap-2">
                 {isSearching && (
                   <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
                 )}
-                <VoiceSearchButton 
+                <VoiceSearchButton
                   onInterimResult={(text) => setSearchQuery(text)}
-                  onResult={(text) => setSearchQuery(text)} 
+                  onResult={(text) => setSearchQuery(text)}
                   className="p-1"
                 />
               </div>
-            </div>
+            </SearchAutocomplete>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-3 rounded-xl transition-all ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
+              className={`p-3 rounded-xl transition-all flex-shrink-0 ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
             >
               <SlidersHorizontalIcon size={20} />
+            </button>
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className={`p-3 rounded-xl transition-all flex-shrink-0 flex items-center gap-2 ${showMap ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+            >
+              <MapPinIcon size={20} />
+              <span className="hidden md:inline font-bold text-xs uppercase tracking-widest">Carte</span>
             </button>
           </div>
         </div>
@@ -329,7 +365,7 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
             </div>
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               {['all', ...categories.map(c => c.name || c)]
-                .filter(cat => cat === 'all' || cat.toLowerCase().includes(categorySearch.toLowerCase()))
+                .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
                 .map(cat => (
                 <button
                   key={cat}
@@ -351,6 +387,84 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
           </div>
         )}
       </section>
+
+      {/* ═══════════════════════════════════════════
+          MAP VIEW (GLOBAL DISCOVERY)
+      ════════════════════════════════════════════ */}
+      {showMap && (
+        <div className="animate-fade-in space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black text-neutral-900">Boutiques à proximité</h2>
+            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{stores.length} boutiques localisées</p>
+          </div>
+          <div className="h-[60vh] md:h-[70vh] w-full rounded-[40px] overflow-hidden border-8 border-white shadow-2xl relative bg-neutral-100 group">
+             <InteractiveMap 
+               mode="view"
+               initialPos={userLocation ? [userLocation.latitude, userLocation.longitude] : [4.0511, 9.7679]}
+               userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+               showSatellite={true}
+               stores={stores}
+             />
+             
+             {/* Floating Activate GPS Button */}
+             {!userLocation && (
+               <button 
+                 onClick={requestLocation}
+                 className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10] px-8 py-4 bg-wa-teal text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-wa-teal/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+               >
+                 <MapPinIcon size={16} /> Activer ma position
+               </button>
+             )}
+             
+             {userLocation && (
+               <button 
+                 onClick={requestLocation}
+                 className="absolute bottom-10 right-10 z-[10] p-4 bg-white text-wa-teal rounded-2xl shadow-xl hover:bg-wa-teal hover:text-white transition-all border-2 border-white"
+                 title="Recalculer ma position"
+               >
+                 <MapPinIcon size={20} />
+               </button>
+             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          MOBILE ONLY — Catégories scrollables (discret)
+      ════════════════════════════════════════════ */}
+      {!searchQuery && !showMap && categories.length > 0 && (
+        <div className="lg:hidden -mx-1 animate-fade-in">
+          {/* Petit champ de filtre discret */}
+          <div className="relative mb-2">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300" size={13} />
+            <input
+              type="text"
+              placeholder="Filtrer les catégories…"
+              value={categorySearch}
+              onChange={e => setCategorySearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 bg-white border border-neutral-100 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-300 shadow-sm"
+            />
+          </div>
+          {/* Pills scrollables */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {['all', ...categories.map(c => c.name || c)]
+              .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
+              .map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    activeCategory === cat
+                      ? 'bg-wa-teal text-white shadow-sm'
+                      : 'bg-white border border-neutral-200 text-neutral-500 hover:border-wa-teal hover:text-wa-teal'
+                  }`}
+                >
+                  {cat === 'all' ? 'Tout' : cat}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════
           2. GLOBAL SEARCH RESULTS (STORES + PRODUCTS)
@@ -393,7 +507,7 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
       {/* ═══════════════════════════════════════════
           3. REGULAR FEED (WHATSAPP STATUS + ALL PRODUCTS)
       ════════════════════════════════════════════ */}
-      {!searchQuery && (
+      {!searchQuery && !showMap && (
         <>
           {/* Status Style Stores */}
           {stores.length > 0 && (
@@ -437,7 +551,7 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
                 </div>
                 <div className="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
                   {['all', ...categories.map(c => c.name || c)]
-                    .filter(cat => cat === 'all' || cat.toLowerCase().includes(categorySearch.toLowerCase()))
+                    .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
                     .map(cat => (
                     <button
                       key={cat}
@@ -470,89 +584,3 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
   );
 }
 
-// Sub-component for Product Cards with Animations
-function ProductCard({ item, idx, trackProductView, formatDistance }) {
-  // Use DB rating if available, otherwise default fallback
-  const rating = item.rating || 4.5;
-  const reviewsCount = item.reviews_count || 0;
-  const discount = item.discount_percentage || 0;
-
-  return (
-    <Link
-      href={`/boutique/${item.stores?.slug || item.store_slug}`}
-      onClick={() => trackProductView(item.id)}
-      className="group relative flex flex-col bg-white rounded-3xl border border-neutral-100 overflow-hidden hover:shadow-2xl hover:shadow-wa-teal/10 transition-all duration-500 hover:-translate-y-1"
-      style={{ animationDelay: `${idx * 50}ms` }}
-    >
-      <div className="relative w-full aspect-square bg-neutral-50 overflow-hidden">
-        <img src={item.image_url || '/placeholder-product.png'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* Badges Overlay */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {item.is_promo && (
-            <div className="bg-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-lg">
-              PROMO {discount > 0 ? `-${discount}%` : ''}
-            </div>
-          )}
-          {item.is_boosted && (
-            <div className="bg-wa-teal text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1">
-              <SparklesIcon size={10} /> SPONSORISÉ
-            </div>
-          )}
-        </div>
-
-        {/* Floating Quick Action */}
-        <div className="absolute bottom-3 right-3 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-           <div className="w-10 h-10 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-xl hover:bg-wa-teal hover:text-white transition-colors">
-             <ChevronRightIcon size={20} />
-           </div>
-        </div>
-      </div>
-
-      <div className="p-5 flex flex-col flex-1 justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded-full overflow-hidden bg-neutral-100 border border-neutral-200 flex-shrink-0">
-              <img src={item.stores?.logo_url || '/placeholder-store.png'} className="w-full h-full object-cover" alt="" />
-            </div>
-            <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider truncate flex-1">
-              {item.stores?.name || item.store_name}
-            </div>
-            {formatDistance && item.stores?.latitude && (
-              <div className="text-[10px] font-black text-wa-teal bg-wa-teal/10 px-2 py-0.5 rounded-md flex items-center gap-1 whitespace-nowrap">
-                <MapPinIcon size={10} /> {formatDistance(item.stores.latitude, item.stores.longitude)}
-              </div>
-            )}
-          </div>
-          <h3 className="text-base font-black text-neutral-900 group-hover:text-wa-teal transition-colors line-clamp-2 leading-tight">
-            {item.name}
-          </h3>
-          
-          <div className="flex items-center gap-1 mt-2">
-            {[...Array(5)].map((_, i) => (
-              <StarIcon key={i} size={12} className={i < Math.floor(rating) ? 'text-amber-400 fill-amber-400' : 'text-neutral-200'} />
-            ))}
-            <span className="text-[10px] font-bold text-neutral-400 ml-1">({reviewsCount})</span>
-          </div>
-        </div>
-        
-        <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between">
-          <div className="flex flex-col">
-            {discount > 0 && (
-               <span className="text-xs text-neutral-400 font-medium line-through">
-                 {(Number(item.price) * (1 + discount/100)).toLocaleString('fr-FR')} F
-               </span>
-            )}
-            <span className="text-lg font-black text-neutral-900">{Number(item.price).toLocaleString('fr-FR')} F</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-500 text-[10px] font-bold">
-              <ZapIcon size={12} className="text-orange-500" /> Populaire
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}

@@ -7,6 +7,13 @@ import Link from 'next/link';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
 import { useDistance } from '@/hooks/useDistance';
 import StoreAIChat from '@/components/StoreAIChat';
+import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-neutral-100 animate-pulse flex items-center justify-center text-xs font-black uppercase tracking-widest text-neutral-400 text-center p-8">Chargement de la navigation satellite...</div>
+});
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -51,6 +58,9 @@ const MapPinIcon = ({ size = 16 }) => (
 const PhoneIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
 );
+const NavigationIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
+);
 const ZapIcon = ({ size = 10 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
 );
@@ -75,6 +85,7 @@ export default function Storefront({ params }) {
   const [isSearching, setIsSearching] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [showRoute, setShowRoute] = useState(false);
 
   // === API #3 : WEB SHARE API ===
   const handleShare = async (product = null) => {
@@ -373,12 +384,14 @@ export default function Storefront({ params }) {
 
       {/* 2. DYNAMIC HERO — High Impact */}
       <section className="relative h-[60vh] sm:h-[50vh] min-h-[400px] w-full overflow-hidden bg-neutral-900">
-        <img
-          src={store.banner_url || "https://images.unsplash.com/photo-1550966841-3ee3ad359051?auto=format&fit=crop&q=80"}
-          className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105"
-          alt="Hero"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-transparent to-black/30"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src={store.banner_url || "https://images.unsplash.com/photo-1550966841-3ee3ad359051?auto=format&fit=crop&q=80"}
+            className="w-full h-full object-cover opacity-60 animate-slow-zoom"
+            alt="Hero"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-neutral-900/10 to-black/30"></div>
 
         <div className="absolute bottom-0 inset-x-0 p-6 md:p-12">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-end gap-6 md:gap-10 animate-fade-in">
@@ -403,12 +416,23 @@ export default function Storefront({ params }) {
                 <div className="flex items-center gap-2">
                   <MapPinIcon size={16} />
                   {store.latitude && store.longitude && formatDistance ? (
-                    <span className="font-black text-wa-teal md:text-wa-teal-light">À {formatDistance(store.latitude, store.longitude)} - </span>
+                    <span className="font-black text-wa-teal md:text-emerald-400">À {formatDistance(store.latitude, store.longitude)} - </span>
                   ) : ''}
                   {store.city || 'Douala, Cameroun'}
                 </div>
                 <div className="flex items-center gap-2"><PhoneIcon size={16} /> {store.whatsapp_number}</div>
-                <div className="flex items-center gap-2"><TruckIcon size={16} /> Livraison Express</div>
+                {store.latitude && store.longitude && (
+                  <button 
+                    onClick={() => {
+                      requestLocation();
+                      setShowRoute(true);
+                    }}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-wa-teal text-white shadow-xl shadow-wa-teal/20 hover:bg-emerald-700 hover:-translate-y-0.5 active:scale-95 border border-white/20 rounded-full transition-all font-black text-[10px] uppercase tracking-widest group/btn"
+                  >
+                    <NavigationIcon size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" /> 
+                    S&apos;y rendre
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -450,7 +474,7 @@ export default function Storefront({ params }) {
                 <input
                   type="text"
                   placeholder="Chercher ici..."
-                  className="w-full pl-12 pr-12 py-4 bg-white rounded-2xl border border-neutral-100 text-sm font-medium focus:ring-2 focus:ring-wa-teal/20 outline-none transition-all shadow-sm group-hover:shadow-md"
+                  className="w-full pl-12 pr-12 py-4 bg-white rounded-2xl border border-neutral-100 text-sm font-bold focus:ring-4 focus:ring-wa-teal/10 outline-none transition-all shadow-sm group-hover:shadow-md placeholder-neutral-300"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                 />
@@ -523,6 +547,56 @@ export default function Storefront({ params }) {
       {/* AI Secretary Chat */}
       <StoreAIChat store={store} products={products} />
 
+      {/* Route Modal */}
+      {showRoute && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div
+            onClick={() => setShowRoute(false)}
+            className="absolute inset-0 bg-neutral-900/80 backdrop-blur-md"
+          />
+          <div className="relative w-full max-w-4xl h-[80vh] md:aspect-video bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+              <div>
+                <h3 className="text-xl font-black text-neutral-900 tracking-tight">Itinéraire vers {store.name}</h3>
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mt-1">Satellite & Temps Réel</p>
+              </div>
+              <button 
+                onClick={() => setShowRoute(false)}
+                className="p-3 bg-white text-neutral-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 relative bg-neutral-50">
+              {userLocation && store?.latitude && store?.longitude ? (
+                <InteractiveMap 
+                  mode="route"
+                  initialPos={[Number(store.latitude), Number(store.longitude)]}
+                  userPos={[userLocation.latitude, userLocation.longitude]}
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-8 text-center">
+                  <div className="w-20 h-20 bg-wa-teal/10 rounded-[2.5rem] flex items-center justify-center text-wa-teal animate-bounce">
+                    <NavigationIcon size={40} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-black text-xl text-neutral-900">GPS ou Données manquantes</p>
+                    <p className="text-sm font-medium text-neutral-400 max-w-xs">Activez votre position ou vérifiez que la boutique a renseigné ses coordonnées.</p>
+                  </div>
+                  <button 
+                    onClick={requestLocation}
+                    className="px-10 py-4 bg-wa-teal text-white rounded-2xl font-black shadow-2xl shadow-wa-teal/20 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs"
+                  >
+                    Activer ma position
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer className="py-20 bg-neutral-900 text-white px-4 text-center mt-20">
         <div className="max-w-4xl mx-auto space-y-8 opacity-80">
           <div className="flex items-center justify-center gap-2">
@@ -546,42 +620,42 @@ export default function Storefront({ params }) {
 function ProductCard({ p, idx, addToCart, setSelectedProduct, themeColor }) {
   return (
     <div
-      className="group flex flex-col bg-white rounded-[2.5rem] overflow-hidden border border-neutral-100 hover:shadow-2xl hover:shadow-wa-teal/5 transition-all duration-500 animate-fade-in"
+      className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-neutral-100 hover:shadow-2xl hover:shadow-neutral-200/50 transition-all duration-500 animate-fade-in"
       style={{ animationDelay: `${idx * 50}ms` }}
     >
       <div className="relative aspect-[4/5] overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(p)}>
         <img src={p.image_url || '/placeholder-product.png'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
         {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           {p.is_promo && (
-            <span className="px-3 py-1 bg-orange-500 text-white text-[10px] font-black rounded-lg shadow-lg">PROMO</span>
+            <span className="px-3 py-1 bg-orange-500 text-white text-[10px] font-black rounded-lg shadow-xl shadow-orange-500/20">PROMO</span>
           )}
           {p.is_boosted && (
-            <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black rounded-lg shadow-lg flex items-center gap-1"><ZapIcon size={10} /> À LA UNE</span>
+            <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black rounded-lg shadow-xl shadow-wa-teal/20 flex items-center gap-1"><ZapIcon size={10} /> À LA UNE</span>
           )}
         </div>
 
         <button
           onClick={(e) => { e.stopPropagation(); addToCart(p); }}
-          className="absolute bottom-4 right-4 w-12 h-12 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-xl translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-wa-teal hover:text-white"
+          className="absolute bottom-5 right-5 w-14 h-14 bg-white text-neutral-900 rounded-full flex items-center justify-center shadow-2xl translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 hover:bg-wa-teal hover:text-white active:scale-90"
         >
-          <ShoppingCartIcon size={22} />
+          <ShoppingCartIcon size={24} />
         </button>
       </div>
 
       <div className="p-7 space-y-4 flex-1 flex flex-col">
-        <div className="space-y-1 cursor-pointer" onClick={() => setSelectedProduct(p)}>
-          <h3 className="font-black text-lg tracking-tight text-neutral-900 group-hover:text-wa-teal transition-colors line-clamp-1">{p.name}</h3>
-          <p className="text-xs text-neutral-400 font-bold uppercase tracking-widest">{p.categories?.name || 'Collection'}</p>
+        <div className="space-y-1.5 cursor-pointer" onClick={() => setSelectedProduct(p)}>
+          <h3 className="font-black text-lg tracking-tight text-neutral-900 group-hover:text-wa-teal transition-colors line-clamp-1 leading-tight">{p.name}</h3>
+          <p className="text-[10px] text-neutral-400 font-black uppercase tracking-[0.2em]">{p.categories?.name || 'Exclusive Selection'}</p>
         </div>
-        <div className="pt-4 mt-auto border-t border-neutral-50 flex items-center justify-between">
+        <div className="pt-5 mt-auto border-t border-neutral-50 flex items-center justify-between">
           <div className="flex flex-col">
-            {p.old_price && <span className="text-[10px] text-neutral-400 font-bold line-through">{p.old_price.toLocaleString()} F</span>}
+            {p.old_price && <span className="text-[10px] text-neutral-400 font-black line-through mb-0.5">{p.old_price.toLocaleString()} F</span>}
             <span className="text-xl font-black tracking-tighter" style={{ color: themeColor }}>{Number(p.price).toLocaleString()} F</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 bg-neutral-50 px-3 py-1.5 rounded-xl">
             <StarIcon size={12} className="text-amber-400 fill-amber-400" />
             <span className="text-[10px] font-black text-neutral-400">4.9</span>
           </div>

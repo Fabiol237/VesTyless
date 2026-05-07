@@ -11,6 +11,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
+import dynamic from 'next/dynamic';
+
+const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-[300px] bg-gray-100 animate-pulse rounded-2xl flex items-center justify-center text-gray-400 font-bold uppercase tracking-widest text-xs">Chargement de la carte...</div>
+});
 
 export default function StoreSettingsPage() {
   const { session } = useAuth();
@@ -264,23 +270,49 @@ export default function StoreSettingsPage() {
               </div>
               <p className="text-sm text-gray-500 font-medium mb-4">Permet à vos clients de voir à quelle distance ils se trouvent de votre boutique.</p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  type="button"
-                  onClick={requestLocation}
-                  disabled={isLocating}
-                  className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50"
-                >
-                  {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
-                  Capturer ma position actuelle
-                </button>
-                <div className="flex-1 grid grid-cols-2 gap-4">
-                  <input type="text" readOnly placeholder="Latitude" value={formData.latitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-500 outline-none" />
-                  <input type="text" readOnly placeholder="Longitude" value={formData.longitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-3.5 text-sm font-bold text-gray-500 outline-none" />
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    type="button"
+                    onClick={requestLocation}
+                    disabled={isLocating}
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50"
+                  >
+                    {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+                    Capturer ma position GPS
+                  </button>
+                  <div className="flex-1 grid grid-cols-2 gap-4">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">LAT</span>
+                      <input type="text" readOnly placeholder="0.000" value={formData.latitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-gray-700 outline-none" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">LON</span>
+                      <input type="text" readOnly placeholder="0.000" value={formData.longitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-gray-700 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-[500px] w-full rounded-[40px] overflow-hidden border-8 border-white shadow-2xl relative group bg-gray-50">
+                  <InteractiveMap 
+                    mode="select"
+                    initialPos={formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude) 
+                      ? [Number(formData.latitude), Number(formData.longitude)] 
+                      : null
+                    }
+                    onPositionChange={(pos) => {
+                      setFormData(prev => ({ ...prev, latitude: pos[0], longitude: pos[1] }));
+                      updateStore({ latitude: pos[0], longitude: pos[1] });
+                    }}
+                  />
+                  <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-600 shadow-sm border border-blue-100">
+                    Ajustez votre position réelle
+                  </div>
                 </div>
               </div>
+
               {gpsError && <p className="mt-3 text-xs font-bold text-red-500">{gpsError}</p>}
-              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> Coordonnées enregistrées</p>}
+              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> Position synchronisée avec succès</p>}
             </div>
           </section>
 
