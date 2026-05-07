@@ -43,3 +43,5 @@ tmp_http_*.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

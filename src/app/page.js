@@ -71,8 +71,11 @@ export default function Home() {
 
   function handleSearch(e) {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    const query = searchQuery.trim();
+    if (query) {
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    } else {
+      router.push('/search');
     }
   }
 

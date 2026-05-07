@@ -14,7 +14,7 @@ function SearchResults() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="mb-8 pt-8">
         <h1 className="text-3xl font-bold text-wa-teal-dark mb-4">
-          Résultats pour &quot;{query}&quot;
+          {query ? `Résultats pour "${query}"` : "Explorer tout l'annuaire"}
         </h1>
       </div>
       <ClientDiscovery initialSearchQuery={query} initialProximity={proximity} />
