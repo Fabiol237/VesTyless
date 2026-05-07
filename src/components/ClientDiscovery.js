@@ -55,6 +55,7 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
   
   const { formatDistance, getDistanceKm, requestLocation, userLocation } = useDistance();
   
@@ -315,11 +316,24 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
 
         {showFilters && (
           <div className="mt-2 bg-white p-4 rounded-2xl shadow-2xl border border-neutral-100 animate-fade-in space-y-4">
+            {/* Barre de recherche catégories (mobile) */}
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+              <input
+                type="text"
+                placeholder="Chercher une catégorie..."
+                value={categorySearch}
+                onChange={e => setCategorySearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-400"
+              />
+            </div>
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              {['all', ...categories.map(c => c.name || c)].map(cat => (
+              {['all', ...categories.map(c => c.name || c)]
+                .filter(cat => cat === 'all' || cat.toLowerCase().includes(categorySearch.toLowerCase()))
+                .map(cat => (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
                   className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-black transition-all ${activeCategory === cat ? 'bg-wa-teal text-white shadow-md' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
                 >
                   {cat === 'all' ? 'TOUT' : cat.toUpperCase()}
@@ -409,12 +423,25 @@ export default function ClientDiscovery({ initialSearchQuery = '', initialProxim
             {/* Desktop Sidebar */}
             <div className="hidden lg:block w-64 flex-shrink-0">
               <div className="sticky top-[160px] bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm">
-                <h3 className="font-black text-lg mb-6">Catégories</h3>
-                <div className="space-y-2">
-                  {['all', ...categories.map(c => c.name || c)].map(cat => (
+                <h3 className="font-black text-lg mb-4">Catégories</h3>
+                {/* Barre de recherche catégories (desktop) */}
+                <div className="relative mb-4">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={15} />
+                  <input
+                    type="text"
+                    placeholder="Filtrer..."
+                    value={categorySearch}
+                    onChange={e => setCategorySearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2.5 bg-neutral-50 border border-neutral-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-400"
+                  />
+                </div>
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
+                  {['all', ...categories.map(c => c.name || c)]
+                    .filter(cat => cat === 'all' || cat.toLowerCase().includes(categorySearch.toLowerCase()))
+                    .map(cat => (
                     <button
                       key={cat}
-                      onClick={() => setActiveCategory(cat)}
+                      onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
                       className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === cat ? 'bg-wa-teal/10 text-wa-teal' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'}`}
                     >
                       {cat === 'all' ? 'Toutes les catégories' : cat}
