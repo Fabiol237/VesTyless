@@ -45,8 +45,17 @@ BEGIN
   END LOOP;
 END $$;
 
--- 4. Nettoyage et optimisation
+-- 4. Ajout de la colonne 'views' à la table 'products'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='views') THEN
+    ALTER TABLE products ADD COLUMN views INTEGER DEFAULT 0;
+  END IF;
+END $$;
+
+-- 5. Nettoyage et optimisation
 ANALYZE stores;
+ANALYZE products;
 `;
 
 async function run() {

@@ -8,6 +8,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyless.vercel.app'),
   title: {
     default: 'VesTyle | Le Premier Marketplace de Proximité au Cameroun',
     template: '%s | VesTyle',
