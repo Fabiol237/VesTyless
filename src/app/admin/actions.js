@@ -157,13 +157,13 @@ export async function getFinanceStatsAction() {
 
   const [
     { data: currentOrders },
-    { data: previousOrders },
-    config
+    { data: previousOrders }
   ] = await Promise.all([
     supabaseAdmin.from('orders').select('total_amount, status, created_at').gte('created_at', thirtyDaysAgo.toISOString()),
-    supabaseAdmin.from('orders').select('total_amount').gte('created_at', sixtyDaysAgo.toISOString()).lt('created_at', thirtyDaysAgo.toISOString()),
-    getGlobalConfigAction()
+    supabaseAdmin.from('orders').select('total_amount').gte('created_at', sixtyDaysAgo.toISOString()).lt('created_at', thirtyDaysAgo.toISOString())
   ]);
+
+  const config = { commission_rate: 15 };
 
   const { data: allOrders } = await supabaseAdmin.from('orders').select('total_amount, status');
 
@@ -243,21 +243,3 @@ export async function triggerMorningPulseAction() {
   return { success: true, log: results };
 }
 
-// FINANCES
-export async function getFinanceStatsAction() {
-  const { data: orders, error } = await supabaseAdmin.from('orders').select('total_amount, status');
-  
-  const totalRevenue = orders?.reduce((acc, o) => acc + (o.total_amount || 0), 0) || 0;
-  const platformRevenue = totalRevenue * 0.15; // 15% commission
-  const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0;
-  const completedOrders = orders?.filter(o => o.status === 'completed' || o.status === 'delivered').length || 0;
-
-  return {
-    totalRevenue,
-    platformRevenue,
-    revenueTrend: "12.5",
-    commissionRate: 15,
-    pendingOrders,
-    completedOrders
-  };
-}

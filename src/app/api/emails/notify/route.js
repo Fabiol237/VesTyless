@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import webpush from 'web-push';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend initialization deferred to avoid build errors
 
 const setupWebPush = () => {
   try {
@@ -37,6 +37,7 @@ export async function POST(request) {
     // 1. ENVOI DE L'EMAIL (RESEND)
     let emailResult = null;
     if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
       const htmlContent = `
         <!DOCTYPE html>
         <html>
