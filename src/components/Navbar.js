@@ -30,7 +30,10 @@ const ArrowRightIcon = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
 );
 const UserIcon = ({ size = 22 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+);
+const ZapIcon = ({ size = 16, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
 );
 
 export default function Navbar() {
@@ -40,7 +43,21 @@ export default function Navbar() {
   const { addSearch } = useUserPreferences();
   const { session, signOut } = useAuth();
   const { cart } = useCart();
+  const [dataSaver, setDataSaver] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('vestyle_data_saver') === 'true';
+    setDataSaver(saved);
+  }, []);
+
+  const toggleDataSaver = () => {
+    const newVal = !dataSaver;
+    setDataSaver(newVal);
+    localStorage.setItem('vestyle_data_saver', String(newVal));
+    window.dispatchEvent(new Event('storage')); // Notifier les autres composants
+    if (newVal) alert("Mode 'Vestyle Lite' activé : Les images ne seront plus chargées automatiquement pour économiser votre DATA.");
+  };
 
   const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
 
@@ -65,8 +82,8 @@ export default function Navbar() {
 
         {/* Left: LOGO */}
         <Link href="/" className="flex items-center gap-2 group z-50">
-          <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-wa-teal font-black text-xl leading-none">V</span>
+          <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm">
+            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
           </div>
           <span className="font-bold text-xl text-white hidden sm:block tracking-wide">
             Vestyle
@@ -108,7 +125,14 @@ export default function Navbar() {
             )}
           </Link>
 
-          <Link 
+          <button
+            onClick={toggleDataSaver}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse' : 'bg-white/10 text-white/80 hover:bg-white/20'}`}
+          >
+            <ZapIcon size={12} /> {dataSaver ? 'Lite ON' : 'Lite Mode'}
+          </button>
+
+          <Link
             href="/profile"
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >

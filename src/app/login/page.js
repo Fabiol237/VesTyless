@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +27,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -119,6 +124,12 @@ export default function Login() {
     }
   };
 
+  if (!mounted) return (
+    <div className="min-h-screen bg-wa-bg flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-wa-bg flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors">
@@ -127,8 +138,8 @@ export default function Login() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-14 h-14 bg-wa-teal rounded-full flex items-center justify-center shadow-md">
-            <StoreIcon className="text-white" size={28} />
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md">
+            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-wa-teal-dark">

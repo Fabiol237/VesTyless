@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Search, MapPin, MessageCircle, ShoppingBag, ArrowRight, Hash, Loader2 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
+import { useOfflineData } from '@/hooks/useOfflineData';
 import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 
 export default function Home() {
@@ -31,33 +32,34 @@ export default function Home() {
   const backgroundY = useTransform(scrollY, [0, 500], [0, 150]);
   const blurEffect = useTransform(scrollY, [0, 300], ["blur(0px)", "blur(6px)"]);
 
+  // Stratégie Offline-First pour les suggestions
+  const { data: offlineSuggestions } = useOfflineData('home_suggestions', async () => {
+    const [cats, strs, prods] = await Promise.all([
+      supabase.from('categories').select('name').limit(10),
+      supabase.from('stores').select('name, city').order('is_boosted', { ascending: false }).limit(10),
+      supabase.from('products').select('name').eq('is_active', true).order('daily_views', { ascending: false }).limit(15)
+    ]);
+
+    const items = [];
+    if (cats.data) cats.data.forEach(c => items.push({ label: c.name, value: c.name, type: 'Catégorie', emoji: '🏷️' }));
+    if (strs.data) strs.data.forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city }));
+    if (prods.data) prods.data.forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️' }));
+    
+    return { data: items };
+  });
+
+  useEffect(() => {
+    if (offlineSuggestions) {
+      setSuggestions(offlineSuggestions);
+      // Extraire les tags tendances
+      const tags = [...new Set(offlineSuggestions.filter(i => i.type === 'Catégorie').map(i => i.label)), 'Nouveautés', 'Promos'].slice(0, 5);
+      setTrendingTags(tags);
+    }
+  }, [offlineSuggestions]);
+
   useEffect(() => {
     setMounted(true);
-    fetchSuggestions();
   }, []);
-
-  async function fetchSuggestions() {
-    try {
-      const [cats, strs, prods] = await Promise.all([
-        supabase.from('categories').select('name').limit(10),
-        supabase.from('stores').select('name, city').order('is_boosted', { ascending: false }).limit(10),
-        supabase.from('products').select('name').eq('is_active', true).order('daily_views', { ascending: false }).limit(15)
-      ]);
-
-      const items = [];
-      if (cats.data) cats.data.forEach(c => items.push({ label: c.name, value: c.name, type: 'Catégorie', emoji: '🏷️' }));
-      if (strs.data) strs.data.forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city }));
-      if (prods.data) prods.data.forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️' }));
-      
-      setSuggestions(items);
-      
-      // Randomly pick some trending tags
-      const tags = [...new Set([...(cats.data || []).map(c => c.name), 'Nouveautés', 'Promos'])].slice(0, 5);
-      setTrendingTags(tags);
-    } catch (err) {
-      console.error('Error fetching suggestions:', err);
-    }
-  }
 
   async function handleCodeSearch(e) {
     e.preventDefault();
@@ -123,7 +125,7 @@ export default function Home() {
   // RECHERCHE DYNAMIQUE POUR L'AUTOCOMPLÉTION
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
-      fetchSuggestions(); // Retour aux suggestions par défaut
+      setSuggestions(offlineSuggestions || []);
       return;
     }
 
@@ -175,17 +177,11 @@ export default function Home() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden font-sans text-slate-900 bg-[#FDFCFB]">
       
-      {/* --- IMAGE DE FOND ANIMÉE (PARALLAX) --- */}
-      <motion.div 
-        style={{ 
-          y: backgroundY,
-          filter: blurEffect,
-          backgroundImage: "url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070')" 
-        }}
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-emerald-950/40 to-[#FDFCFB]" />
-      </motion.div>
+      {/* --- FOND DYNAMIQUE ULTRA-LÉGER (0 Ko de Data) --- */}
+      <div className="fixed inset-0 z-0 bg-[#FDFCFB]">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-slate-900 to-[#128C7E] opacity-95" />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+      </div>
 
       {/* --- CONTENU (Z-INDEX SUPÉRIEUR) --- */}
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -199,6 +195,9 @@ export default function Home() {
             transition={{ duration: 1.5, ease: "easeOut" }}
             className="bg-white/10 backdrop-blur-md p-8 md:p-14 rounded-[40px] md:rounded-[60px] border border-white/20 shadow-2xl mb-12 mt-10"
           >
+            <div className="w-20 h-20 md:w-32 md:h-32 mx-auto mb-6 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20">
+              <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
+            </div>
             <h1 className="text-5xl md:text-8xl font-serif text-white mb-4 drop-shadow-lg">
               Ves<span className="text-emerald-400 italic">Tyle</span>
             </h1>

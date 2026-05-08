@@ -1,3 +1,5 @@
+import imageCompression from 'browser-image-compression';
+
 export function extractCloudinaryPublicId(imageUrl) {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
 
@@ -9,7 +11,7 @@ export function extractCloudinaryPublicId(imageUrl) {
   const parts = afterUpload.split('/').filter(Boolean);
   if (parts.length === 0) return null;
 
-  // Ignore transformation/version segments like "c_fill,w_800" and "v1712345678".
+  // Ignore transformation/version segments
   const cleanedParts = parts.filter((segment) => !segment.startsWith('v') || Number.isNaN(Number(segment.slice(1))));
   if (cleanedParts.length === 0) return null;
 
@@ -21,9 +23,31 @@ export function extractCloudinaryPublicId(imageUrl) {
 }
 
 export async function uploadImage(file, options = {}) {
+  // CONFIGURATION DE LA COMPRESSION ULTRA-AGRESSIVE
+  const compressionOptions = {
+    maxSizeMB: 0.5,          // Limite très basse à 500 Ko
+    maxWidthOrHeight: 1024, // Taille optimisée pour le web/mobile
+    useWebWorker: true,
+    initialQuality: 0.6     // Compression plus forte dès le départ
+  };
+
+  let fileToUpload = file;
+
+  // Appliquer la compression uniquement si c'est une image lourde ou nécessaire
+  try {
+    if (file.type.startsWith('image/')) {
+      console.log(`[Vestyle Compression] Taille originale: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      fileToUpload = await imageCompression(file, compressionOptions);
+      console.log(`[Vestyle Compression] Nouvelle taille: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
+    }
+  } catch (error) {
+    console.error("[Vestyle Compression] Erreur:", error);
+    // On continue avec le fichier original si la compression échoue
+  }
+
   const formData = new FormData();
   formData.append('action', 'upload');
-  formData.append('file', file);
+  formData.append('file', fileToUpload, file.name); // Conserver le nom original
   if (options.folder) {
     formData.append('folder', options.folder);
   }

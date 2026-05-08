@@ -8,6 +8,7 @@ import { useDistance } from '@/hooks/useDistance';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { normalizeStr } from '@/lib/searchUtils';
 import ProductCard from '@/components/ProductCard';
+import { useOfflineData } from '@/hooks/useOfflineData';
 import dynamic from 'next/dynamic';
 
 const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
@@ -91,76 +92,38 @@ export default function ClientDiscovery({
     if (!userLocation) requestLocation();
   }, [userLocation, requestLocation]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Produits réels avec boutique + catégorie, triés par boost puis vues puis date
-      const { data: prodData, error: prodErr } = await supabase
-        .from('products')
-        .select(`
-          id, name, price, image_url, created_at, category_id, is_active,
-          is_boosted, is_promo, daily_views,
-          stores ( id, name, slug, logo_url, latitude, longitude ),
-          categories ( name )
-        `)
-        .eq('is_active', true)
-        .order('is_boosted', { ascending: false })
-        .order('is_promo', { ascending: false })
-        .order('daily_views', { ascending: false })
-        .order('created_at', { ascending: false });
+  // --- STRATÉGIE OFFLINE-FIRST POUR LE FLUX PRINCIPAL ---
+  const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed', async () => {
+    // On regroupe les appels pour un cache cohérent
+    const [prodRes, storeIdsRes, catRes] = await Promise.all([
+      supabase.from('products').select('id, name, price, image_url, created_at, category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), categories(name)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.from('products').select('store_id').eq('is_active', true),
+      supabase.from('categories').select('*')
+    ]);
 
-      if (prodErr) throw prodErr;
+    const activeStoreIds = [...new Set((storeIdsRes.data || []).map(p => p.store_id))];
+    let stores = [];
+    if (activeStoreIds.length > 0) {
+      const { data: sd } = await supabase.from('stores').select('id, name, slug, logo_url, city, is_boosted, daily_views, latitude, longitude').in('id', activeStoreIds).order('is_boosted', { ascending: false }).order('daily_views', { ascending: false });
+      stores = sd || [];
+    }
 
-      // Récupérer uniquement les boutiques qui ont au moins un produit actif
-      // On passe par les produits pour extraire les store_id uniques avec produits
-      const { data: storeIdsData } = await supabase
-        .from('products')
-        .select('store_id')
-        .eq('is_active', true);
+    const normalizedProds = (prodRes.data || []).map(p => ({
+      ...p,
+      category: p.categories?.name || 'Autre',
+    }));
 
-      const activeStoreIds = [...new Set((storeIdsData || []).map(p => p.store_id))];
+    return { data: { products: normalizedProds, stores, categories: catRes.data || [] } };
+  });
 
-      let storeData = [];
-      if (activeStoreIds.length > 0) {
-        const { data: sd, error: storeErr } = await supabase
-          .from('stores')
-          .select('id, name, slug, logo_url, city, is_boosted, daily_views, latitude, longitude')
-          .in('id', activeStoreIds)
-          .order('is_boosted', { ascending: false })
-          .order('daily_views', { ascending: false });
-
-        if (storeErr) throw storeErr;
-        storeData = sd || [];
-      }
-
-      // Catégories réelles
-      const { data: catData } = await supabase.from('categories').select('*');
-
-      const normalized = (prodData || []).map(p => ({
-        ...p,
-        category: p.categories?.name || 'Autre',
-      }));
-
-      setProducts(normalized);
-      setStores(storeData || []);
-
-      if (catData && catData.length > 0) {
-        setCategories(catData);
-      } else {
-        // Dériver les catégories depuis les produits si la table est vide
-        const uniqueCats = [...new Set(normalized.map(p => p.category).filter(Boolean))];
-        setCategories(uniqueCats.map(name => ({ id: name, name })));
-      }
-    } catch (err) {
-      console.error('Erreur chargement données:', err);
-      setError('Impossible de charger les données. Vérifiez votre connexion.');
-    } finally {
+  useEffect(() => {
+    if (offlineDiscovery) {
+      setProducts(offlineDiscovery.products);
+      setStores(offlineDiscovery.stores);
+      setCategories(offlineDiscovery.categories);
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  }, [offlineDiscovery]);
 
   // Incrémenter vues produit (fire-and-forget)
   const trackProductView = useCallback((productId) => {

@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -10,17 +10,16 @@ import {
   Settings, 
   X, 
   ExternalLink, 
-  ChevronRight,
-  MapPin
+  ChevronRight
 } from 'lucide-react';
 
-export default function DashboardSidebar({ isOpen, onClose }) {
+export default function VestyleSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const { store } = useAuth();
-  const [hasMounted, setHasMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  React.useEffect(() => {
-    setHasMounted(true);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   const links = [
@@ -34,8 +33,8 @@ export default function DashboardSidebar({ isOpen, onClose }) {
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
       <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-wa-teal rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-wa-teal/20 group-hover:scale-105 transition-transform">
-            V
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-wa-teal/20 group-hover:scale-105 transition-transform">
+            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle Logo" />
           </div>
           <span className="text-2xl font-black tracking-tight text-gray-900 uppercase">VesTyle</span>
         </Link>
@@ -52,7 +51,7 @@ export default function DashboardSidebar({ isOpen, onClose }) {
             <Link
               key={link.name}
               href={link.href}
-              onClick={() => onClose()}
+              onClick={() => onClose && onClose()}
               className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
                 isActive 
                   ? 'bg-wa-teal text-white shadow-xl shadow-wa-teal/20' 
@@ -88,31 +87,21 @@ export default function DashboardSidebar({ isOpen, onClose }) {
     </div>
   );
 
+  // Note: Root <div> is matches the 'loading' component in dashboard/layout.js
   return (
-    <aside className="relative">
-      {/* Desktop Sidebar Shell */}
+    <div className="relative">
       <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0 border-r border-gray-200 bg-white">
-        {hasMounted ? sidebarContent : <div className="h-full w-full bg-white animate-pulse" />}
+        {mounted ? sidebarContent : null}
       </div>
 
-      {/* Mobile Sidebar */}
-      {hasMounted && isOpen && (
-        <div className="lg:hidden">
-          <div
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-          />
-          <div
-            className="fixed inset-y-0 left-0 w-[280px] z-50 shadow-2xl bg-white"
-          >
+      {mounted && isOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white shadow-2xl">
             {sidebarContent}
           </div>
         </div>
       )}
-    </aside>
+    </div>
   );
 }
-
-
-
-

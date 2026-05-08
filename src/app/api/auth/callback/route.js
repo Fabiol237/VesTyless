@@ -26,11 +26,18 @@ export async function GET(request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    console.log('[OAuth Callback] Code reçu, échange en cours...');
+    console.log('[OAuth Callback] URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Redirection vers le dashboard vendeur après connexion Google réussie
+      console.log('[OAuth Callback] Succès ! Redirection vers /dashboard');
       return NextResponse.redirect(`${origin}/dashboard`);
+    } else {
+      console.error('[OAuth Callback] Erreur échange:', error.message);
     }
+  } else {
+    console.warn('[OAuth Callback] Aucun code trouvé dans l\'URL');
   }
 
   // En cas d'erreur, retourner à la page de login

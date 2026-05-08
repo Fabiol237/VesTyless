@@ -29,6 +29,7 @@ export default function StoreAIChat({ store, products }) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
+  const chatSessionStartedRef = useRef(false);
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom
@@ -43,6 +44,30 @@ export default function StoreAIChat({ store, products }) {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
+
+    // Trigger Message Notification on first message (Notification #4)
+    if (!chatSessionStartedRef.current) {
+      chatSessionStartedRef.current = true;
+      try {
+        // Fetch vendor email
+        const { data: profileData } = await fetch(`/api/dashboard/stats`).then(res => res.json()).catch(() => ({})); 
+        // Note: Ideally we fetch owner_email from store object passed as prop
+        // But for simplicity let's assume we have it or use a simplified trigger
+        
+        fetch('/api/emails/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: store.owner_email || 'admin@vestyle.com', // Fallback
+            subject: `Nouveau message sur ${store.name}`,
+            type: 'MESSAGE',
+            data: {
+              message: `Un client est en train de discuter avec votre assistant IA sur votre boutique.`,
+            }
+          })
+        }).catch(e => console.error('Message notify failed:', e));
+      } catch (e) {}
+    }
 
     const userMsg = { role: 'user', content: input.trim() };
     setMessages(prev => [...prev, userMsg]);

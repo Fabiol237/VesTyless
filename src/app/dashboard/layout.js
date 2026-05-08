@@ -1,10 +1,21 @@
 'use client';
+// Force Refresh Version: 2026-05-08-T18-07-00
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import DashboardHeader from '@/components/DashboardHeader';
-import DashboardSidebar from '@/components/DashboardSidebar';
 import { Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Force client-side only render with a NEW path to break any cache
+const VestyleSidebar = dynamic(() => import('@/components/Navigation/VestyleSidebar'), { 
+  ssr: false,
+  loading: () => (
+    <div className="relative">
+      <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0 border-r border-gray-100 bg-white animate-pulse" />
+    </div>
+  )
+});
 
 export default function DashboardLayout({ children }) {
   const { session, loading } = useAuth();
@@ -17,14 +28,13 @@ export default function DashboardLayout({ children }) {
     }
   }, [session, loading, router]);
 
-  // Don't render the dashboard if there's no session and we're done loading (redirect is in progress)
   if (!loading && session === null) {
     return null;
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <VestyleSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />

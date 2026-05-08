@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +29,11 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -65,6 +70,12 @@ export default function Signup() {
     });
     if (error) setError(error.message);
   };
+
+  if (!mounted) return (
+    <div className="min-h-screen bg-wa-bg flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   if (success) {
     return (

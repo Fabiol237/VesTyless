@@ -79,6 +79,13 @@ export default function ProductDetailPage() {
     }, 1000);
   };
 
+  const shareOnWhatsApp = () => {
+    if (!product) return;
+    const url = window.location.href;
+    const text = `🔥 *${product.name}*\n💰 Prix: *${Number(product.price).toLocaleString()} FCFA*\n\nDécouvrez cet article sur *Vestyle Pro* et commandez en un clic ici :\n👉 ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
   if (loading) {
     return (
       <main className="bg-wa-bg min-h-screen flex flex-col font-sans">
@@ -148,8 +155,11 @@ export default function ProductDetailPage() {
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-wa-teal px-4 py-1.5 bg-wa-teal/10 rounded-full">{product.category || 'EXCLUSIVITÉ'}</span>
                    {product.is_promo && <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 px-4 py-1.5 bg-orange-50 rounded-full">Offre Spéciale</span>}
                  </div>
-                 <button className="text-neutral-400 hover:text-wa-teal-dark flex items-center gap-2 text-xs font-black transition-colors uppercase tracking-widest">
-                   <Share2 size={16} /> Partager
+                 <button 
+                   onClick={shareOnWhatsApp}
+                   className="text-neutral-400 hover:text-wa-teal-dark flex items-center gap-2 text-xs font-black transition-colors uppercase tracking-widest"
+                 >
+                   <Share2 size={16} /> Partager sur WhatsApp
                  </button>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.05] mb-6">

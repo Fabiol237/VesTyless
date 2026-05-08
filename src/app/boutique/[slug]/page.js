@@ -440,7 +440,7 @@ export default function Storefront({ params }) {
               <div className="flex items-center gap-3 mb-2">
                 <span className="px-3 py-1 bg-wa-teal text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-wa-teal/20">Boutique Vérifiée</span>
                 <div className="flex items-center gap-1 text-white/80 text-xs font-bold">
-                  <StarIcon size={14} className="text-amber-400 fill-amber-400" /> 4.9 (128 avis)
+                  <StarIcon size={14} className="text-amber-400 fill-amber-400" /> {store.average_rating ? `${Number(store.average_rating).toFixed(1)} (${store.reviews_count || 0} avis)` : 'Nouveau vendeur'}
                 </div>
               </div>
               <h1 className="text-4xl md:text-6xl font-black text-neutral-900 md:text-white tracking-tight drop-shadow-sm mb-4 leading-none">{store.name}</h1>
@@ -633,7 +633,9 @@ export default function Storefront({ params }) {
       <footer className="py-20 bg-neutral-900 text-white px-4 text-center mt-20">
         <div className="max-w-4xl mx-auto space-y-8 opacity-80">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center font-black text-lg">V</div>
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm">
+            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
+          </div>
             <span className="text-xl font-black tracking-[0.2em] uppercase">VesTyle</span>
           </div>
           <p className="text-sm font-medium text-white/50 max-w-md mx-auto">Propulsé par VesTyle — La solution SaaS leader pour les boutiques et restaurants premium au Cameroun.</p>

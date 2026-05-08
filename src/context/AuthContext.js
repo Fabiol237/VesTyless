@@ -46,6 +46,22 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
           if (session?.user) {
+            // Trigger Security Notification on Sign In
+            if (event === 'SIGNED_IN') {
+              fetch('/api/emails/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: session.user.email,
+                  subject: 'Alerte Connexion',
+                  type: 'SECURITY',
+                  data: {
+                    message: `Une nouvelle connexion a été détectée sur votre compte Vestyle Pro à ${new Date().toLocaleTimeString('fr-FR')}. Si ce n'était pas vous, sécurisez votre compte immédiatement.`
+                  }
+                })
+              }).catch(e => console.error('Security notify failed:', e));
+            }
+
             setUser(session.user);
             await withTimeout(() => fetchUserData(session.user.id));
           } else {
