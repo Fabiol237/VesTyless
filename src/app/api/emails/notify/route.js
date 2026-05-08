@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import webpush from 'web-push';
 
-// Resend initialization deferred to avoid build errors
+export const dynamic = 'force-dynamic';
+
 
 const setupWebPush = () => {
   try {
