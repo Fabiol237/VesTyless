@@ -1,7 +1,7 @@
 {
-  "name": "VesTyle",
+  "name": "VesTyle Marketplace",
   "short_name": "VesTyle",
-  "description": "Le marketplace premium du Cameroun",
+  "description": "Le marketplace de proximité premium au Cameroun. Découvrez et commandez dans les meilleures boutiques locales.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F8F9FA",
@@ -19,6 +19,18 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explorer les Boutiques",
+      "url": "/boutiques",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mon Panier",
+      "url": "/cart",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["shopping", "business"],

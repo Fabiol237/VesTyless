@@ -1,6 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // ── SVG Icons ──────────────────────────────────────────────
 const LogOutIcon = ({ size = 18 }) => (
@@ -25,6 +25,13 @@ const ChevronDownIcon = ({ size = 14, className = "" }) => (
 export default function DashboardHeader({ onMenuClick }) {
   const { store, session, loading, signOut } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Ne plus retourner null, rendre le header même côté serveur pour la structure
 
   const handleLogout = async () => {
     try {
@@ -48,7 +55,7 @@ export default function DashboardHeader({ onMenuClick }) {
           
           <div className="flex flex-col sm:block">
             <h2 className="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate max-w-[150px] sm:max-w-none">
-              {store?.name || 'Dashboard'}
+              {hasMounted ? (store?.name || 'Dashboard') : '...'}
             </h2>
             <p className="text-[10px] text-gray-500 font-medium leading-none sm:leading-normal">Espace vendeur Pro</p>
           </div>
@@ -60,30 +67,30 @@ export default function DashboardHeader({ onMenuClick }) {
             className="p-2.5 text-gray-400 hover:text-wa-teal-dark hover:bg-wa-chat rounded-xl transition-all relative"
           >
             <BellIcon size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            {hasMounted && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>}
           </Link>
 
           <div className="h-8 w-[1px] bg-gray-100 mx-1 hidden sm:block"></div>
 
           <div className="relative">
             <button 
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              onClick={() => hasMounted && setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 p-1 pr-3 hover:bg-gray-50 rounded-2xl transition-all border border-transparent hover:border-gray-100"
             >
               <div className="w-9 h-9 bg-gradient-to-br from-wa-teal to-wa-green rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md">
-                {session?.email?.charAt(0)?.toUpperCase() || <UserIcon size={18} />}
+                {hasMounted ? (session?.email?.charAt(0)?.toUpperCase() || <UserIcon size={18} />) : <UserIcon size={18} />}
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-xs font-bold text-gray-900 truncate max-w-[120px]">
-                  {session?.email}
+                  {hasMounted ? session?.email : '...'}
                 </p>
                 <p className="text-[10px] text-gray-500 font-medium leading-none">Administrateur</p>
               </div>
-              <ChevronDownIcon size={14} className={`text-gray-400 transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
+              <ChevronDownIcon size={14} className={`text-gray-400 transition-transform duration-300 ${hasMounted && showProfileMenu ? 'rotate-180' : ''}`} />
             </button>
 
             <div>
-              {showProfileMenu && (
+              {hasMounted && showProfileMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)}></div>
                   <div

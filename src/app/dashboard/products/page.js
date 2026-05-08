@@ -292,6 +292,10 @@ export default function ProductsPage() {
                             <div className={`w-1.5 h-1.5 rounded-full ${p.stock_quantity > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
                             <p className="text-[10px] font-bold text-gray-500">{p.stock_quantity} en stock</p>
                           </div>
+                          <div className="flex items-center gap-1 border-l border-gray-100 pl-3">
+                            <TrendingUp size={10} className="text-indigo-400" />
+                            <p className="text-[10px] font-bold text-indigo-500">{p.views || 0} vues</p>
+                          </div>
                         </div>
                       </div>
 

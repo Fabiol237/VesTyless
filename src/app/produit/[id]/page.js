@@ -317,7 +317,9 @@ export default function ProductDetailPage() {
                 <InteractiveMap 
                   mode="route"
                   initialPos={[Number(product.stores.latitude), Number(product.stores.longitude)]}
-                  userPos={[userLocation.latitude, userLocation.longitude]}
+                  userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+                  userAccuracy={userLocation?.accuracy}
+                  showSatellite={true}
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-8 text-center">

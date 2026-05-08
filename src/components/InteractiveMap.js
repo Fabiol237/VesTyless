@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
@@ -54,10 +54,10 @@ function RoutingMachine({ userPos, storePos }) {
 
     try {
       if (routingControlRef.current) {
-        try { 
+        try {
           routingControlRef.current.setWaypoints([]);
-          map.removeControl(routingControlRef.current); 
-        } catch (e) {}
+          map.removeControl(routingControlRef.current);
+        } catch (e) { }
       }
 
       routingControlRef.current = L.Routing.control({
@@ -95,7 +95,7 @@ function RoutingMachine({ userPos, storePos }) {
             if (map._container && map.removeControl) {
               map.removeControl(routingControlRef.current);
             }
-          } catch (e) {}
+          } catch (e) { }
         }
         routingControlRef.current = null;
       };
@@ -137,8 +137,8 @@ function LocationMarker({ position, setPosition, isSelectable }) {
   if (!position || isNaN(position[0]) || isNaN(position[1])) return null;
 
   return (
-    <Marker 
-      position={position} 
+    <Marker
+      position={position}
       draggable={isSelectable}
       eventHandlers={{
         dragend: (e) => {
@@ -154,15 +154,16 @@ function LocationMarker({ position, setPosition, isSelectable }) {
   );
 }
 
-export default function InteractiveMap({ 
-  initialPos, 
-  userPos, 
-  onPositionChange, 
-  mode = 'view', 
+export default function InteractiveMap({
+  initialPos,
+  userPos,
+  onPositionChange,
+  mode = 'view',
   showSatellite = true,
-  stores = []
+  stores = [],
+  userAccuracy = null
 }) {
-  const [position, setPosition] = useState(initialPos || [4.0511, 9.7679]); 
+  const [position, setPosition] = useState(initialPos || [4.0511, 9.7679]);
   const [mapType, setMapType] = useState(showSatellite ? 'satellite' : 'osm');
   const [isReady, setIsReady] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null); // { pos, name }
@@ -173,7 +174,7 @@ export default function InteractiveMap({
         setIsReady(true);
       }).catch(err => {
         console.error("Failed to load leaflet-routing-machine", err);
-        setIsReady(true); 
+        setIsReady(true);
       });
     }
   }, []);
@@ -191,12 +192,12 @@ export default function InteractiveMap({
 
   return (
     <div className="relative w-full h-full rounded-[32px] overflow-hidden shadow-inner bg-slate-100 border-2 border-slate-100 group">
-      
+
       {/* Premium Map Controls (Top) */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between pointer-events-none">
         <div className="flex flex-col gap-2 pointer-events-auto">
           {activeRoute && (
-            <button 
+            <button
               onClick={() => setActiveRoute(null)}
               className="px-4 py-2.5 bg-rose-500 text-white rounded-2xl shadow-xl font-black text-[10px] uppercase tracking-widest border-2 border-white flex items-center gap-2"
             >
@@ -208,7 +209,7 @@ export default function InteractiveMap({
 
       {/* Map Style Toggle (Bottom Left) */}
       <div className="absolute bottom-6 left-6 z-[1000] pointer-events-auto">
-        <button 
+        <button
           onClick={() => setMapType(mapType === 'osm' ? 'satellite' : 'osm')}
           className="px-6 py-3 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl text-slate-900 hover:bg-wa-teal hover:text-white transition-all font-black text-[10px] uppercase tracking-[0.1em] border-2 border-white flex items-center gap-3 active:scale-95"
         >
@@ -222,9 +223,9 @@ export default function InteractiveMap({
 
 
 
-      <MapContainer 
-        center={position} 
-        zoom={13} 
+      <MapContainer
+        center={position}
+        zoom={13}
         scrollWheelZoom={true}
         className="w-full h-full z-0"
       >
@@ -241,29 +242,45 @@ export default function InteractiveMap({
           />
         )}
 
-        {/* User Marker */}
+        {/* User Marker & Accuracy Circle */}
         {userPos && !isNaN(userPos[0]) && (
-          <Marker position={userPos} icon={getUserIcon()}>
-            <Popup>
-               <div className="text-center font-black text-xs text-slate-900">Ma position</div>
-            </Popup>
-          </Marker>
+          <>
+            <Marker position={userPos} icon={getUserIcon()}>
+              <Popup>
+                <div className="text-center font-black text-xs text-slate-900">Ma position</div>
+                {userAccuracy && <div className="text-[10px] text-slate-500">Précision: {Math.round(userAccuracy)}m</div>}
+              </Popup>
+            </Marker>
+            {userAccuracy && (
+              <Circle
+                center={userPos}
+                radius={userAccuracy}
+                pathOptions={{
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.15,
+                  color: '#3b82f6',
+                  weight: 1,
+                  dashArray: '5, 10'
+                }}
+              />
+            )}
+          </>
         )}
 
         {/* Mode: Selection or View Single Store */}
         {mode !== 'route' && stores.length === 0 && (
-          <LocationMarker 
-            position={position} 
-            setPosition={handlePositionUpdate} 
-            isSelectable={mode === 'select'} 
+          <LocationMarker
+            position={position}
+            setPosition={handlePositionUpdate}
+            isSelectable={mode === 'select'}
           />
         )}
 
         {/* Mode: Multiple Stores Discovery */}
         {stores.length > 0 && !activeRoute && stores.map(store => (
           store.latitude && store.longitude && (
-            <Marker 
-              key={store.id} 
+            <Marker
+              key={store.id}
               position={[Number(store.latitude), Number(store.longitude)]}
               icon={getStoreIcon()}
             >
@@ -277,13 +294,13 @@ export default function InteractiveMap({
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{store.city || 'Douala'}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => setActiveRoute({ pos: [Number(store.latitude), Number(store.longitude)], name: store.name })}
                       className="px-4 py-2 bg-wa-teal text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors"
                     >
                       Y aller
                     </button>
-                    <a 
+                    <a
                       href={`/boutique/${store.slug}`}
                       className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
                     >
@@ -299,9 +316,9 @@ export default function InteractiveMap({
         {/* Mode: Route Planning (Explicit or from Discovery) */}
         {(mode === 'route' || activeRoute) && userPos && isReady && !isNaN(userPos[0]) && (
           <>
-            <RoutingMachine 
-              userPos={userPos} 
-              storePos={activeRoute ? activeRoute.pos : position} 
+            <RoutingMachine
+              userPos={userPos}
+              storePos={activeRoute ? activeRoute.pos : position}
             />
             {activeRoute && (
               <Marker position={activeRoute.pos} icon={getStoreIcon()}>

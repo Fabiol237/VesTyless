@@ -86,6 +86,38 @@ export default function OrdersPage() {
   const handleStatusChange = async (order, newStatus) => {
     setUpdatingId(order.id);
     await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
+    
+    // --- NOTIFICATION CLIENT PAR EMAIL ---
+    if (order.customer_email && ['shipped', 'delivered', 'processing'].includes(newStatus)) {
+      try {
+        const subjects = {
+          processing: 'Commande en cours de préparation ! 🛠️',
+          shipped: 'Bonne nouvelle : Votre colis est en route ! 🚀',
+          delivered: 'Commande livrée ! Merci de votre confiance. ✨'
+        };
+
+        const titles = {
+          processing: 'Nous préparons vos articles.',
+          shipped: 'Votre commande a été expédiée.',
+          delivered: 'Votre colis vous a été remis.'
+        };
+
+        await fetch('/api/emails/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: order.customer_email,
+            subject: subjects[newStatus] || 'Mise à jour de votre commande',
+            title: titles[newStatus] || 'Le statut de votre commande a changé.',
+            message: `Votre commande #${shortId(order.id)} sur la boutique ${store?.store_name} est désormais au statut : ${newStatus}.`,
+            type: 'status_update'
+          })
+        });
+      } catch (err) {
+        console.error("Erreur notification client:", err);
+      }
+    }
+
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
     setUpdatingId(null);
   };

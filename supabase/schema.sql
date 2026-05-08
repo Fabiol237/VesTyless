@@ -83,6 +83,15 @@ begin
   if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='custom_message') then
     alter table stores add column custom_message text;
   end if;
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='is_active') then
+    alter table stores add column is_active boolean default true;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='is_boosted') then
+    alter table stores add column is_boosted boolean default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='stores' and column_name='daily_views') then
+    alter table stores add column daily_views integer default 0;
+  end if;
 
   -- ORDERS new columns
   if not exists (select 1 from information_schema.columns where table_name='orders' and column_name='delivery_lat') then

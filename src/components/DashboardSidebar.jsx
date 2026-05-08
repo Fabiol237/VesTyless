@@ -1,3 +1,5 @@
+'use client';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -8,12 +10,18 @@ import {
   Settings, 
   X, 
   ExternalLink, 
-  ChevronRight 
+  ChevronRight,
+  MapPin
 } from 'lucide-react';
 
 export default function DashboardSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const { store } = useAuth();
+  const [hasMounted, setHasMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const links = [
     { name: 'Vue d’ensemble', href: '/dashboard', icon: LayoutDashboard },
@@ -81,29 +89,27 @@ export default function DashboardSidebar({ isOpen, onClose }) {
   );
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0">
-        {sidebarContent}
+    <aside className="relative">
+      {/* Desktop Sidebar Shell */}
+      <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0 border-r border-gray-200 bg-white">
+        {hasMounted ? sidebarContent : <div className="h-full w-full bg-white animate-pulse" />}
       </div>
 
       {/* Mobile Sidebar */}
-      
-        {isOpen && (
-          <>
-            <div
-              onClick={onClose}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
-            />
-            <div
-              className="fixed inset-y-0 left-0 w-[280px] z-50 lg:hidden shadow-2xl"
-            >
-              {sidebarContent}
-            </div>
-          </>
-        )}
-      
-    </>
+      {hasMounted && isOpen && (
+        <div className="lg:hidden">
+          <div
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+          />
+          <div
+            className="fixed inset-y-0 left-0 w-[280px] z-50 shadow-2xl bg-white"
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </aside>
   );
 }
 

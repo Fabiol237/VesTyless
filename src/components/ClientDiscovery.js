@@ -402,6 +402,7 @@ export default function ClientDiscovery({
                mode="view"
                initialPos={userLocation ? [userLocation.latitude, userLocation.longitude] : [4.0511, 9.7679]}
                userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+               userAccuracy={userLocation?.accuracy}
                showSatellite={true}
                stores={stores}
              />

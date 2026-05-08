@@ -6,7 +6,7 @@ export function useDistance() {
   const [error, setError] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  // Initialize from localStorage if available to avoid constant prompts
+  // Initialize from localStorage if available
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('vestyle_user_location');
@@ -18,49 +18,85 @@ export function useDistance() {
     }
   }, []);
 
+  // Force ultra-precise real-time tracking
+  useEffect(() => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return;
+
+    // Configuration ultra-agressive pour forcer le GPS matériel
+    const geoOptions = {
+      enableHighAccuracy: true, // Demande explicitement le GPS satellite
+      timeout: 20000,           // Laisse 20s au GPS pour "fixer" les satellites
+      maximumAge: 0             // Interdiction formelle d'utiliser du cache (Wi-Fi/Cellulaire ancien)
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const coords = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp
+        };
+
+        // On ne met à jour que si c'est plus précis ou si c'est nouveau
+        setUserLocation(coords);
+        localStorage.setItem('vestyle_user_location', JSON.stringify(coords));
+        setError(null);
+      },
+      (err) => {
+        console.error("Erreur WatchPosition:", err);
+        // Si erreur de timeout, on réessaie sans crash
+        if (err.code === 3) {
+          console.warn("GPS lent à répondre, maintien du suivi...");
+        }
+      },
+      geoOptions
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setError("La géolocalisation n'est pas supportée par votre navigateur.");
+      setError("La géolocalisation n'est pas supportée.");
       return;
     }
 
     setIsLocating(true);
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        };
-        setUserLocation(coords);
-        localStorage.setItem('vestyle_user_location', JSON.stringify(coords));
-        setIsLocating(false);
-        setError(null);
-      },
-      (err) => {
-        console.error("Erreur géolocalisation détaillée:", { code: err.code, message: err.message });
-        
-        let msg = "Impossible d'obtenir votre position.";
-        
-        if (err.code === 1) {
-          msg = "Accès refusé. Veuillez autoriser la géolocalisation dans les paramètres de votre navigateur.";
-        } else if (err.code === 2) {
-          msg = "Position indisponible. Vérifiez votre connexion internet ou votre signal GPS.";
-        } else if (err.code === 3) {
-          msg = "Délai d'attente dépassé. Réessayez dans un instant.";
-        }
+    // Fonction interne pour forcer un rafraîchissement GPS
+    const getPrecisePosition = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+          setUserLocation(coords);
+          localStorage.setItem('vestyle_user_location', JSON.stringify(coords));
+          setIsLocating(false);
+          setError(null);
+        },
+        (err) => {
+          let msg = "Précision insuffisante. Vérifiez que votre GPS est activé et que vous êtes à découvert.";
+          if (err.code === 1) msg = "Accès refusé. Activez la position dans les réglages.";
+          else if (err.code === 2) msg = "Signal GPS introuvable. Sortez des bâtiments.";
+          else if (err.code === 3) msg = "Le GPS met trop de temps à répondre.";
 
-        // Check for HTTPS
-        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-          msg += " Note: La géolocalisation nécessite une connexion sécurisée (HTTPS).";
+          setError(msg);
+          setIsLocating(false);
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 30000, // On attend jusqu'à 30s pour un fix satellite propre
+          maximumAge: 0 
         }
+      );
+    };
 
-        setError(msg);
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: Infinity }
-    );
+    getPrecisePosition();
   }, []);
 
   // Haversine formula to calculate distance between two lat/lon points in km

@@ -84,7 +84,14 @@ Règles strictes :
       setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
     } catch (err) {
       console.error("Chat Error:", err);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, j'ai rencontré une petite difficulté technique. Pourriez-vous reformuler ?" }]);
+      let errorMsg = "Désolé, j'ai rencontré une petite difficulté technique. Pourriez-vous reformuler ?";
+      
+      // Si l'erreur vient du message personnalisé pour le chargement du modèle
+      if (err.message.includes("démarre")) {
+        errorMsg = "Je suis en train de me réveiller ! ☕ Donnez-moi 10 petites secondes et renvoyez votre message.";
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
     } finally {
       setIsTyping(false);
     }

@@ -1,14 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 
+const DashboardChart = dynamic(() => import('@/components/DashboardChart'), {
+  ssr: false,
+  loading: () => <div className="h-48 bg-neutral-50 animate-pulse rounded-3xl border border-neutral-100" />
+});
+
 import { 
   TrendingUp, ShoppingCart, AlertTriangle, CheckCircle,
   Bell, ArrowRight, Package, Store, Settings, Plus,
-  ChevronRight, Clock, Zap, BarChart2
+  ChevronRight, Clock, Zap, BarChart2, MapPin
 } from 'lucide-react';
 
 const currencyFormatter = new Intl.NumberFormat('fr-FR', {
@@ -201,29 +207,59 @@ export default function SellerDashboard() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-          {[
-            { title: 'Revenus', value: formatAmount(stats.revenue), hint: 'Cumulés', icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-            { title: 'Commandes', value: String(stats.monthlyOrders), hint: 'Ce mois', icon: ShoppingCart, color: 'text-blue-500', bg: 'bg-blue-50' },
-            { title: 'Stock faible', value: String(stats.lowStock.length), hint: 'Alertes', icon: AlertTriangle, color: stats.lowStock.length > 0 ? 'text-rose-500' : 'text-emerald-500', bg: stats.lowStock.length > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
-            { title: 'Livraisons', value: `${stats.delivered}/${stats.inProgress}`, hint: 'Livrées / En cours', icon: CheckCircle, color: 'text-amber-500', bg: 'bg-amber-50' },
-          ].map((s, i) => (
-            <div
-              key={s.title}
-              className="bg-white rounded-2xl sm:rounded-3xl border border-neutral-100 shadow-sm p-4 sm:p-5"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{s.title}</p>
-                <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center`}>
-                  <s.icon size={18} className={s.color} />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-neutral-900 tracking-tight leading-none">{s.value}</p>
-              <p className="text-xs text-neutral-400 mt-1.5">{s.hint}</p>
+        {/* ONBOARDING PROGRESS - The success engine */}
+        <section className="bg-gradient-to-r from-wa-teal-dark to-wa-teal rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black tracking-tight">Configuration de votre succès</h2>
+              <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">65% Terminé</span>
             </div>
-          ))}
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-6">
+              <div className="h-full bg-wa-green w-[65%] shadow-[0_0_15px_rgba(37,211,102,0.5)] transition-all duration-1000" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/10 opacity-50">
+                <CheckCircle size={18} className="text-wa-green" />
+                <span className="text-xs font-bold">Compte créé</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/10">
+                <Plus size={18} className="text-wa-teal" />
+                <span className="text-xs font-bold">Ajouter 5 produits</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/10">
+                <MapPin size={18} className="text-wa-teal" />
+                <span className="text-xs font-bold">Localiser boutique</span>
+              </div>
+            </div>
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-wa-green/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+        </section>
+
+        {/* Stat Cards & Mini Chart */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+          <div className="xl:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { title: 'Revenus', value: formatAmount(stats.revenue), hint: 'Cumulés', icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+              { title: 'Commandes', value: String(stats.monthlyOrders), hint: 'Ce mois', icon: ShoppingCart, color: 'text-blue-500', bg: 'bg-blue-50' },
+              { title: 'Stock faible', value: String(stats.lowStock.length), hint: 'Alertes', icon: AlertTriangle, color: stats.lowStock.length > 0 ? 'text-rose-500' : 'text-emerald-500', bg: stats.lowStock.length > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
+              { title: 'Livraisons', value: `${stats.delivered}/${stats.inProgress}`, hint: 'Livrées / En cours', icon: CheckCircle, color: 'text-amber-500', bg: 'bg-amber-50' },
+            ].map((s, i) => (
+              <div key={s.title} className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-5 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{s.title}</p>
+                  <div className={`w-8 h-8 ${s.bg} rounded-xl flex items-center justify-center`}><s.icon size={16} className={s.color} /></div>
+                </div>
+                <p className="text-xl font-black text-neutral-900 tracking-tight">{s.value}</p>
+                <p className="text-[10px] text-neutral-400 mt-1">{s.hint}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Performance Summary / Mini Chart */}
+          <DashboardChart />
+
         </div>
+
 
         {/* Main Grid */}
         <div className="grid gap-4 xl:grid-cols-[1.3fr,0.9fr]">
@@ -369,13 +405,13 @@ export default function SellerDashboard() {
                 </Link>
               ))}
             </div>
-
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 function StatusBadge({ status }) {
   const normalized = normalizeStatus(status);

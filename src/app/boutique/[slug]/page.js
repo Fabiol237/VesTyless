@@ -260,6 +260,38 @@ export default function Storefront({ params }) {
 
       if (orderError) throw orderError;
 
+      // --- NOTIFICATION VENDEUR VIA GMAIL (RESEND) ---
+      try {
+        if (store.owner_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', store.owner_id)
+            .single();
+
+          if (profileData?.email) {
+            await fetch('/api/emails/notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: profileData.email,
+                subject: `🚀 Nouveau contact client sur ${store.name} !`,
+                title: 'Une nouvelle commande est en attente sur WhatsApp.',
+                message: `Le client ${customerName} vient de vous envoyer une commande de ${total.toLocaleString()} FCFA via WhatsApp.`,
+                type: 'order',
+                orderData: {
+                  id: newOrder.id,
+                  total: total.toLocaleString(),
+                  items_count: cart.length
+                }
+              })
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error("Erreur notification vendeur boutique:", notifErr);
+      }
+
       // WhatsApp Message
       let message = `*COMMANDE ${store.name.toUpperCase()}*\n`;
       message += `--------------------------\n`;
@@ -573,7 +605,8 @@ export default function Storefront({ params }) {
                 <InteractiveMap 
                   mode="route"
                   initialPos={[Number(store.latitude), Number(store.longitude)]}
-                  userPos={[userLocation.latitude, userLocation.longitude]}
+                  userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+                  userAccuracy={userLocation?.accuracy}
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-8 text-center">

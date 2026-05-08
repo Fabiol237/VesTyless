@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Search, MapPin, MessageCircle, ShoppingBag, ArrowRight, Hash, Loader2 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
+import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,7 +40,7 @@ export default function Home() {
     try {
       const [cats, strs, prods] = await Promise.all([
         supabase.from('categories').select('name').limit(10),
-        supabase.from('stores').select('name, city').eq('is_active', true).order('is_boosted', { ascending: false }).limit(10),
+        supabase.from('stores').select('name, city').order('is_boosted', { ascending: false }).limit(10),
         supabase.from('products').select('name').eq('is_active', true).order('daily_views', { ascending: false }).limit(15)
       ]);
 
@@ -68,15 +69,49 @@ export default function Home() {
     setCodeLoading(true);
     setCodeError('');
     setCodeResult(null);
-    const { data } = await supabase.from('stores').select('id,name,slug,logo_url,city,description,whatsapp_number,store_code').eq('store_code', code).eq('is_active', true).single();
-    setCodeLoading(false);
-    if (data) setCodeResult(data);
-    else setCodeError('Aucune boutique avec ce code.');
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id,name,slug,logo_url,city,description,whatsapp_number,store_code')
+        .eq('store_code', code)
+        .single();
+
+      if (error) {
+        setCodeError('Aucune boutique avec ce code.');
+        return;
+      }
+      
+      if (data) {
+        setCodeResult(data);
+        // Redirection automatique immédiate pour un accès VIP
+        router.push(`/boutique/${data.slug}`);
+      } else {
+        setCodeError('Aucune boutique avec ce code.');
+      }
+    } catch (err) {
+      console.error('Erreur recherche code:', err);
+      setCodeError('Code introuvable.');
+    } finally {
+      setCodeLoading(false);
+    }
   }
 
-  function handleSearch(e) {
+  async function handleSearch(e) {
     e.preventDefault();
-    // On laisse ClientDiscovery réagir au changement de searchQuery
+    const query = searchQuery.trim();
+    
+    // Détection intelligente : si c'est un code à 5 chiffres, on traite comme un accès direct
+    if (query.length === 5 && !isNaN(query)) {
+      setCodeLoading(true);
+      const { data } = await supabase.from('stores').select('slug').eq('store_code', query).single();
+      if (data) {
+        router.push(`/boutique/${data.slug}`);
+        return;
+      }
+      setCodeLoading(false);
+    }
+    
+    // Sinon, on laisse ClientDiscovery gérer la recherche classique
   }
 
   useEffect(() => {
@@ -84,6 +119,54 @@ export default function Home() {
       setLocationStatus('📍 À proximité');
     }
   }, [userLocation]);
+
+  // RECHERCHE DYNAMIQUE POUR L'AUTOCOMPLÉTION
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      fetchSuggestions(); // Retour aux suggestions par défaut
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        let items = [];
+        
+        // Tentative via Meilisearch (Ultra-rapide et flou)
+        try {
+          const [storeHits, productHits] = await Promise.all([
+            publicStoresIndex.search(searchQuery, { limit: 5 }),
+            publicProductsIndex.search(searchQuery, { limit: 10 })
+          ]);
+
+          if (storeHits.hits.length > 0) {
+            storeHits.hits.forEach(s => items.push({ 
+              label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city 
+            }));
+          }
+          if (productHits.hits.length > 0) {
+            productHits.hits.forEach(p => items.push({ 
+              label: p.name, value: p.name, type: 'Produit', emoji: '🛍️' 
+            }));
+          }
+        } catch (meiliErr) {
+          console.warn('Meilisearch non disponible, fallback SQL...');
+          // Fallback SQL si Meili est down
+          const [strs, prods] = await Promise.all([
+            supabase.from('stores').select('name, city').ilike('name', `%${searchQuery}%`).limit(5),
+            supabase.from('products').select('name').eq('is_active', true).ilike('name', `%${searchQuery}%`).limit(10)
+          ]);
+          if (strs.data) strs.data.forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city }));
+          if (prods.data) prods.data.forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️' }));
+        }
+        
+        if (items.length > 0) setSuggestions(items);
+      } catch (err) {
+        console.error('Error fetching dynamic suggestions:', err);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   if (!mounted) {
     return <div className="min-h-screen font-sans bg-[#FDFCFB]"></div>;

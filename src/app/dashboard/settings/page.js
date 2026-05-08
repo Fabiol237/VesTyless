@@ -300,6 +300,8 @@ export default function StoreSettingsPage() {
                       ? [Number(formData.latitude), Number(formData.longitude)] 
                       : null
                     }
+                    userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+                    userAccuracy={userLocation?.accuracy}
                     onPositionChange={(pos) => {
                       setFormData(prev => ({ ...prev, latitude: pos[0], longitude: pos[1] }));
                       updateStore({ latitude: pos[0], longitude: pos[1] });

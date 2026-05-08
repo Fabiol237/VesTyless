@@ -67,7 +67,50 @@ export default function CartPage() {
         }]).select('id, created_at, store_id').single();
         
         if (orderError) throw orderError;
-        if (data) newOrders.push({ id: data.id, created_at: data.created_at, store_id: data.store_id });
+        if (data) {
+          newOrders.push({ id: data.id, created_at: data.created_at, store_id: data.store_id });
+          
+          // --- NOTIFICATION VENDEUR VIA GMAIL (RESEND) ---
+          try {
+            // 1. Récupérer l'email du vendeur
+            const { data: storeData } = await supabase
+              .from('stores')
+              .select('owner_id, name')
+              .eq('id', storeId)
+              .single();
+
+            if (storeData?.owner_id) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', storeData.owner_id)
+                .single();
+
+              if (profileData?.email) {
+                // 2. Envoyer la notification via notre API
+                await fetch('/api/emails/notify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    to: profileData.email,
+                    subject: `🚀 Nouvelle commande sur ${storeData.name} !`,
+                    title: 'Bonne nouvelle ! Une vente a été réalisée.',
+                    message: `Le client ${name} vient de passer une commande de ${storeTotal.toLocaleString()} FCFA sur votre boutique VesTyle.`,
+                    type: 'order',
+                    orderData: {
+                      id: data.id,
+                      total: storeTotal.toLocaleString(),
+                      items_count: storeItems.length
+                    }
+                  })
+                });
+              }
+            }
+          } catch (notifErr) {
+            console.error("Erreur notification vendeur:", notifErr);
+            // On ne bloque pas la vente si l'email échoue
+          }
+        }
       }
       
       // Save to localStorage (expire in 30 days handled when reading)
