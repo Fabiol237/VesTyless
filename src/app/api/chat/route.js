@@ -1,59 +1,65 @@
 import { NextResponse } from 'next/server';
+import { HfInference } from '@huggingface/inference';
 
 export async function POST(req) {
   try {
-    const { messages, model = "HuggingFaceH4/zephyr-7b-beta" } = await req.json();
+    const { messages } = await req.json();
     const token = process.env.HUGGINGFACE_TOKEN;
     
-    if (!token) return NextResponse.json({ error: "Token non configuré" }, { status: 500 });
-
-    // Tentative via le nouveau routeur unifié de Hugging Face (URL 2026)
-    const tryChat = async (modelId) => {
-      const res = await fetch("https://router.huggingface.co/v1/chat/completions", {
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json",
-          "x-use-cache": "false" 
-        },
-        method: "POST",
-        body: JSON.stringify({ 
-          model: modelId, 
-          messages, 
-          max_tokens: 500, 
-          temperature: 0.7 
-        })
-      });
-      return res;
-    };
-
-    // Modèle recommandé pour le routeur unifié
-    let response = await tryChat("meta-llama/Llama-3.2-3B-Instruct");
-
-    if (!response.ok) {
-      console.warn("Llama échoué, tentative Qwen...");
-      response = await tryChat("Qwen/Qwen2.5-7B-Instruct");
+    if (!token) {
+      console.error("AI Error: HUGGINGFACE_TOKEN is missing in .env.local");
+      return NextResponse.json({ error: "Token non configuré" }, { status: 500 });
     }
 
-    // Fallback 2: Si toujours erreur, tenter Qwen 2.5
-    if (!response.ok) {
-      console.warn("Fallback 1 échoué, tentative Fallback 2 (Qwen)...");
-      response = await tryChat("Qwen/Qwen2.5-7B-Instruct");
-    }
+    const hf = new HfInference(token);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMsg = errorData.error || `Erreur API ${response.status}`;
-      
-      if (errorMsg.includes("loading")) {
-        return NextResponse.json({ error: "Le serveur IA démarre...", is_loading: true }, { status: 503 });
+    // Liste de modèles ultra-fiables (souvent "warm")
+    const models = [
+      "mistralai/Mistral-7B-Instruct-v0.3",
+      "meta-llama/Llama-3.2-3B-Instruct",
+      "Qwen/Qwen2.5-7B-Instruct",
+      "HuggingFaceH4/zephyr-7b-beta"
+    ];
+
+    let lastError = "";
+    let content = "";
+
+    for (const model of models) {
+      try {
+        console.log(`AI: Attempting with model ${model}...`);
+        const response = await hf.chatCompletion({
+          model: model,
+          messages: messages,
+          max_tokens: 500,
+          temperature: 0.7,
+        });
+
+        if (response.choices?.[0]?.message?.content) {
+          content = response.choices[0].message.content;
+          console.log(`AI: Success with ${model}`);
+          break;
+        }
+      } catch (err) {
+        lastError = err.message;
+        console.warn(`AI: Model ${model} failed:`, lastError);
+        if (lastError.includes("loading")) {
+          // Si le modèle charge, on peut soit attendre soit passer au suivant
+          continue; 
+        }
       }
-      return NextResponse.json({ error: errorMsg }, { status: response.status });
     }
 
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content;
+    if (!content) {
+      if (lastError.includes("loading")) {
+        return NextResponse.json({ 
+          error: "Le serveur IA est en cours de démarrage. Réessayez dans quelques secondes.",
+          is_loading: true 
+        }, { status: 503 });
+      }
+      return NextResponse.json({ error: `Tous les modèles IA ont échoué. ${lastError}` }, { status: 500 });
+    }
 
-    return NextResponse.json({ content: content || "Désolé, je suis un peu fatigué. Réessayez ?" });
+    return NextResponse.json({ content });
 
   } catch (error) {
     console.error("Chat API Global Error:", error);

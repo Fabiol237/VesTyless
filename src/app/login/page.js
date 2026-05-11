@@ -45,7 +45,19 @@ export default function Login() {
       });
 
       if (error) throw error;
-      router.push('/dashboard');
+
+      // Redirection intelligente : Vendeur vs Livreur
+      const { data: isLivreur } = await supabase
+        .from('livreurs')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+        .single();
+
+      if (isLivreur) {
+        router.push('/delivery');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       if (err.message.includes('Email not confirmed')) {
         setError("Veuillez vérifier votre email avant de vous connecter.");
@@ -109,7 +121,19 @@ export default function Login() {
         // Pour l'instant, on montre un message de succès et on redirige vers le dashboard.
         console.log('[WebAuthn] Authentification biométrique réussie:', credential.id);
         setError(null);
-        router.push('/dashboard');
+        
+        // Redirection intelligente
+        const { data: isLivreur } = await supabase
+          .from('livreurs')
+          .select('id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+          .single();
+
+        if (isLivreur) {
+          router.push('/delivery');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err) {
       if (err.name === 'NotAllowedError') {

@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 // ── SVG Icons ──────────────────────────────────────────────
 const LogOutIcon = ({ size = 18 }) => (
@@ -24,14 +25,42 @@ const ChevronDownIcon = ({ size = 14, className = "" }) => (
 
 export default function DashboardHeader({ onMenuClick }) {
   const { store, session, loading, signOut } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    if (!store?.id) return;
 
-  // Ne plus retourner null, rendre le header même côté serveur pour la structure
+    // 1. Initial fetch
+    const fetchUnreadCount = async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', store.id)
+        .eq('is_read', false);
+      if (!error) setUnreadCount(count || 0);
+    };
+    fetchUnreadCount();
+
+    // 2. Realtime subscription
+    const channel = supabase
+      .channel(`header-notifs-${store.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'notifications', 
+        filter: `store_id=eq.${store.id}` 
+      }, () => {
+        fetchUnreadCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [store?.id]);
 
   const handleLogout = async () => {
     try {
@@ -40,7 +69,6 @@ export default function DashboardHeader({ onMenuClick }) {
       console.error('Logout error:', err);
     }
   };
-
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 sm:px-8 py-3">
@@ -67,7 +95,11 @@ export default function DashboardHeader({ onMenuClick }) {
             className="p-2.5 text-gray-400 hover:text-wa-teal-dark hover:bg-wa-chat rounded-xl transition-all relative"
           >
             <BellIcon size={20} />
-            {hasMounted && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>}
+            {hasMounted && unreadCount > 0 && (
+              <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white border-2 border-white">
+                {unreadCount > 9 ? '+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           <div className="h-8 w-[1px] bg-gray-100 mx-1 hidden sm:block"></div>

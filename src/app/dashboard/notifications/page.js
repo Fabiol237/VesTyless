@@ -11,40 +11,77 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simuler des notifications pour le moment ou les charger si elles existent en DB
-    // Pour une version premium, on peut générer des notifs basées sur les commandes récentes
-    const mockNotifications = [
-      {
-        id: 1,
-        title: "Bienvenue sur VesTyle !",
-        message: "Votre boutique est prête. Commencez à ajouter des produits pour vendre.",
-        type: "info",
-        time: "Il y a 2h",
-        read: false
-      },
-      {
-        id: 2,
-        title: "Nouveau Design Activé",
-        message: "Votre tableau de bord a été mis à jour avec le thème WhatsApp Premium.",
-        type: "success",
-        time: "Il y a 5h",
-        read: true
-      }
-    ];
-
-    const timer = setTimeout(() => {
-      setNotifications(mockNotifications);
+    if (!store?.id) {
       setLoading(false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [store]);
+      return;
+    }
 
-  const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    const fetchNotifications = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('store_id', store.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setNotifications(data || []);
+      } catch (err) {
+        console.error('Erreur chargement notifications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+
+    // Optionnel: Realtime pour cette page aussi
+    const channel = supabase
+      .channel(`page-notifs-${store.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'notifications', 
+        filter: `store_id=eq.${store.id}` 
+      }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [store?.id]);
+
+  const markAllRead = async () => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('store_id', store.id)
+        .eq('is_read', false);
+      
+      if (!error) {
+        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      }
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const deleteNotification = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id);
+        
+      if (!error) {
+        setNotifications(notifications.filter(n => n.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
   };
 
   return (
@@ -88,25 +125,27 @@ export default function NotificationsPage() {
             {notifications.map((n) => (
               <div 
                 key={n.id} 
-                className={`p-6 flex items-start gap-4 hover:bg-gray-50/50 transition-all group ${!n.read ? 'bg-wa-chat/10' : ''}`}
+                className={`p-6 flex items-start gap-4 hover:bg-gray-50/50 transition-all group ${!n.is_read ? 'bg-wa-chat/10' : ''}`}
               >
                 <div className={`p-3 rounded-2xl flex-shrink-0 ${
-                  n.type === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                  n.type === 'info' ? 'bg-wa-chat text-wa-teal' :
-                  'bg-amber-50 text-amber-600'
+                  n.type === 'ORDER' ? 'bg-emerald-50 text-emerald-600' :
+                  n.type === 'SECURITY' ? 'bg-rose-50 text-rose-600' :
+                  n.type === 'STOCK' ? 'bg-amber-50 text-amber-600' :
+                  'bg-wa-chat text-wa-teal'
                 }`}>
-                  {n.type === 'success' ? <CheckCircle2 size={20} /> :
-                   n.type === 'info' ? <Info size={20} /> :
-                   <ShoppingBag size={20} />}
+                  {n.type === 'ORDER' ? <ShoppingBag size={20} /> :
+                   n.type === 'SECURITY' ? <Bell size={20} /> :
+                   n.type === 'STOCK' ? <CheckCircle2 size={20} /> :
+                   <Info size={20} />}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className={`font-bold text-gray-900 truncate ${!n.read ? 'pr-4 relative after:content-[""] after:absolute after:top-1/2 after:-right-1 after:w-2 after:h-2 after:bg-wa-teal after:rounded-full after:-translate-y-1/2' : ''}`}>
+                    <h4 className={`font-bold text-gray-900 truncate ${!n.is_read ? 'pr-4 relative after:content-[""] after:absolute after:top-1/2 after:-right-1 after:w-2 after:h-2 after:bg-wa-teal after:rounded-full after:-translate-y-1/2' : ''}`}>
                       {n.title}
                     </h4>
                     <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
-                      <Clock size={12} /> {n.time}
+                      <Clock size={12} /> {new Date(n.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1 leading-relaxed">{n.message}</p>

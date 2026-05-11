@@ -32,6 +32,9 @@ const ArrowRightIcon = ({ size = 16 }) => (
 const UserIcon = ({ size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
 );
+const PackageIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.5 4.21" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.29 7 12 12 20.71 7" /><line x1="12" x2="12" y1="22" y2="12" /></svg>
+);
 const ZapIcon = ({ size = 16, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
 );
@@ -132,6 +135,10 @@ export default function Navbar() {
             <ZapIcon size={12} /> {dataSaver ? 'Lite ON' : 'Lite Mode'}
           </button>
 
+          <Link href="/mes-commandes" className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest transition-all" title="Suivre mes commandes">
+            <PackageIcon size={14} /> Mes Commandes
+          </Link>
+
           <Link
             href="/profile"
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -162,7 +169,7 @@ export default function Navbar() {
           <Link href="/cart" className="relative p-2">
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
-              <span className="absolute 0 right-0 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+              <span className="absolute -top-1 -right-1 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                 {totalCartItems}
               </span>
             )}
@@ -209,6 +216,7 @@ export default function Navbar() {
 
         <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRightIcon size={16} className="text-neutral-400" /></Link>
+          <Link href="/mes-commandes" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Mes Commandes <PackageIcon size={18} className="text-wa-teal" /></Link>
 
           {session ? (
             <>

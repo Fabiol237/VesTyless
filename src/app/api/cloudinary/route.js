@@ -45,6 +45,7 @@ async function handleUpload(formData) {
   uploadForm.append('folder', folder);
   uploadForm.append('signature', signature);
 
+  console.log(`[Cloudinary API] Début de l'upload vers ${cloudName}...`);
   const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
     method: 'POST',
     body: uploadForm,
@@ -52,10 +53,14 @@ async function handleUpload(formData) {
 
   const cloudinaryData = await cloudinaryRes.json();
   if (!cloudinaryRes.ok) {
-    console.error('Cloudinary Upload Error Details:', cloudinaryData);
-    return NextResponse.json({ error: cloudinaryData?.error?.message || 'Echec upload Cloudinary' }, { status: 400 });
+    console.error('Cloudinary Upload Error Details:', JSON.stringify(cloudinaryData, null, 2));
+    return NextResponse.json({ 
+      error: cloudinaryData?.error?.message || 'Echec upload Cloudinary',
+      details: cloudinaryData
+    }, { status: 400 });
   }
 
+  console.log(`[Cloudinary API] Upload réussi: ${cloudinaryData.secure_url}`);
   return NextResponse.json({
     secure_url: cloudinaryData.secure_url,
     public_id: cloudinaryData.public_id,

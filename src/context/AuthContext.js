@@ -46,7 +46,8 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
           if (session?.user) {
-            // Trigger Security Notification on Sign In
+            /* 
+            // Trigger Security Notification on Sign In (Disabled because it fires too often)
             if (event === 'SIGNED_IN') {
               fetch('/api/emails/notify', {
                 method: 'POST',
@@ -61,6 +62,7 @@ export function AuthProvider({ children }) {
                 })
               }).catch(e => console.error('Security notify failed:', e));
             }
+            */
 
             setUser(session.user);
             await withTimeout(() => fetchUserData(session.user.id));

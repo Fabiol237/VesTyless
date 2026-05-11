@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  const { id } = await params;
 
   // Récupérer les infos du produit pour le SEO (WhatsApp / Facebook)
   const { data: product } = await supabase
@@ -44,6 +44,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function ProductLayout({ children }) {
+export default async function ProductLayout({ children, params }) {
+  const { id } = await params;
   return <>{children}</>;
 }

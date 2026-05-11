@@ -10,10 +10,12 @@ import {
   Settings, 
   X, 
   ExternalLink, 
-  ChevronRight
+  ChevronRight,
+  Truck
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-export default function VestyleSidebar({ isOpen, onClose }) {
+export default function DashboardSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const { store } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -28,6 +30,19 @@ export default function VestyleSidebar({ isOpen, onClose }) {
     { name: 'Commandes', href: '/dashboard/orders', icon: ShoppingCart },
     { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
   ];
+
+  const [isLivreur, setIsLivreur] = useState(false);
+  const { session } = useAuth();
+
+  useEffect(() => {
+    if (session?.id) {
+      const checkLivreur = async () => {
+        const { data } = await supabase.from('livreurs').select('id').eq('user_id', session.id).maybeSingle();
+        if (data) setIsLivreur(true);
+      };
+      checkLivreur();
+    }
+  }, [session]);
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
@@ -70,6 +85,23 @@ export default function VestyleSidebar({ isOpen, onClose }) {
             </Link>
           );
         })}
+
+        {isLivreur && (
+          <Link
+            href="/delivery"
+            onClick={() => onClose && onClose()}
+            className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
+              pathname === '/delivery'
+                ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200/50' 
+                : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Truck size={20} className={pathname === '/delivery' ? 'text-white' : 'text-emerald-600'} />
+              <span className="font-black text-xs uppercase tracking-widest">Hub Livreur</span>
+            </div>
+          </Link>
+        )}
       </nav>
 
       {store?.slug && (

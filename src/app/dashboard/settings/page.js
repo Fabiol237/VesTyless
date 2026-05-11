@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   Settings, Save, Loader2, ArrowLeft, Image as ImageIcon,
   Palette, Type, Megaphone, Globe, Info, CheckCircle2,
-  Camera, Trash2, Smartphone, MapPin, Navigation, Bot
+  Camera, Trash2, Smartphone, MapPin, Navigation, Bot, Truck, Plus, User
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
@@ -190,6 +190,72 @@ export default function StoreSettingsPage() {
     }
     setFormData((prev) => ({ ...prev, [fieldName]: null }));
     updateStore({ [fieldName]: null });
+  };
+
+  // === LIVREURS MANAGEMENT ===
+  const [livreurs, setLivreurs] = useState([]);
+  const [newLivreur, setNewLivreur] = useState({ name: '', phone: '', email: '' });
+  const [addingLivreur, setAddingLivreur] = useState(false);
+
+  useEffect(() => {
+    if (storeId) {
+      const fetchLivreurs = async () => {
+        const { data } = await supabase.from('livreurs').select('*').eq('store_id', storeId);
+        setLivreurs(data || []);
+      };
+      fetchLivreurs();
+    }
+  }, [storeId]);
+
+  const handleAddLivreur = async (e) => {
+    e.preventDefault();
+    if (!newLivreur.name || !newLivreur.phone) return;
+    setAddingLivreur(true);
+    try {
+      let userId = null;
+      
+      // Si un email est fourni, on cherche l'utilisateur correspondant
+      if (newLivreur.email) {
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', newLivreur.email.trim().toLowerCase())
+          .single();
+        
+        if (userData) {
+          userId = userData.id;
+        } else {
+          alert("Aucun utilisateur trouvé avec cet email. Le livreur pourra être ajouté mais ne pourra pas se connecter au dashboard pour l'instant.");
+        }
+      }
+
+      const { data, error } = await supabase.from('livreurs').insert([{
+        store_id: storeId,
+        user_id: userId,
+        name: newLivreur.name,
+        phone: newLivreur.phone
+      }]).select().single();
+
+      if (!error && data) {
+        setLivreurs([...livreurs, data]);
+        setNewLivreur({ name: '', phone: '', email: '' });
+        alert("Livreur ajouté avec succès !");
+      } else {
+        throw error;
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'ajout du livreur.");
+    } finally {
+      setAddingLivreur(false);
+    }
+  };
+
+  const handleRemoveLivreur = async (id) => {
+    const { error } = await supabase.from('livreurs').delete().eq('id', id);
+    if (!error) {
+      setLivreurs(livreurs.filter(l => l.id !== id));
+    }
   };
 
   if (session === undefined) return <div className="min-h-screen bg-wa-bg flex justify-center items-center"><Loader2 className="animate-spin text-wa-teal" size={48} /></div>;
@@ -425,6 +491,104 @@ export default function StoreSettingsPage() {
               </div>
             </div>
             <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
+          </section>
+
+          {/* GESTION DES LIVREURS */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left relative overflow-hidden">
+             <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600"><Truck size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Équipe de Livraison</h2>
+            </div>
+            <p className="text-sm text-gray-500 font-medium mb-6">Ajoutez les livreurs officiels de votre boutique pour automatiser les livraisons.</p>
+
+            <div className="space-y-4">
+               {livreurs.map((l) => (
+                 <div key={l.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-wa-teal shadow-sm"><User size={18} /></div>
+                       <div>
+                          <p className="font-bold text-gray-900 text-sm">{l.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{l.phone}</p>
+                       </div>
+                    </div>
+                    <button onClick={() => handleRemoveLivreur(l.id)} className="p-2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                 </div>
+               ))}
+
+               <form onSubmit={handleAddLivreur} className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-gray-50">
+                  <input 
+                    type="text" 
+                    placeholder="Nom complet" 
+                    value={newLivreur.name}
+                    onChange={e => setNewLivreur({...newLivreur, name: e.target.value})}
+                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="WhatsApp" 
+                    value={newLivreur.phone}
+                    onChange={e => setNewLivreur({...newLivreur, phone: e.target.value})}
+                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
+                  />
+                  <input 
+                    type="email" 
+                    placeholder="Email (pour connexion)" 
+                    value={newLivreur.email}
+                    onChange={e => setNewLivreur({...newLivreur, email: e.target.value})}
+                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
+                  />
+                  <button 
+                    disabled={addingLivreur}
+                    className="bg-wa-teal text-white rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-wa-teal/10 flex items-center justify-center gap-2 hover:bg-wa-teal-dark disabled:opacity-50"
+                  >
+                    {addingLivreur ? <Loader2 className="animate-spin" size={14} /> : <><Plus size={14} /> Ajouter</>}
+                  </button>
+               </form>
+               
+               <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      if (!session?.id || !storeId) return;
+                      if (livreurs.some(l => l.user_id === session.id)) {
+                        alert("Vous êtes déjà enregistré comme livreur.");
+                        return;
+                      }
+                      setAddingLivreur(true);
+                      try {
+                        const { data, error } = await supabase.from('livreurs').insert([{
+                          store_id: storeId,
+                          user_id: session.id,
+                          name: formData.name + " (Propriétaire)",
+                          phone: formData.whatsapp_number || formData.phone || ""
+                        }]).select().single();
+                        
+                        if (!error && data) {
+                          setLivreurs([...livreurs, data]);
+                          alert("Vous avez été ajouté comme livreur avec succès !");
+                        } else {
+                          throw error;
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        alert("Erreur lors de votre ajout comme livreur.");
+                      } finally {
+                        setAddingLivreur(false);
+                      }
+                    }}
+                    disabled={addingLivreur || livreurs.some(l => l.user_id === session?.id)}
+                    className="flex-1 py-3 px-4 bg-emerald-50 text-emerald-700 rounded-2xl border-2 border-dashed border-emerald-200 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all disabled:opacity-50"
+                  >
+                    <User size={16} /> Me rajouter comme livreur
+                  </button>
+                  <Link 
+                    href="/delivery"
+                    className="flex-1 py-3 px-4 bg-gray-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all"
+                  >
+                    <Truck size={16} /> Voir mon Hub Livreur
+                  </Link>
+               </div>
+            </div>
           </section>
         </div>
 

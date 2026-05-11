@@ -23,11 +23,14 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
 
     try {
       setUploadingImage(true);
+      setError('');
       const { secureUrl } = await uploadImage(file, { folder: 'vestyle/products' });
-      if (!secureUrl) throw new Error('Upload image invalide');
+      if (!secureUrl) throw new Error('URL sécurisée non reçue de Cloudinary');
       setImageUrl(secureUrl);
     } catch (err) {
-      setError("Erreur upload image. Verifiez votre connexion.");
+      console.error('[Upload] Erreur détaillée:', err);
+      const msg = err?.message || 'Erreur inconnue';
+      setError(`Erreur upload image: ${msg}`);
     } finally {
       setUploadingImage(false);
     }
