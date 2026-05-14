@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vestyle-v3";
+const CACHE_VERSION = "vestyle-v4.7";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const DATA_CACHE = `${CACHE_VERSION}-data`;
