@@ -22,29 +22,23 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
-  // -- Initialisation au montage --
+  // -- Initialisation au montage (SANS CHARGEMENT AUTOMATIQUE) --
   useEffect(() => {
     configureEnv();
-    const aiReady = typeof window !== 'undefined' && localStorage.getItem(AI_READY_KEY) === 'true';
-    if (aiReady) {
-      setPhase('loading');
-      loadModel(true);
-    } else {
-      setPhase('consent');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setPhase('consent'); // On commence toujours par le consentement pour économiser la RAM
   }, []);
 
   const loadModel = useCallback(async (silent = false) => {
     try {
       if (!extractorRef.current) {
+        setStatusText('Initialisation de l\'IA sécurisée…');
         const { getAIExtractor } = await import('@/lib/aiService');
         if (!silent) setPhase('loading');
         
         extractorRef.current = await getAIExtractor((info) => {
           if (info.status === 'progress' && !silent) {
             setProgress(Math.round(info.progress || 0));
-            setStatusText(`Téléchargement… ${Math.round(info.progress || 0)}%`);
+            setStatusText(`Préparation… ${Math.round(info.progress || 0)}%`);
           }
         });
 
@@ -53,17 +47,14 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
         }
       }
       setPhase('ready');
-      setStatusText('Prenez en photo le vêtement que vous cherchez !');
     } catch (err) {
       console.error('Erreur IA:', err);
       setPhase('consent');
-      setStatusText('Erreur de connexion. Vérifiez votre internet.');
+      setStatusText('Mémoire saturée ou erreur de connexion.');
     }
   }, []);
 
   const handleActivate = () => {
-    setPhase('loading');
-    setProgress(0);
     loadModel(false);
   };
 
@@ -210,16 +201,21 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
           </div>
 
           <button
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={() => cameraInputRef.current?.click()}
             className="w-full bg-white text-slate-700 p-5 rounded-[24px] shadow-sm border-2 border-slate-100 hover:border-emerald-400 hover:shadow-md transition-all flex items-center justify-center gap-3 font-black"
           >
             <ImageIcon className="text-emerald-500" size={22} />
-            Choisir dans la galerie
+            Choisir dans la galerie / Autre
           </button>
 
-          {/* Inputs cachés */}
-          <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
-          <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={handleFileChange} />
+          {/* Input unique pour Galerie et Caméra */}
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={cameraInputRef} 
+            onChange={handleFileChange} 
+          />
         </div>
       );
     }

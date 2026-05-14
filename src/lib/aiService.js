@@ -19,7 +19,10 @@ export const getAIExtractor = async (progress_callback = null) => {
     extractor = await pipeline(
       'image-feature-extraction',
       'Xenova/clip-vit-base-patch32',
-      { progress_callback }
+      { 
+        progress_callback,
+        quantized: true // RÉDUIT LA MÉMOIRE DE 50% - INDISPENSABLE SUR MOBILE
+      }
     );
     return extractor;
   } finally {

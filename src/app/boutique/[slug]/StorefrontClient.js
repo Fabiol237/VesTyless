@@ -11,50 +11,7 @@ import {
   Store, Loader2, Search, Zap, Share2, Navigation, MessageCircle, ChevronRight 
 } from 'lucide-react';
 
-function ProductCard({ item, addToCart }) {
-  const [added, setAdded] = useState(false);
-  const handleAdd = () => {
-    addToCart({ 
-      id: item.id, 
-      name: item.name, 
-      price: Number(item.price), 
-      image_url: item.image_url, 
-      store_id: item.store_id, 
-      category_id: item.category_id 
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
-
-  return (
-    <div className="group relative flex flex-col bg-white rounded-3xl border border-neutral-100 overflow-hidden hover:border-wa-teal transition-all duration-300 hover:shadow-xl">
-      <Link href={`/produit/${item.id}`} className="relative w-full aspect-square bg-neutral-50 overflow-hidden flex items-center justify-center">
-        {item.image_url
-          ? <img src={item.image_url} alt={item.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-          : <Package size={48} className="text-neutral-200" />}
-        <div className="absolute top-3 left-3 flex flex-col gap-1">
-          {item.is_promo && <span className="bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg">PROMO</span>}
-          {item.is_boosted && <span className="bg-wa-teal text-white text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow-lg"><Zap size={8} />BOOST</span>}
-        </div>
-      </Link>
-      <div className="p-4 flex flex-col flex-1">
-        <Link href={`/produit/${item.id}`}>
-          <h3 className="text-sm font-bold text-neutral-900 line-clamp-2 leading-snug mb-2 group-hover:text-wa-teal transition-colors">{item.name}</h3>
-        </Link>
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-neutral-50">
-          <span className="text-base font-black text-wa-teal">{Number(item.price).toLocaleString('fr-FR')} F</span>
-          <button 
-            onClick={handleAdd} 
-            disabled={item.stock === 0} 
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md ${added ? 'bg-green-500 text-white' : 'bg-wa-teal text-white hover:bg-wa-teal-dark'}`}
-          >
-            {added ? <CheckCircle2 size={18} /> : <ShoppingCart size={18} />}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import ProductCard from '@/components/ProductCard';
 
 export default function StorefrontClient({ params }) {
   const { slug } = use(params);
