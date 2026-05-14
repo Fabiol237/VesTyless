@@ -32,9 +32,18 @@ export function CartProvider({ children }) {
 
   const addToCart = (product) => {
     setCart(current => {
-      const existing = current.find(item => item.id === product.id);
+      // Un produit est identique seulement s'il a les mêmes variantes
+      const existing = current.find(item => 
+        item.id === product.id && 
+        JSON.stringify(item.selectedVariants) === JSON.stringify(product.selectedVariants)
+      );
+      
       if (existing) {
-        return current.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return current.map(item => 
+          (item.id === product.id && JSON.stringify(item.selectedVariants) === JSON.stringify(product.selectedVariants)) 
+          ? { ...item, quantity: item.quantity + 1 } 
+          : item
+        );
       }
       return [...current, { ...product, quantity: 1 }];
     });

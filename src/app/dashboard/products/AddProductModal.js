@@ -1,53 +1,79 @@
-import { useState, useEffect } from 'react';
-import { X, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, CheckCircle2, AlertCircle, Loader2, ChevronDown, ShoppingCart, Shirt, Smartphone, Home, Heart, Star, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/cloudinary';
-import { productsIndex } from '@/lib/meilisearch';
+import { offlineStore } from '@/lib/offlineStore';
 
+const CAT_ICONS = {
+  'ShoppingCart': ShoppingCart,
+  'Shirt': Shirt,
+  'Smartphone': Smartphone,
+  'Home': Home,
+  'Heart': Heart,
+  'Star': Star,
+  'Package': Package,
+};
+
+const CAT_COLORS = [
+  'bg-emerald-100 text-emerald-600',
+  'bg-violet-100 text-violet-600',
+  'bg-sky-100 text-sky-600',
+  'bg-orange-100 text-orange-600',
+  'bg-rose-100 text-rose-600',
+  'bg-amber-100 text-amber-600',
+  'bg-slate-100 text-slate-600',
+];
 
 export default function AddProductModal({ onClose, categories = [], storeId, onSuccess, productToEdit = null }) {
   const [name, setName] = useState(productToEdit?.name || '');
   const [description, setDescription] = useState(productToEdit?.description || '');
   const [price, setPrice] = useState(productToEdit?.price || '');
   const [stock, setStock] = useState(productToEdit?.stock_quantity || '');
-  const [categoryId, setCategoryId] = useState(productToEdit?.category_id || '');
+  const [globalCategoryId, setGlobalCategoryId] = useState(productToEdit?.global_category_id || '');
+  const [showCatDropdown, setShowCatDropdown] = useState(false);
   const [imageUrl, setImageUrl] = useState(productToEdit?.image_url || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusText, setStatusText] = useState('');
   const [error, setError] = useState('');
+  const catRef = useRef(null);
 
   const isEdit = !!productToEdit;
+  const selectedCat = categories.find(c => c.id === globalCategoryId);
+
+  useEffect(() => {
+    const handler = (e) => { if (catRef.current && !catRef.current.contains(e.target)) setShowCatDropdown(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleImageFile = async (file) => {
     if (!file) return;
-
     try {
       setUploadingImage(true);
       setError('');
       const { secureUrl } = await uploadImage(file, { folder: 'vestyle/products' });
-      if (!secureUrl) throw new Error('URL sécurisée non reçue de Cloudinary');
+      if (!secureUrl) throw new Error('Upload échoué');
       setImageUrl(secureUrl);
     } catch (err) {
-      console.error('[Upload] Erreur détaillée:', err);
-      const msg = err?.message || 'Erreur inconnue';
-      setError(`Erreur upload image: ${msg}`);
+      setError(`Erreur upload: ${err.message}`);
     } finally {
       setUploadingImage(false);
     }
   };
 
   const handleSave = async () => {
-    if (!name || !price || !categoryId) {
-      setError('Champs obligatoires : Nom, Prix, Catégorie.');
+    if (!name || !price || !globalCategoryId) {
+      setError('Champs obligatoires manquants.');
       return;
     }
     
     setLoading(true);
-    setError('');
+    setStatusText('Enregistrement...');
 
     const productData = {
       store_id: storeId,
-      category_id: categoryId,
+      global_category_id: globalCategoryId,
       name,
       description,
       price: parseFloat(price),
@@ -57,160 +83,100 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     };
 
     try {
-      let savedProduct;
+      const isOnline = navigator.onLine;
+      if (!isOnline) {
+        await offlineStore.addToQueue({
+          type: isEdit ? 'update_product' : 'create_product',
+          data: productData,
+          productId: productToEdit?.id
+        });
+        onSuccess(productData);
+        return;
+      }
+
       if (isEdit) {
-        const { data, error: updateError } = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', productToEdit.id)
-          .select()
-          .single();
-        if (updateError) throw updateError;
-        savedProduct = data;
+        await supabase.from('products').update(productData).eq('id', productToEdit.id);
       } else {
-        const { data, error: insertError } = await supabase
-          .from('products')
-          .insert([productData])
-          .select()
-          .single();
-        if (insertError) throw insertError;
-        savedProduct = data;
+        await supabase.from('products').insert([productData]);
       }
-
-      // Indexation en temps réel dans Meilisearch
-      try {
-        await productsIndex.addDocuments([savedProduct]);
-      } catch (meiliErr) {
-        console.error('Meilisearch Sync Error:', meiliErr);
-      }
-
-      if(onSuccess) onSuccess(savedProduct);
+      onSuccess(productData);
     } catch (err) {
-      setError(isEdit ? 'Erreur lors de la modification.' : 'Erreur lors de la création.');
+      setError('Erreur lors de la sauvegarde.');
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-      <div
-        onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-      />
-      
-      <div
-        className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden"
-      >
-        <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
+      <div onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden">
+        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-              {isEdit ? 'Modifier le Produit' : 'Nouveau Produit'}
-            </h2>
-            <p className="text-[10px] sm:text-sm text-gray-500 font-medium uppercase tracking-wider">
-              {isEdit ? 'Mettez à jour les informations de votre article.' : 'Ajoutez une pépite à votre catalogue.'}
-            </p>
+            <h2 className="text-2xl font-black text-gray-900">{isEdit ? 'Modifier' : 'Nouveau Produit'}</h2>
           </div>
-          <button onClick={onClose} className="p-2 sm:p-2.5 bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl sm:rounded-2xl transition-all">
-             <X size={18} className="sm:w-5 sm:h-5" />
-          </button>
+          <button onClick={onClose} className="p-2 bg-gray-50 rounded-xl"><X size={20}/></button>
         </div>
         
-        <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar text-left">
-           {error && (
-             <div className="flex items-center gap-3 p-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold border border-rose-100">
-               <AlertCircle size={18} />
-               {error}
-             </div>
-           )}
+        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-left">
+           {error && <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl font-bold">{error}</div>}
            
-           <div className="space-y-2">
-              <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Nom du produit *</label>
-              <input type="text" placeholder="Ex: Robe d'été en lin" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all placeholder:text-gray-400" value={name} onChange={e => setName(e.target.value)}/>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Prix (FCFA) *</label>
-                <input type="number" placeholder="0" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all" value={price} onChange={e => setPrice(e.target.value)}/>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Quantité en Stock</label>
-                <input type="number" placeholder="0" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all" value={stock} onChange={e => setStock(e.target.value)}/>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Description</label>
-              <textarea 
-                placeholder="Matière, coupe, conseils d'entretien..." 
-                className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all min-h-[100px] sm:min-h-[120px] resize-none"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-              ></textarea>
-            </div>
-
-            <div className="space-y-4">
-              <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Visuel du produit</label>
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-3">
-                <input
-                  type="url"
-                  placeholder="Lien de l'image (URL)..."
-                  className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
-                <label className="flex items-center justify-center gap-2 px-6 py-3 sm:py-4 bg-gray-100 text-gray-600 font-bold rounded-xl sm:rounded-2xl cursor-pointer hover:bg-gray-200 transition-all active:scale-95 text-sm sm:text-base">
-                  <Upload size={18} className="sm:w-5 sm:h-5" />
-                  <span>Upload</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageFile(e.target.files?.[0])}
-                  />
-                </label>
-              </div>
-             {uploadingImage && (
-               <div className="flex items-center gap-2 text-wa-teal text-xs font-bold bg-wa-chat p-2 rounded-lg">
-                 <Loader2 size={14} className="animate-spin" />
-                 Téléversement en cours...
-               </div>
-             )}
-             {imageUrl && (
-                <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-4 border-white shadow-xl">
-                  <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <button onClick={() => setImageUrl('')} className="absolute top-1 right-1 p-1 bg-white/80 rounded-full text-rose-600">
-                    <X size={14} />
-                  </button>
-                </div>
-             )}
+           <div className="space-y-2" ref={catRef}>
+               <label className="text-sm font-black text-gray-700 uppercase">Catégorie *</label>
+               <button onClick={() => setShowCatDropdown(!showCatDropdown)} className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 font-bold bg-gray-50">
+                 {selectedCat ? selectedCat.name : 'Choisir...'}
+                 <ChevronDown size={18}/>
+               </button>
+               {showCatDropdown && (
+                 <div className="absolute z-50 w-full left-0 px-8 mt-1">
+                   <div className="bg-white rounded-2xl shadow-2xl border border-gray-100">
+                     {categories.map(cat => (
+                       <button key={cat.id} onClick={() => { setGlobalCategoryId(cat.id); setShowCatDropdown(false); }} className="w-full p-4 text-left font-bold hover:bg-gray-50">{cat.name}</button>
+                     ))}
+                   </div>
+                 </div>
+               )}
            </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] sm:text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Catégorie *</label>
-              <select className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-gray-900 font-medium outline-none transition-all appearance-none cursor-pointer" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-                 <option value="">Sélectionnez une catégorie</option>
-                 {categories.map((c) => (
-                   <option key={c.id} value={c.id}>{c.name}</option>
-                 ))}
-              </select>
-            </div>
+           <div className="space-y-2">
+              <label className="text-sm font-black text-gray-700 uppercase">Nom *</label>
+              <input type="text" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={name} onChange={e => setName(e.target.value)}/>
+           </div>
+
+           <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-black text-gray-700 uppercase">Prix *</label>
+                <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={price} onChange={e => setPrice(e.target.value)}/>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-black text-gray-700 uppercase">Stock</label>
+                <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={stock} onChange={e => setStock(e.target.value)}/>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <label className="text-sm font-black text-gray-700 uppercase">Description</label>
+              <textarea className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-medium h-32" value={description} onChange={e => setDescription(e.target.value)}></textarea>
+           </div>
+
+           <div className="space-y-4">
+              <label className="text-sm font-black text-gray-700 uppercase">Image</label>
+              <div className="flex gap-4">
+                <input type="file" className="hidden" id="img-up" onChange={e => handleImageFile(e.target.files[0])}/>
+                <label htmlFor="img-up" className="px-6 py-4 bg-gray-100 rounded-2xl cursor-pointer font-bold flex items-center gap-2"><Upload size={20}/> Upload</label>
+                {imageUrl && <img src={imageUrl} className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-lg"/>}
+              </div>
+           </div>
         </div>
 
-        <div className="px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-3">
-           <button className="w-full sm:w-auto px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-500 font-bold hover:text-gray-900 transition-colors" onClick={onClose} disabled={loading}>Annuler</button>
-           <button 
-            className="w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-8 py-3.5 sm:py-4 bg-wa-teal text-white font-black rounded-xl sm:rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 disabled:bg-gray-400 disabled:shadow-none text-sm sm:text-base" 
-            onClick={handleSave} 
-            disabled={loading || uploadingImage}
-           >
-             {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-             <span>{loading ? (isEdit ? 'Mise à jour...' : 'Création...') : (isEdit ? 'Enregistrer les modifications' : 'Valider le produit')}</span>
+        <div className="p-8 bg-gray-50 border-t flex justify-end gap-4">
+           <button onClick={onClose} className="font-bold text-gray-500">Annuler</button>
+           <button onClick={handleSave} disabled={loading} className="px-10 py-4 bg-wa-teal text-white font-black rounded-2xl shadow-xl flex flex-col items-center">
+              <span>{loading ? 'Enregistrement...' : 'Valider'}</span>
+              {loading && <span className="text-[10px] opacity-80">{statusText}</span>}
            </button>
         </div>
       </div>
     </div>
   );
 }
-
-

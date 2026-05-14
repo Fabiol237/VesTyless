@@ -198,7 +198,21 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-wa-teal-dark mb-2">Mot de passe</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-wa-teal-dark">Mot de passe</label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email.trim()) { setError("Entrez votre email d'abord."); return; }
+                    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/login` });
+                    if (err) setError(err.message);
+                    else setError(null), alert("✅ Email de réinitialisation envoyé ! Vérifiez votre boîte.");
+                  }}
+                  className="text-xs text-wa-teal hover:underline font-bold"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
               <div className="mt-1">
                 <input
                   type="password"

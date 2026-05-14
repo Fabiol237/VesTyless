@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   Settings, Save, Loader2, ArrowLeft, Image as ImageIcon,
   Palette, Type, Megaphone, Globe, Info, CheckCircle2,
-  Camera, Trash2, Smartphone, MapPin, Navigation, Bot, Truck, Plus, User
+  Camera, Trash2, Smartphone, MapPin, Navigation, Bot, Truck, Plus, User, Send, TestTube
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
@@ -80,12 +80,14 @@ export default function StoreSettingsPage() {
     if (!storeSchema.hasCity) delete validFields.city;
     if (!storeSchema.hasPhone) delete validFields.phone;
 
-    const { error } = await supabase.from('stores').update(validFields).eq('id', storeId);
-
+    const { data, error } = await supabase.from('stores').update(validFields).eq('id', storeId).select().single();
+    
     if (error) {
       console.error("Erreur de sauvegarde:", error);
       setAutoSaveStatus('error');
     } else {
+        // Mise à jour réussie
+        console.log('Paramètres sauvegardés', data);
       setAutoSaveStatus('saved');
       setTimeout(() => setAutoSaveStatus('idle'), 3000);
     }
@@ -276,7 +278,7 @@ export default function StoreSettingsPage() {
         </Link>
       </div>
 
-      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Colonne de Gauche : Infos de Base & Branding */}
         <div className="lg:col-span-2 space-y-8">
@@ -409,7 +411,7 @@ export default function StoreSettingsPage() {
               </label>
 
               {formData.ai_enabled && (
-                <div className="grid grid-cols-1 gap-6 animate-fade-in">
+                <div className="grid grid-cols-1 gap-6 animate-fade-in mt-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Nom de l'Assistant</label>
                     <input type="text" name="ai_name" value={formData.ai_name} onChange={handleChange} placeholder="Ex: Sophie (Assistant VesTyle)" className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
@@ -422,6 +424,37 @@ export default function StoreSettingsPage() {
                   </div>
                 </div>
               )}
+
+              {/* AI DIAGNOSTIC TOOL */}
+              <div className="pt-4 mt-4 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Diagnostic IA</p>
+                  <p className="text-xs text-gray-500">Vérifiez si l'intelligence artificielle est prête.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ messages: [{ role: 'user', content: 'Vérification de connexion' }] })
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.content) {
+                        alert("✅ IA Opérationnelle : " + data.content.slice(0, 50) + "...");
+                      } else {
+                        alert("❌ Erreur IA : " + (data.error || "Configuration incomplète"));
+                      }
+                    } catch (err) {
+                      alert("❌ Erreur Réseau : " + err.message);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-all"
+                >
+                  <TestTube size={14} /> Tester l'IA
+                </button>
+              </div>
             </div>
           </section>
 
@@ -484,10 +517,51 @@ export default function StoreSettingsPage() {
                     className="w-full bg-white/10 backdrop-blur-md border-2 border-white/20 focus:border-white focus:bg-white/20 rounded-2xl px-5 py-4 text-sm font-black placeholder:text-white/40 outline-none transition-all resize-none"
                   ></textarea>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
                   <Info size={12} />
                   <span>Apparaît comme une bannière animée sur la boutique</span>
                 </div>
+              </div>
+
+              {/* NOTIFICATION DIAGNOSTIC */}
+              <div className="pt-6 mt-6 border-t border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black text-white/60 uppercase tracking-widest">Diagnostic Notifications</p>
+                  <p className="text-xs text-white/80">Vérifiez la configuration des emails (Resend).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!session?.email) return;
+                    try {
+                      const res = await fetch('/api/emails/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          to: session.email, 
+                          subject: 'Test de Notification VesTyle', 
+                          type: 'MESSAGE', 
+                          data: { message: 'Si vous recevez ceci, votre configuration email fonctionne.' } 
+                        })
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        if (data.email?.error) {
+                          alert("⚠️ Email en mode TEST : " + data.email.error.message + "\n\nNote: Vous devez valider votre domaine sur Resend.com pour envoyer à d'autres adresses.");
+                        } else {
+                          alert("✅ Email envoyé avec succès à " + session.email);
+                        }
+                      } else {
+                        alert("❌ Erreur Notification : " + (data.error || "Problème serveur"));
+                      }
+                    } catch (err) {
+                      alert("❌ Erreur Réseau : " + err.message);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-lg"
+                >
+                  <Send size={14} /> Tester l'Email
+                </button>
               </div>
             </div>
             <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
@@ -649,6 +723,39 @@ export default function StoreSettingsPage() {
             </div>
           </section>
 
+          {/* Live Preview Card (Simulation of the store card) */}
+          <section className="bg-white p-6 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600"><Smartphone size={20} /></div>
+              <h2 className="text-lg font-black text-gray-900">Aperçu en direct</h2>
+            </div>
+            
+            <div className="relative group w-full aspect-[4/5] bg-slate-50 rounded-[32px] overflow-hidden border border-slate-100 shadow-inner flex flex-col p-4">
+               {/* Mockup Store Card */}
+               <div className="bg-white rounded-[24px] overflow-hidden shadow-xl flex flex-col h-full border border-slate-50">
+                  <div className="h-24 w-full bg-slate-100 relative">
+                     {formData.banner_url ? <img src={formData.banner_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-100" />}
+                     <div className="absolute -bottom-6 left-4 w-12 h-12 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-white">
+                        {formData.logo_url ? <img src={formData.logo_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black bg-slate-50">{formData.name?.[0] || 'V'}</div>}
+                     </div>
+                  </div>
+                  <div className="pt-8 px-4 pb-4 flex-1 flex flex-col justify-between">
+                     <div>
+                        <h4 className="font-bold text-sm text-slate-900 truncate" style={{ color: formData.theme_color }}>{formData.name || 'Nom de la boutique'}</h4>
+                        <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-1">{formData.description || 'Description courte de votre boutique...'}</p>
+                     </div>
+                     <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-[9px] font-black text-slate-300 uppercase tracking-widest"><MapPin size={10} /> {formData.city || 'Douala'}</div>
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ backgroundColor: formData.theme_color }}>
+                           <ArrowLeft className="rotate-180" size={12} />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <p className="mt-4 text-[10px] text-center font-black text-slate-300 uppercase tracking-widest">Apparence de votre carte boutique</p>
+            </div>
+          </section>
+
           {/* Action Card (Auto-Save Indicator) */}
           <div className="bg-gray-900 p-8 rounded-[40px] shadow-2xl space-y-6">
             <div className="flex items-center gap-3">
@@ -667,7 +774,7 @@ export default function StoreSettingsPage() {
             </div>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

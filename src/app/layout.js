@@ -1,7 +1,5 @@
 import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
-import { CartProvider } from '@/context/CartContext';
-import PwaRegistry from '@/components/PwaRegistry';
+import ClientProviders from '@/components/ClientProviders';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyless.vercel.app'),
@@ -34,12 +32,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body className="antialiased system-fonts">
-        <AuthProvider>
-          <CartProvider>
-            <PwaRegistry />
-            {children}
-          </CartProvider>
-        </AuthProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

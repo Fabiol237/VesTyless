@@ -1,45 +1,52 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useRef } from 'react';
+import { offlineStore } from '@/lib/offlineStore';
 
 /**
- * Hook pour récupérer des données avec une stratégie 'Cache-First' (Offline)
- * @param {string} key - Clé unique pour le cache local
- * @param {Function} fetchQuery - Fonction retournant une promesse Supabase
- * @param {Array} dependencies - Dépendances pour re-déclencher le fetch
+ * Hook de haute performance pour charger des données instantanément (IDB Cache-First)
  */
 export function useOfflineData(key, fetchQuery, dependencies = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     let mounted = true;
 
     const loadData = async () => {
-      // 1. Charger depuis le cache local immédiatement (Ultra-rapide)
-      const cached = localStorage.getItem(`vestyle_cache_${key}`);
-      if (cached && mounted) {
-        setData(JSON.parse(cached));
-        setLoading(false); // On arrête le loading dès qu'on a le cache
+      // 1. CHARGEMENT INSTANTANÉ DEPUIS INDEXEDDB
+      try {
+        const cached = await offlineStore.get(key);
+        if (cached && mounted) {
+          setData(cached);
+          setLoading(false);
+          
+          // Stratégie intelligéante : si le cache date de moins de 5 minutes, 
+          // on ne re-fetch pas forcément tout de suite (sauf si c'est le premier montage)
+          const lastUpdate = localStorage.getItem(`vestyle_ts_${key}`);
+          const age = Date.now() - (parseInt(lastUpdate) || 0);
+          if (age < 300000 && !isInitialMount.current) return;
+        }
+      } catch (e) {
+        console.warn('[Offline] IDB get failed, falling back to network', e);
       }
 
-      // 2. Tenter de mettre à jour depuis le réseau
+      // 2. MISE À JOUR SILENCIEUSE DEPUIS LE RÉSEAU
       try {
         const { data: freshData, error: fetchError } = await fetchQuery();
-        
         if (fetchError) throw fetchError;
 
         if (mounted && freshData) {
           setData(freshData);
-          // Mettre à jour le cache pour la prochaine fois
-          localStorage.setItem(`vestyle_cache_${key}`, JSON.stringify(freshData));
+          await offlineStore.set(key, freshData);
+          localStorage.setItem(`vestyle_ts_${key}`, Date.now().toString());
         }
       } catch (err) {
-        console.error(`[Offline Engine] Erreur chargement ${key}:`, err);
+        console.error(`[Offline] Network error for ${key}:`, err);
         setError(err);
       } finally {
         if (mounted) setLoading(false);
+        isInitialMount.current = false;
       }
     };
 

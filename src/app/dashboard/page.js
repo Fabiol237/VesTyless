@@ -32,13 +32,13 @@ function formatDate(value) {
 // PERIOD CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 const PERIODS = [
-  { id: '7d',   label: '7 jours',   days: 7,    groupBy: 'day' },
-  { id: '30d',  label: '30 jours',  days: 30,   groupBy: 'day' },
-  { id: '90d',  label: '3 mois',    days: 90,   groupBy: 'week' },
-  { id: '6m',   label: '6 mois',    days: 182,  groupBy: 'week' },
-  { id: '1y',   label: '1 an',      days: 365,  groupBy: 'month' },
-  { id: '2y',   label: '2 ans',     days: 730,  groupBy: 'month' },
-  { id: '3y',   label: '3 ans',     days: 1095, groupBy: 'month' },
+  { id: '7d', label: '7 jours', days: 7, groupBy: 'day' },
+  { id: '30d', label: '30 jours', days: 30, groupBy: 'day' },
+  { id: '90d', label: '3 mois', days: 90, groupBy: 'week' },
+  { id: '6m', label: '6 mois', days: 182, groupBy: 'week' },
+  { id: '1y', label: '1 an', days: 365, groupBy: 'month' },
+  { id: '2y', label: '2 ans', days: 730, groupBy: 'month' },
+  { id: '3y', label: '3 ans', days: 1095, groupBy: 'month' },
 ];
 
 function buildChartData(orders, period) {
@@ -113,57 +113,71 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [analytics, setAnalytics] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [livreur, setLivreur] = useState(null);
+  const [deliveryCount, setDeliveryCount] = useState(0);
 
   const storeId = store?.id;
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (isSilent = false) => {
     if (!storeId) { setDashboardLoading(false); return; }
-    setDashboardLoading(true);
-    try {
-      // Fetch orders for up to 3 years to support all period filters
-      const since = new Date();
-      since.setFullYear(since.getFullYear() - 3);
+    if (!isSilent) setDashboardLoading(true);
 
-      const [productsRes, ordersRes, notifsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('store_id', storeId).order('created_at', { ascending: false }),
-        supabase.from('orders').select('*').eq('store_id', storeId)
+    try {
+      // Optimized: Fetch only last 90 days by default (covers 7d, 30d, 90d filters)
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+
+      const [productsRes, ordersRes, notifsRes, analyticsRes] = await Promise.all([
+        supabase.from('products').select('id, name, price, image_url, stock_quantity, created_at').eq('store_id', storeId).order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, created_at, status, total_amount, customer_name, customer_phone')
+          .eq('store_id', storeId)
           .gte('created_at', since.toISOString())
           .order('created_at', { ascending: false }),
-        supabase.from('notifications').select('*').eq('store_id', storeId)
-          .order('created_at', { ascending: false }).limit(5),
+        supabase.from('notifications').select('*').eq('store_id', storeId).order('created_at', { ascending: false }).limit(5),
+        supabase.rpc('get_store_weekly_analytics', { store_id_param: storeId })
       ]);
+
       setProducts(productsRes.data || []);
       setOrders(ordersRes.data || []);
       setNotifications(notifsRes.data || []);
+      setAnalytics(analyticsRes.data || []);
+
+      // Check if user is also a livreur
+      const { data: liv } = await supabase.from('livreurs').select('id').eq('user_id', store.owner_id).maybeSingle();
+      if (liv) {
+        setLivreur(liv);
+        const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
+          .eq('livreur_id', liv.id)
+          .not('status', 'in', '("delivered","cancelled")');
+        setDeliveryCount(count || 0);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Dashboard Load Error:', err);
     } finally {
       setDashboardLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, store?.owner_id]);
 
   useEffect(() => {
     if (!authLoading && storeId) {
       loadDashboardData();
 
-      // REAL-TIME: Listen for any changes in orders for this store
+      // REAL-TIME: Throttled refresh to avoid infinite loops and UI lag
+      let timeout;
       const channel = supabase
-        .channel(`dashboard-realtime-${storeId}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders', 
-          filter: `store_id=eq.${storeId}` 
-        }, () => {
-          console.log('Dashboard: Orders changed, refreshing stats...');
-          loadDashboardData();
+        .channel(`dashboard-rt-${storeId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` }, () => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => loadDashboardData(true), 1000); // Silent refresh after 1s stability
         })
         .subscribe();
 
       return () => {
+        clearTimeout(timeout);
         supabase.removeChannel(channel);
       };
     }
@@ -176,7 +190,7 @@ export default function SellerDashboard() {
     start.setDate(start.getDate() - selectedPeriod.days);
 
     const periodOrders = orders.filter(o => new Date(o.created_at) >= start);
-    
+
     // SYNC: Only count DELIVERED orders as Revenue (Actual Sales)
     const revenue = periodOrders
       .filter(o => o.status === 'delivered')
@@ -195,18 +209,21 @@ export default function SellerDashboard() {
     const pendingOrders = orders.filter(o => o.status === 'pending').length;
     const lowStock = products.filter(p => (p.stock_quantity || 0) <= 3).length;
 
+    const weeklyViews = analytics.reduce((acc, curr) => acc + (curr.total_views || 0), 0);
+
     return {
       revenue,
       ordersCount: periodOrders.length,
       pendingOrders,
       lowStock,
       growth,
+      weeklyViews,
     };
-  }, [orders, products, selectedPeriod]);
+  }, [orders, products, selectedPeriod, analytics]);
 
   // Chart data
   const chartBuckets = useMemo(() => buildChartData(orders, selectedPeriod), [orders, selectedPeriod]);
-  const chartData   = chartBuckets.map(b => b.total);
+  const chartData = chartBuckets.map(b => b.total);
   const chartLabels = chartBuckets.map(b => b.label);
 
   const updateOrderStatus = async (orderId, newStatus) => {
@@ -302,6 +319,20 @@ export default function SellerDashboard() {
             <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
           </div>
 
+          {/* Views (Analytics) */}
+          <div className="bg-indigo-600 text-white p-6 rounded-[32px] shadow-xl shadow-indigo-600/10 relative overflow-hidden group">
+            <div className="relative z-10">
+              <p className="text-xs font-black uppercase tracking-widest opacity-70">
+                Vues · 7 derniers jours
+              </p>
+              <h3 className="text-3xl font-black mt-2">{stats.weeklyViews}</h3>
+              <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
+                {stats.weeklyViews > 0 ? 'Excellente visibilité' : 'Générez du trafic !'}
+              </div>
+            </div>
+            <TrendingUp className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
+          </div>
+
           {/* Orders */}
           <div className="bg-emerald-500 text-white p-6 rounded-[32px] shadow-xl shadow-emerald-500/10 relative overflow-hidden group">
             <div className="relative z-10">
@@ -333,9 +364,39 @@ export default function SellerDashboard() {
             </h3>
             <p className="text-xs text-slate-400 font-bold mt-4">Articles à réapprovisionner</p>
           </div>
-      </div>
+        </div>
 
-      <div className="max-w-7xl mx-auto px-6">
+        {/* ── LIVREUR QUICK VIEW (DUAL ROLE) ─────────────────────────────── */}
+        {livreur && (
+          <div className="mt-8 animate-fade-in">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-[40px] p-8 border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 bg-white/10 backdrop-blur rounded-[24px] flex items-center justify-center text-emerald-400 shadow-inner">
+                    <Truck size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">Hub Livreur Rapide</h3>
+                    <p className="text-slate-400 text-sm font-medium">
+                      Vous avez <span className="text-emerald-400 font-black">{deliveryCount} livraison{deliveryCount > 1 ? 's' : ''}</span> en cours.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/delivery"
+                    className="flex-1 md:flex-none px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 hover:scale-105 transition-all shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2"
+                  >
+                    Ouvrir le Hub <Truck size={16} />
+                  </Link>
+                </div>
+              </div>
+              <Truck className="absolute -right-10 -bottom-10 w-48 h-48 text-white/5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
+            </div>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-6">
 
           {/* ── CHART ──────────────────────────────────────────────────────── */}
           <div className="mt-8">
@@ -389,11 +450,10 @@ export default function SellerDashboard() {
                       <h4 className="font-bold text-slate-900 text-lg">#{order.id.slice(0, 8).toUpperCase()}</h4>
                       <p className="text-sm text-slate-500 font-medium">{order.customer_name} · {order.customer_phone}</p>
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                          order.status === 'pending' ? 'bg-amber-100 text-amber-700'
-                          : order.status === 'processing' ? 'bg-sky-100 text-sky-700'
-                          : 'bg-wa-chat text-wa-teal-dark'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${order.status === 'pending' ? 'bg-amber-100 text-amber-700'
+                            : order.status === 'processing' ? 'bg-sky-100 text-sky-700'
+                              : 'bg-wa-chat text-wa-teal-dark'
+                          }`}>
                           {order.status === 'pending' ? 'Nouvelle' : order.status === 'processing' ? 'Préparation' : 'En route'}
                         </span>
                         <span className="text-sm font-black text-wa-teal">{formatAmount(order.total_amount)}</span>

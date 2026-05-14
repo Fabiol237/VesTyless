@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { publicProductsIndex, publicStoresIndex } from '@/lib/meilisearch';
 import Link from 'next/link';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
 import { useDistance } from '@/hooks/useDistance';
@@ -10,6 +9,40 @@ import { normalizeStr } from '@/lib/searchUtils';
 import ProductCard from '@/components/ProductCard';
 import { useOfflineData } from '@/hooks/useOfflineData';
 import dynamic from 'next/dynamic';
+import { 
+  LayoutGrid, 
+  ShoppingBag, 
+  Store, 
+  Sparkles, 
+  Search, 
+  MapPin, 
+  ChevronRight, 
+  X, 
+  SlidersHorizontal, 
+  Zap,
+  Shirt,
+  Utensils,
+  Smartphone,
+  Home,
+  HeartPulse,
+  Gamepad2,
+  MoreHorizontal
+} from 'lucide-react';
+
+const categoryIcons = {
+  'Mode & Beauté': Shirt,
+  'Alimentation': Utensils,
+  'High-Tech': Smartphone,
+  'Maison': Home,
+  'Santé': HeartPulse,
+  'Loisirs': Gamepad2,
+  'Divers': MoreHorizontal,
+};
+
+const CategoryIcon = ({ name, size = 24, className = "" }) => {
+  const Icon = categoryIcons[name] || LayoutGrid;
+  return <Icon size={size} className={className} />;
+};
 
 const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
   ssr: false,
@@ -57,7 +90,9 @@ export default function ClientDiscovery({
   initialSearchQuery = '', 
   initialProximity = false,
   externalSearchQuery = null,
-  onExternalSearchChange = null
+  onExternalSearchChange = null,
+  overrideProducts = null,
+  onClearVisualSearch = null
 }) {
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
@@ -73,7 +108,7 @@ export default function ClientDiscovery({
   const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [categorySearch, setCategorySearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(12);
 
   // Suggestions pour l'autocomplétion de la recherche principale
   const mainSuggestions = useMemo(() => {
@@ -87,18 +122,36 @@ export default function ClientDiscovery({
   
   const { formatDistance, getDistanceKm, requestLocation, userLocation } = useDistance();
   
+  // --- SMART RANKING (Simulation: Personalization) ---
+  const [userInterests, setUserInterests] = useState({});
+
+  useEffect(() => {
+    // Charger les intérêts locaux (catégories les plus vues)
+    const saved = localStorage.getItem('vestyle_user_interests');
+    if (saved) setUserInterests(JSON.parse(saved));
+  }, []);
+
+  const trackInterest = useCallback((categoryId) => {
+    if (!categoryId) return;
+    setUserInterests(prev => {
+      const next = { ...prev, [categoryId]: (prev[categoryId] || 0) + 1 };
+      localStorage.setItem('vestyle_user_interests', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   // Ask for location quietly once
   useEffect(() => {
     if (!userLocation) requestLocation();
   }, [userLocation, requestLocation]);
 
   // --- STRATÉGIE OFFLINE-FIRST POUR LE FLUX PRINCIPAL ---
-  const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed', async () => {
+  const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed_v4', async () => {
     // On regroupe les appels pour un cache cohérent
     const [prodRes, storeIdsRes, catRes] = await Promise.all([
-      supabase.from('products').select('id, name, price, image_url, created_at, category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), categories(name)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.from('products').select('id, name, price, image_url, created_at, global_category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), global_categories(name, icon)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('products').select('store_id').eq('is_active', true),
-      supabase.from('categories').select('*')
+      supabase.from('global_categories').select('*').is('parent_id', null).order('name')
     ]);
 
     const activeStoreIds = [...new Set((storeIdsRes.data || []).map(p => p.store_id))];
@@ -110,25 +163,29 @@ export default function ClientDiscovery({
 
     const normalizedProds = (prodRes.data || []).map(p => ({
       ...p,
-      category: p.categories?.name || 'Autre',
+      category: p.global_categories?.name || 'Autre',
     }));
 
     return { data: { products: normalizedProds, stores, categories: catRes.data || [] } };
   });
 
   useEffect(() => {
-    if (offlineDiscovery) {
+    if (overrideProducts) {
+      setProducts(overrideProducts);
+      setLoading(false);
+    } else if (offlineDiscovery) {
       setProducts(offlineDiscovery.products);
       setStores(offlineDiscovery.stores);
       setCategories(offlineDiscovery.categories);
       setLoading(false);
     }
-  }, [offlineDiscovery]);
+  }, [offlineDiscovery, overrideProducts]);
 
-  // Incrémenter vues produit (fire-and-forget)
-  const trackProductView = useCallback((productId) => {
+  // Incrémenter vues produit + Tracker l'intérêt local
+  const trackProductView = useCallback((productId, categoryId) => {
     safeRpc(supabase.rpc('increment_product_view', { prod_id: productId }));
-  }, []);
+    if (categoryId) trackInterest(categoryId);
+  }, [trackInterest]);
 
   // Incrémenter vues boutique (fire-and-forget)
   const trackStoreView = useCallback((storeId) => {
@@ -142,32 +199,24 @@ export default function ClientDiscovery({
   // Search effect
   useEffect(() => {
     const performSearch = async () => {
-      if (!searchQuery.trim()) {
+      const q = (searchQuery || '').trim();
+      if (!q) {
         setMeiliResults({ products: [], stores: [] });
         return;
       }
 
       setIsSearching(true);
       try {
-        // Parallel search for products and stores
-        const [prodSearch, storeSearch] = await Promise.all([
-          publicProductsIndex.search(searchQuery, {
-            limit: 12,
-            attributesToHighlight: ['name'],
-          }),
-          publicStoresIndex.search(searchQuery, {
-            limit: 4,
-          })
+        const [rpcDataRes, storeSearchRes] = await Promise.all([
+          supabase.rpc('search_products_v2', { search_term: searchQuery }),
+          supabase.from('stores')
+            .select('id, name, slug, logo_url, city, is_boosted, daily_views, latitude, longitude')
+            .ilike('name', `%${searchQuery}%`)
+            .limit(4)
         ]);
         
-        let fetchedProducts = prodSearch.hits;
-        let fetchedStores = storeSearch.hits;
-
-        // Fallback SQL (Tolérance de frappe) si Meilisearch est vide
-        if (fetchedProducts.length === 0) {
-          const { data: rpcData } = await supabase.rpc('search_products_v2', { search_term: searchQuery });
-          if (rpcData && rpcData.length > 0) fetchedProducts = rpcData;
-        }
+        let fetchedProducts = rpcDataRes.data || [];
+        let fetchedStores = storeSearchRes.data || [];
 
         setMeiliResults({
           products: fetchedProducts.map(hit => {
@@ -177,14 +226,8 @@ export default function ClientDiscovery({
           stores: fetchedStores
         });
       } catch (err) {
-        console.error('Meilisearch search error:', err);
-        // Fallback SQL total si Meilisearch est down
-        const { data: rpcData } = await supabase.rpc('search_products_v2', { search_term: searchQuery });
-        if (rpcData && rpcData.length > 0) {
-          setMeiliResults({ products: rpcData, stores: [] });
-        } else {
-          setMeiliResults({ products: [], stores: [] });
-        }
+        console.error('Supabase search error:', err);
+        setMeiliResults({ products: [], stores: [] });
       } finally {
         setIsSearching(false);
       }
@@ -196,17 +239,17 @@ export default function ClientDiscovery({
 
   // Produits filtrés + triés côté client
   const filteredProducts = useMemo(() => {
-    let result = searchQuery.trim() && meiliResults.products.length > 0 ? [...meiliResults.products] : [...products];
+    if (overrideProducts) return overrideProducts;
+    const _sq = (searchQuery || '').trim();
+    let result = _sq && meiliResults.products.length > 0 ? [...meiliResults.products] : [...products];
 
     // Client-side fallback ultra robuste si Meili/SQL sont vides
-    if (searchQuery.trim() && meiliResults.products.length === 0) {
-      const terms = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    if (_sq && meiliResults.products.length === 0) {
+      const terms = _sq.toLowerCase().split(/\s+/).filter(Boolean);
       
       const scoredProducts = products.map(p => {
         const pName = (p.name || '').toLowerCase();
-        const sName = (p.stores?.name || '').toLowerCase();
-        const pCat = (p.category || '').toLowerCase();
-        const fullText = `${pName} ${sName} ${pCat}`;
+        const fullText = `${pName}`;
         
         let score = 0;
         terms.forEach(t => {
@@ -245,13 +288,28 @@ export default function ClientDiscovery({
         break;
       default:
         result.sort((a, b) => {
+          // Priorité 1 : Produits Boostés (Sponsorisés)
           if (a.is_boosted !== b.is_boosted) return b.is_boosted ? 1 : -1;
+          
+          // Priorité 2 : Score d'Affinité (Personnalisation par habitude)
+          const scoreA = userInterests[a.category_id] || 0;
+          const scoreB = userInterests[b.category_id] || 0;
+          if (scoreA !== scoreB) return scoreB - scoreA;
+          
+          // Priorité 3 : Promotions
           if (a.is_promo !== b.is_promo) return b.is_promo ? 1 : -1;
+          
+          // Priorité 4 : Popularité globale
           return b.daily_views - a.daily_views;
         });
     }
     return result;
-  }, [products, searchQuery, activeCategory, sortBy, meiliResults.products, userLocation, getDistanceKm]);
+  }, [products, searchQuery, activeCategory, sortBy, meiliResults.products, userLocation, getDistanceKm, userInterests, overrideProducts]);
+
+  const displayedProducts = useMemo(() => filteredProducts.slice(0, visibleCount), [filteredProducts, visibleCount]);
+
+  // Safe searchQuery for JSX (avoid null.trim() crashes)
+  const sq = (searchQuery || '').trim();
 
   // Handle scroll reveal
   // IntersectionObserver removed to prevent elements staying invisible.
@@ -266,101 +324,100 @@ export default function ClientDiscovery({
   }
 
   return (
-    <div className="space-y-12 pb-20">
+    <div className="space-y-12 pb-20" id="discovery-section">
 
       {/* ═══════════════════════════════════════════
-          1. WHATSAPP STYLE SEARCH BAR
+          1. WHATSAPP STYLE SEARCH BAR - Hide if external search is handled by parent (e.g. Home Page)
       ════════════════════════════════════════════ */}
-      <section className="sticky top-[70px] z-40 transition-all duration-500 py-4 bg-[#F8F9FA]/80 backdrop-blur-xl">
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-wa-teal to-wa-green rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative bg-white px-4 py-3 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-3">
-            <SearchAutocomplete
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSelect={(s) => setSearchQuery(s.value)}
-              suggestions={mainSuggestions}
-              placeholder="Chercher le meilleur de Douala..."
-              className="flex-1"
-              inputClassName="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
-              dropdownOffset="mt-3"
-              leftIcon={<SearchIcon className={`transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />}
-            >
-              <div className="absolute right-3 flex items-center gap-2">
-                {isSearching && (
-                  <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
-                )}
-                <VoiceSearchButton
-                  onInterimResult={(text) => setSearchQuery(text)}
-                  onResult={(text) => setSearchQuery(text)}
-                  className="p-1"
-                />
+      {!externalSearchQuery && (
+        <section className="sticky top-[70px] z-40 transition-all duration-500 py-4 bg-[#F8F9FA]/80 backdrop-blur-xl">
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-wa-teal to-wa-green rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative bg-white px-4 py-3 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-3">
+              <SearchAutocomplete
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onSelect={(s) => setSearchQuery(s.value)}
+                suggestions={mainSuggestions}
+                placeholder="Chercher le meilleur de Douala..."
+                className="flex-1"
+                inputClassName="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
+                dropdownOffset="mt-3"
+                leftIcon={<SearchIcon className={`transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />}
+              >
+                <div className="absolute right-3 flex items-center gap-2">
+                  {isSearching && (
+                    <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <VoiceSearchButton
+                    onInterimResult={(text) => setSearchQuery(text)}
+                    onResult={(text) => setSearchQuery(text)}
+                    className="p-1"
+                  />
+                </div>
+              </SearchAutocomplete>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`p-3 rounded-xl transition-all flex-shrink-0 ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
+              >
+                <SlidersHorizontalIcon size={20} />
+              </button>
+              <button
+                onClick={() => setShowMap(!showMap)}
+                className={`p-3 rounded-xl transition-all flex-shrink-0 flex items-center gap-2 ${showMap ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+              >
+                <MapPinIcon size={20} />
+                <span className="hidden md:inline font-bold text-xs uppercase tracking-widest">Carte</span>
+              </button>
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="mt-2 bg-white p-4 rounded-2xl shadow-2xl border border-neutral-100 animate-fade-in space-y-4">
+              {/* Catégories (mobile) */}
+              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 pt-2">
+                {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
+                  const isActive = activeCategory === cat.name;
+                  return (
+                  <button
+                    key={cat.id || 'all'}
+                    onClick={() => { setActiveCategory(cat.name); setShowFilters(false); }}
+                    className={`flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-2xl min-w-[80px] transition-all border-2 ${isActive ? 'border-wa-teal bg-wa-teal/5' : 'border-transparent bg-neutral-50 hover:bg-neutral-100'}`}
+                  >
+                    <CategoryIcon name={cat.icon || 'LayoutGrid'} size={24} className={isActive ? 'text-wa-teal' : 'text-neutral-500'} />
+                    <span className={`text-[10px] font-black ${isActive ? 'text-wa-teal' : 'text-neutral-500'}`}>{cat.name === 'all' ? 'TOUT' : cat.name.toUpperCase()}</span>
+                  </button>
+                  );
+                })}
               </div>
-            </SearchAutocomplete>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-3 rounded-xl transition-all flex-shrink-0 ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
-            >
-              <SlidersHorizontalIcon size={20} />
-            </button>
-            <button
-              onClick={() => setShowMap(!showMap)}
-              className={`p-3 rounded-xl transition-all flex-shrink-0 flex items-center gap-2 ${showMap ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
-            >
-              <MapPinIcon size={20} />
-              <span className="hidden md:inline font-bold text-xs uppercase tracking-widest">Carte</span>
-            </button>
-          </div>
-        </div>
 
-        {showFilters && (
-          <div className="mt-2 bg-white p-4 rounded-2xl shadow-2xl border border-neutral-100 animate-fade-in space-y-4">
-            {/* Barre de recherche catégories (mobile) */}
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
-              <input
-                type="text"
-                placeholder="Chercher une catégorie..."
-                value={categorySearch}
-                onChange={e => setCategorySearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-400"
-              />
+              <div className="pt-2 border-t border-neutral-50 flex flex-wrap gap-2">
+                <span className="text-[10px] font-black text-neutral-400 w-full mb-1 uppercase tracking-widest">Trier par</span>
+                <button onClick={() => setSortBy('boost')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'boost' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Suggérés</button>
+                <button onClick={() => setSortBy('distance')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'distance' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>À proximité 📍</button>
+                <button onClick={() => setSortBy('newest')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'newest' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Nouveautés</button>
+                <button onClick={() => setSortBy('price_asc')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'price_asc' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Prix croissant</button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              {['all', ...categories.map(c => c.name || c)]
-                .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
-                .map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
-                  className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-black transition-all ${activeCategory === cat ? 'bg-wa-teal text-white shadow-md' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}
-                >
-                  {cat === 'all' ? 'TOUT' : cat.toUpperCase()}
-                </button>
-              ))}
-            </div>
+          )}
+        </section>
+      )}
 
-            <div className="pt-2 border-t border-neutral-50 flex flex-wrap gap-2">
-              <span className="text-[10px] font-black text-neutral-400 w-full mb-1 uppercase tracking-widest">Trier par</span>
-              <button onClick={() => setSortBy('boost')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'boost' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Suggérés</button>
-              <button onClick={() => setSortBy('distance')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'distance' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>À proximité 📍</button>
-              <button onClick={() => setSortBy('newest')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'newest' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Nouveautés</button>
-              <button onClick={() => setSortBy('price_asc')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'price_asc' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Prix croissant</button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* ═══════════════════════════════════════════
-          MAP VIEW (GLOBAL DISCOVERY)
-      ════════════════════════════════════════════ */}
       {showMap && (
-        <div className="animate-fade-in space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-neutral-900">Boutiques à proximité</h2>
-            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{stores.length} boutiques localisées</p>
+        <div className="animate-fade-in space-y-8" id="map-section">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Explorez la <span className="text-wa-teal">Ville</span></h2>
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Trouvez vos boutiques favorites</p>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+               <div className="w-10 h-10 rounded-xl bg-wa-teal/10 flex items-center justify-center text-wa-teal">
+                  <MapPinIcon size={20} />
+               </div>
+               <p className="text-xs font-black text-slate-600 uppercase tracking-widest">{stores.length} Boutiques</p>
+            </div>
           </div>
-          <div className="h-[60vh] md:h-[70vh] w-full rounded-[40px] overflow-hidden border-8 border-white shadow-2xl relative bg-neutral-100 group">
+          <div className="h-[60vh] md:h-[70vh] w-full rounded-[32px] overflow-hidden border border-white/50 shadow-2xl relative bg-neutral-100 group">
              <InteractiveMap 
                mode="view"
                initialPos={userLocation ? [userLocation.latitude, userLocation.longitude] : [4.0511, 9.7679]}
@@ -394,38 +451,31 @@ export default function ClientDiscovery({
       )}
 
       {/* ═══════════════════════════════════════════
-          MOBILE ONLY — Catégories scrollables (discret)
+          AIRBNB STYLE CATEGORY RIBBON (MOBILE)
       ════════════════════════════════════════════ */}
-      {!searchQuery && !showMap && categories.length > 0 && (
-        <div className="lg:hidden -mx-1 animate-fade-in">
-          {/* Petit champ de filtre discret */}
-          <div className="relative mb-2">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300" size={13} />
-            <input
-              type="text"
-              placeholder="Filtrer les catégories…"
-              value={categorySearch}
-              onChange={e => setCategorySearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-white border border-neutral-100 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-300 shadow-sm"
-            />
-          </div>
-          {/* Pills scrollables */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {['all', ...categories.map(c => c.name || c)]
-              .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
-              .map(cat => (
+      {!sq && !showMap && categories.length > 0 && !overrideProducts && (
+        <div className="lg:hidden -mx-4 px-4 bg-white sticky top-[70px] z-30 shadow-sm border-b border-neutral-100 pt-2 pb-1 animate-fade-in">
+          <div className="flex gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+            {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
+              const isActive = activeCategory === cat.name;
+              return (
                 <button
-                  key={cat}
-                  onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
-                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    activeCategory === cat
-                      ? 'bg-wa-teal text-white shadow-sm'
-                      : 'bg-white border border-neutral-200 text-neutral-500 hover:border-wa-teal hover:text-wa-teal'
-                  }`}
+                  key={cat.id || 'all'}
+                  onClick={() => { setActiveCategory(cat.name); }}
+                  className={`flex flex-col items-center gap-2 flex-shrink-0 snap-start pb-3 relative min-w-[60px] transition-all group`}
                 >
-                  {cat === 'all' ? 'Tout' : cat}
+                  <div className={`p-2 rounded-full transition-all duration-300 ${isActive ? 'bg-wa-teal/10 text-wa-teal scale-110' : 'text-neutral-500 group-hover:bg-neutral-50 group-hover:text-neutral-900'}`}>
+                    <CategoryIcon name={cat.icon || 'LayoutGrid'} size={24} />
+                  </div>
+                  <span className={`text-[10px] font-bold whitespace-nowrap transition-colors ${isActive ? 'text-slate-900' : 'text-neutral-500'}`}>
+                    {cat.name === 'all' ? 'Tout' : cat.name}
+                  </span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-wa-teal rounded-t-full shadow-[0_0_8px_#128c7e]"></div>
+                  )}
                 </button>
-              ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -433,7 +483,7 @@ export default function ClientDiscovery({
       {/* ═══════════════════════════════════════════
           2. GLOBAL SEARCH RESULTS (STORES + PRODUCTS)
       ════════════════════════════════════════════ */}
-      {searchQuery && (
+      {sq && !overrideProducts && (
         <div className="space-y-10">
           {/* Section Boutiques dans la recherche */}
           {meiliResults.stores.length > 0 && (
@@ -471,24 +521,37 @@ export default function ClientDiscovery({
       {/* ═══════════════════════════════════════════
           3. REGULAR FEED (WHATSAPP STATUS + ALL PRODUCTS)
       ════════════════════════════════════════════ */}
-      {!searchQuery && !showMap && (
+      {(!searchQuery || overrideProducts) && (
         <>
-          {/* Status Style Stores */}
-          {stores.length > 0 && (
+          {/* Vestyle Life (Stories Style) */}
+          {!overrideProducts && stores.length > 0 && (
             <section className="animate-fade-in">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">En ligne maintenant</h2>
-                <Link href="/boutiques" className="text-xs font-bold text-wa-teal">Voir tout</Link>
+              <div className="flex items-center justify-between mb-6 px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-8 bg-wa-teal rounded-full" />
+                  <div>
+                    <h2 className="text-xl font-black text-neutral-900 tracking-tight">Vestyle <span className="text-wa-teal">Life</span></h2>
+                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em]">En direct des boutiques</p>
+                  </div>
+                </div>
+                <Link href="/boutiques" className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Tout voir</Link>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                 {stores.map(store => (
-                  <Link key={store.id} href={`/boutique/${store.slug}`} className="flex-shrink-0 group flex flex-col items-center w-20">
-                    <div className={`relative p-[3px] rounded-full border-2 ${store.is_boosted ? 'border-wa-teal' : 'border-neutral-200'} group-hover:border-wa-teal transition-all duration-500`}>
-                      <div className="w-16 h-16 rounded-full overflow-hidden bg-neutral-100 border border-white shadow-sm">
+                  <Link key={store.id} href={`/boutique/${store.slug}`} className="flex-shrink-0 group flex flex-col items-center w-20 relative">
+                    <div className={`relative p-[3px] rounded-full transition-all duration-500 ${store.is_boosted ? 'bg-gradient-to-tr from-wa-teal to-emerald-400' : 'border-2 border-neutral-200'}`}>
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-white shadow-lg">
                         <img src={store.logo_url || '/placeholder-store.png'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={store.name} />
                       </div>
+                      {/* Pulse Live indicator */}
+                      <div className="absolute bottom-0 right-0 w-5 h-5 bg-wa-teal rounded-full border-2 border-white flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      </div>
                     </div>
-                    <span className="text-[11px] font-bold text-neutral-800 mt-2 truncate w-full text-center group-hover:text-wa-teal">{store.name}</span>
+                    <span className="text-[10px] font-black text-neutral-800 mt-2 truncate w-full text-center uppercase tracking-tighter group-hover:text-wa-teal">{store.name}</span>
+                    {store.is_boosted && (
+                      <span className="absolute -top-1 right-0 bg-orange-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full shadow-sm">LIVE</span>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -499,47 +562,83 @@ export default function ClientDiscovery({
           <section className="animate-fade-in flex flex-col lg:flex-row gap-8">
             
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-[160px] bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm">
-                <h3 className="font-black text-lg mb-4">Catégories</h3>
-                {/* Barre de recherche catégories (desktop) */}
-                <div className="relative mb-4">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={15} />
-                  <input
-                    type="text"
-                    placeholder="Filtrer..."
-                    value={categorySearch}
-                    onChange={e => setCategorySearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2.5 bg-neutral-50 border border-neutral-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-wa-teal/20 placeholder-neutral-400"
-                  />
-                </div>
-                <div className="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar">
-                  {['all', ...categories.map(c => c.name || c)]
-                    .filter(cat => cat === 'all' || normalizeStr(cat).includes(normalizeStr(categorySearch)))
-                    .map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => { setActiveCategory(cat); setCategorySearch(''); }}
-                      className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === cat ? 'bg-wa-teal/10 text-wa-teal' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'}`}
-                    >
-                      {cat === 'all' ? 'Toutes les catégories' : cat}
-                    </button>
-                  ))}
+            {!overrideProducts && (
+              <div className="hidden lg:block w-64 flex-shrink-0">
+                <div className="sticky top-[160px] bg-white p-6 rounded-3xl border border-neutral-100 shadow-xl shadow-neutral-100/50">
+                  <h3 className="font-black text-xl mb-6 text-slate-900 tracking-tight">Catégories</h3>
+                  <div className="space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                    {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
+                      const isActive = activeCategory === cat.name;
+                      return (
+                      <button
+                        key={cat.id || 'all'}
+                        onClick={() => { setActiveCategory(cat.name); }}
+                        className={`w-full text-left px-4 py-3.5 rounded-2xl font-bold transition-all flex items-center gap-4 group ${isActive ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/20 scale-[1.02]' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 hover:scale-[1.01]'}`}
+                      >
+                        <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-white/20' : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-wa-teal group-hover:shadow-sm'}`}>
+                          <CategoryIcon name={cat.icon || 'LayoutGrid'} size={20} />
+                        </div>
+                        <span className="text-sm">{cat.name === 'all' ? 'Toutes les catégories' : cat.name}</span>
+                        {isActive && <ChevronRightIcon className="ml-auto opacity-70" size={16} />}
+                      </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* All Products Feed */}
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-black text-neutral-900">À la une</h2>
-                <div className="text-sm font-bold text-neutral-500">{filteredProducts.length} produits</div>
+              {/* Header: Résultats IA ou titre normal */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                {overrideProducts ? (
+                  <div className="flex items-center justify-between bg-emerald-50 text-emerald-800 p-4 rounded-3xl border border-emerald-100 shadow-sm w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                        <SparklesIcon size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-lg">Résultats IA</h3>
+                        <p className="text-xs font-bold opacity-80 uppercase tracking-widest">{overrideProducts.length} produit(s) trouvé(s)</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onClearVisualSearch}
+                      className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-600 font-bold text-sm rounded-xl hover:bg-emerald-100 transition-colors"
+                    >
+                      <XIcon size={16} /> Fermer
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-10 bg-wa-teal rounded-full shadow-[0_0_10px_#128c7e]" />
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Découverte <span className="text-wa-teal">Live</span></h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{filteredProducts.length} pépites disponibles</p>
+                    </div>
+                  </div>
+                  </>
+                )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProducts.map((item, idx) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {displayedProducts.map((item, idx) => (
                   <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} formatDistance={formatDistance} />
                 ))}
               </div>
+
+              {visibleCount < filteredProducts.length && (
+                <div className="mt-12 flex justify-center">
+                  <button 
+                    onClick={() => setVisibleCount(v => v + 12)}
+                    className="group flex items-center gap-3 px-10 py-5 bg-white border border-slate-100 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-wa-teal hover:text-wa-teal transition-all shadow-sm hover:shadow-xl active:scale-95"
+                  >
+                    <span>Charger plus de pépites</span>
+                    <Zap size={14} className="group-hover:animate-bounce" />
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         </>

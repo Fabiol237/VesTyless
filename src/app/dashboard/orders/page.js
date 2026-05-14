@@ -45,8 +45,12 @@ function OrderTicket({ order, onStatusChange, isUpdating, livreurs, onAssignLivr
     window.open(`https://wa.me/${(order.customer_phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  const handlePrintIndividual = () => {
+    window.open(`/suivi/${order.id}/invoice`, '_blank');
+  };
+
   return (
-    <div className="relative w-full print:shadow-none mb-6" style={{ filter:'drop-shadow(0 8px 30px rgba(0,0,0,0.08))' }}>
+    <div id={`ticket-${order.id}`} className="relative w-full print:shadow-none mb-6" style={{ filter:'drop-shadow(0 8px 30px rgba(0,0,0,0.08))' }}>
       <style>{`
         @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
         .tshim { background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.4) 50%,transparent 100%); background-size:200% 100%; animation:shimmer 4s infinite linear; }
@@ -214,6 +218,13 @@ function OrderTicket({ order, onStatusChange, isUpdating, livreurs, onAssignLivr
                 <Printer size={12} /> {order.can_print_invoice ? 'Facture Activée' : 'Autoriser Facture'}
               </button>
 
+              <button 
+                onClick={handlePrintIndividual}
+                className="w-full py-2.5 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+              >
+                <Printer size={12} /> Imprimer Reçu
+              </button>
+
               {st!=='cancelled'&&st!=='delivered'&&<button disabled={isUpdating} onClick={()=>onStatusChange(order,'cancelled')} className="w-full py-2 text-rose-400 hover:text-rose-600 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors"><XCircle size={12}/> Annuler la commande</button>}
             </div>
           </div>
@@ -248,24 +259,33 @@ export default function OrdersPage() {
   const [pageError, setPageError]   = useState('');
   const [livreurs, setLivreurs]     = useState([]);
   
+  const [displayLimit, setDisplayLimit] = useState(20);
+  const [hasMore, setHasMore] = useState(true);
+
   const fetchOrders = useCallback(async () => {
     if (!store?.id) return;
     setLoading(true); setPageError('');
     try {
-      const [ordersRes, livreursRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('store_id', store.id).order('created_at', { ascending: false }),
-        supabase.from('livreurs').select('*').eq('store_id', store.id)
-      ]);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, created_at, status, total_amount, customer_name, customer_phone, customer_email, shipping_address, livreur_id, can_print_invoice')
+        .eq('store_id', store.id)
+        .order('created_at', { ascending: false })
+        .range(0, displayLimit - 1);
 
-      if (ordersRes.error) throw ordersRes.error;
-      setOrders(ordersRes.data || []);
-      setLivreurs(livreursRes.data || []);
+      if (error) throw error;
+      
+      const { data: livData } = await supabase.from('livreurs').select('*').eq('store_id', store.id);
+
+      setOrders(data || []);
+      setLivreurs(livData || []);
+      setHasMore((data || []).length === displayLimit);
     } catch (err) { 
       console.error(err);
       setPageError('Erreur lors du chargement des commandes.'); 
     }
     finally { setLoading(false); }
-  }, [store?.id]);
+  }, [store?.id, displayLimit]);
 
   useEffect(()=>{ fetchOrders(); },[fetchOrders]);
 
@@ -316,12 +336,28 @@ export default function OrdersPage() {
 
   const handleAssignLivreur = async (orderId, livreurId) => {
     try {
-      const { error } = await supabase
+      const { data: orderData, error } = await supabase
         .from('orders')
         .update({ livreur_id: livreurId || null })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select()
+        .single();
+      
       if (error) throw error;
+      
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, livreur_id: livreurId } : o));
+      
+      // Notify Livreur if assigned
+      if (livreurId && orderData) {
+        const liv = livreurs.find(l => l.id === livreurId);
+        if (liv && (liv.phone || liv.email)) {
+          // Trigger WhatsApp or Email Notification
+          const msg = `📦 Nouvelle livraison assignée ! Commande #${shortId(orderId)}. Ouvrez votre Hub Livreur pour plus de détails.`;
+          if (liv.phone) {
+             window.open(`https://wa.me/${liv.phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+          }
+        }
+      }
     } catch (err) {
       alert("Erreur lors de l'assignation du livreur.");
     }
@@ -454,6 +490,18 @@ export default function OrdersPage() {
               currentUserId={session?.id}
             />
           ))
+        )}
+
+        {hasMore && !loading && (
+          <div className="flex justify-center pt-6">
+            <button 
+              onClick={() => setDisplayLimit(prev => prev + 20)}
+              className="px-10 py-4 bg-white border border-gray-200 text-gray-900 font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-sm hover:shadow-md hover:bg-gray-50 transition-all flex items-center gap-3"
+            >
+              Charger plus de commandes
+              <ArrowUpDown size={14} />
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -115,9 +115,13 @@ export function AuthProvider({ children }) {
         setStore(storeData);
       } else if (storeError?.code === 'PGRST116' || !storeData) {
         // No store found for this user, let's create a default one
+        // Try to get store_name from auth metadata
+        const { data: { user } } = await supabase.auth.getUser();
+        const storeNameFromMeta = user?.user_metadata?.store_name;
+        
         const randomString = Math.random().toString(36).substring(2, 8);
-        const defaultName = `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
-        const defaultSlug = `boutique-${randomString}`;
+        const defaultName = storeNameFromMeta || `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
+        const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
 
         const { data: newStore, error: insertError } = await supabase
           .from('stores')
@@ -133,6 +137,8 @@ export function AuthProvider({ children }) {
 
         if (!insertError && newStore) {
           setStore(newStore);
+          // Initialisation de la boutique sans Meilisearch
+          console.log('Boutique créée', newStore);
         } else {
           console.error("Erreur lors de la creation de la boutique auto:", insertError);
         }

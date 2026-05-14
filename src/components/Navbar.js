@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
@@ -42,11 +42,14 @@ const ZapIcon = ({ size = 16, className = "" }) => (
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
   const [searchQuery, setSearchQuery] = useState("");
   const { addSearch } = useUserPreferences();
   const { session, signOut } = useAuth();
   const { cart } = useCart();
   const [dataSaver, setDataSaver] = useState(false);
+  const [dataSaverToast, setDataSaverToast] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,8 +61,11 @@ export default function Navbar() {
     const newVal = !dataSaver;
     setDataSaver(newVal);
     localStorage.setItem('vestyle_data_saver', String(newVal));
-    window.dispatchEvent(new Event('storage')); // Notifier les autres composants
-    if (newVal) alert("Mode 'Vestyle Lite' activé : Les images ne seront plus chargées automatiquement pour économiser votre DATA.");
+    window.dispatchEvent(new Event('storage'));
+    if (newVal) {
+      setDataSaverToast(true);
+      setTimeout(() => setDataSaverToast(false), 3000);
+    }
   };
 
   const totalCartItems = cart.reduce((total, item) => total + item.quantity, 0);
@@ -93,29 +99,31 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Center: SEARCH (Desktop) */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
-          />
-          <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
-            <VoiceSearchButton
-              onInterimResult={(text) => setSearchQuery(text)}
-              onResult={(text) => {
-                setSearchQuery(text);
-                router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-              }}
-              className="p-1 text-white/80 hover:text-white transition-colors"
+        {/* Center: SEARCH (Desktop) - Hide on home page to avoid redundancy with Hero search */}
+        {!isHomePage && (
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
             />
-            <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
-              <SearchIcon size={18} />
-            </button>
-          </div>
-        </form>
+            <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
+              <VoiceSearchButton
+                onInterimResult={(text) => setSearchQuery(text)}
+                onResult={(text) => {
+                  setSearchQuery(text);
+                  router.push(`/search?q=${encodeURIComponent(text.trim())}`);
+                }}
+                className="p-1 text-white/80 hover:text-white transition-colors"
+              />
+              <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
+                <SearchIcon size={18} />
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Right: DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-4 text-white">
@@ -230,6 +238,13 @@ export default function Navbar() {
           )}
         </nav>
       </div>
+
+      {/* LITE MODE TOAST */}
+      {dataSaverToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-orange-500 text-white px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 animate-fade-in">
+          <ZapIcon size={16} /> Mode Lite activé — images masquées pour économiser votre DATA
+        </div>
+      )}
     </header>
   );
 }

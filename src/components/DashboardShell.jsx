@@ -23,10 +23,11 @@ export default function DashboardShell({ children }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roleChecked, setRoleChecked] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
 
   useEffect(() => {
-    // Pas encore chargé
-    if (loading) return;
+    if (!isClient || loading) return;
 
     // Non connecté → login
     if (session === null) {
@@ -51,9 +52,9 @@ export default function DashboardShell({ children }) {
           }
         });
     }
-  }, [session, loading, router, store]);
+  }, [session, loading, router, store, isClient]);
 
-  if (loading || !roleChecked) {
+  if (!isClient || loading || !roleChecked) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <Loader2Icon className="animate-spin text-indigo-500 mb-4" size={40} />

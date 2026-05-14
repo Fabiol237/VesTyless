@@ -1,6 +1,8 @@
 'use client';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { getSuggestions } from '@/lib/searchUtils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 
 /**
  * Composant de recherche avec autocomplétion intelligente :
@@ -110,37 +112,53 @@ export default function SearchAutocomplete({
         {children}
       </div>
 
-      {showDropdown && (
-        <div className={`absolute left-0 right-0 ${dropdownOffset} bg-white rounded-2xl shadow-2xl border border-neutral-100 z-[999] overflow-hidden max-h-80 overflow-y-auto`}>
-          {Object.entries(grouped).map(([type, items]) => (
-            <div key={type}>
-              <div className="px-4 pt-3 pb-1 text-[10px] font-black text-neutral-400 uppercase tracking-widest bg-neutral-50">
-                {type}
+      <AnimatePresence>
+        {showDropdown && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={`absolute left-0 right-0 ${dropdownOffset} bg-white rounded-3xl shadow-2xl border border-neutral-100 z-[999] overflow-hidden max-h-96 overflow-y-auto document-shadow`}
+          >
+            {Object.entries(grouped).map(([type, items]) => (
+              <div key={type}>
+                <div className="px-5 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] bg-slate-50/50 flex items-center justify-between">
+                  {type}
+                  <div className="h-px bg-slate-200 flex-1 ml-4 opacity-50" />
+                </div>
+                {items.map((s) => {
+                  globalIdx++;
+                  const idx = globalIdx;
+                  return (
+                    <button
+                      key={`${s.label}-${idx}`}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
+                      className={`w-full text-left px-5 py-4 flex items-center gap-4 transition-all ${
+                        highlighted === idx ? 'bg-emerald-50 text-emerald-900 border-l-4 border-emerald-500' : 'hover:bg-slate-50 text-slate-700 border-l-4 border-transparent'
+                      }`}
+                    >
+                      <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-xl shadow-sm">
+                        {s.emoji || '🔍'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black truncate tracking-tight">{s.label}</p>
+                        {s.sublabel && (
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate mt-0.5">{s.sublabel}</p>
+                        )}
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 text-emerald-500">
+                        <ArrowLeft className="rotate-180" size={14} />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              {items.map((s) => {
-                globalIdx++;
-                const idx = globalIdx;
-                return (
-                  <button
-                    key={`${s.label}-${idx}`}
-                    type="button"
-                    onMouseDown={(e) => { e.preventDefault(); selectSuggestion(s); }}
-                    className={`w-full text-left px-4 py-3 flex items-center gap-3 border-b border-neutral-50 last:border-0 transition-colors ${
-                      highlighted === idx ? 'bg-emerald-50 text-emerald-800' : 'hover:bg-neutral-50 text-neutral-700'
-                    }`}
-                  >
-                    <span className="text-base leading-none flex-shrink-0">{s.emoji || '🔍'}</span>
-                    <span className="flex-1 text-sm font-semibold truncate">{s.label}</span>
-                    {s.sublabel && (
-                      <span className="text-xs text-neutral-400 truncate max-w-[100px]">{s.sublabel}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

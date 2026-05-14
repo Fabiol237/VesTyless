@@ -48,16 +48,41 @@ export default function PwaRegistry() {
         const reg = await navigator.serviceWorker.register('/sw.js');
         console.log('[Vestyle PWA] Service Worker enregistré:', reg.scope);
         
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (Notification.permission === 'granted') {
-            await syncPushSubscription(reg, user);
-          } else {
-            console.log('[Vestyle PWA] Permission notification:', Notification.permission);
+        // --- FORCE UPDATE LOGIC ---
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Nouvelle version disponible !
+              if (confirm('🎉 Une nouvelle version de Vestyle est disponible ! Voulez-vous mettre à jour ?')) {
+                window.location.reload();
+              }
+            }
+          });
+        });
+
+        // --- SYNC AUTH & PUSH (Delayed to avoid race conditions with main app) ---
+        setTimeout(async () => {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) throw sessionError;
+            
+            const user = session?.user;
+            if (user && Notification.permission === 'granted') {
+              await syncPushSubscription(reg, user);
+            }
+          } catch (err) {
+            // Silence auth lock errors as they are common and self-correcting in multi-tab PWA
+            if (!err.message?.includes('lock')) {
+              console.warn('[Vestyle PWA] Auth sync skipped:', err.message);
+            }
           }
-        }
+        }, 1000);
+
       } catch (err) {
-        console.error('[Vestyle PWA] Erreur init:', err);
+        if (!err.message?.includes('lock')) {
+          console.error('[Vestyle PWA] Erreur init:', err);
+        }
       }
     };
 

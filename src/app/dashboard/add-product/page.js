@@ -4,7 +4,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { deleteCloudinaryByUrl, uploadImage } from '@/lib/cloudinary';
 import { useRouter } from 'next/navigation';
-import { ImagePlus, Package, ArrowLeft, Loader2, Save } from 'lucide-react';
+import CategorySearch from '@/components/CategorySearch';
+
+import { ImagePlus, Package, ArrowLeft, Loader2, Save, Plus, X, List, Palette, Maximize, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AddProductPage() {
@@ -12,19 +14,22 @@ export default function AddProductPage() {
   const router = useRouter();
   
   const [storeId, setStoreId] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const tempUploadedUrlsRef = useRef(new Set());
   const saveSucceededRef = useRef(false);
+
+  // Nouvel état étendu
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category_id: '',
+    global_category_id: '',
     price: '',
     stock_quantity: '1',
-    image_url: ''
+    images: [] // Tableau pour multi-images
   });
+
+  const [variants, setVariants] = useState([]); // [{type: 'taille', value: 'M', stock: 10}]
 
   useEffect(() => {
     if (!session?.id) return;
@@ -36,206 +41,258 @@ export default function AddProductPage() {
   }, [session]);
 
   useEffect(() => {
-    if (!storeId) return;
-
-    async function fetchCategories() {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('store_id', storeId)
-        .order('name', { ascending: true });
-
-      if (data) {
-        setCategories(data);
-      }
-    }
-
-    fetchCategories();
-  }, [storeId]);
-
-  useEffect(() => {
     const urlsRef = tempUploadedUrlsRef.current;
     return () => {
       if (saveSucceededRef.current) return;
-
       const pending = Array.from(urlsRef);
-      pending.forEach((url) => {
-        deleteCloudinaryByUrl(url);
-      });
+      pending.forEach((url) => deleteCloudinaryByUrl(url));
     };
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    setUploadingImage(true);
+    const newImages = [...formData.images];
+    
+    for (const file of files) {
+      if (newImages.length >= 4) break;
+      try {
+        const url = await uploadImage(file);
+        newImages.push(url);
+        tempUploadedUrlsRef.current.add(url);
+      } catch (err) {
+        console.error('Upload failed:', err);
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, images: newImages }));
+    setUploadingImage(false);
+
+    // IA: Si c'est la première image, on essaie de deviner la catégorie
+    if (newImages.length === 1 && !formData.global_category_id) {
+       suggestCategory(newImages[0]);
+    }
   };
 
-  const handleImageFile = async (file) => {
-    if (!file) return;
-
+  const suggestCategory = async (imageUrl) => {
     try {
-      setUploadingImage(true);
-      const previousUrl = formData.image_url;
-      const { secureUrl } = await uploadImage(file, { folder: 'vestyle/products' });
-      if (!secureUrl) {
-        throw new Error("Upload invalide");
-      }
-
-      if (previousUrl && previousUrl !== secureUrl && tempUploadedUrlsRef.current.has(previousUrl)) {
-        await deleteCloudinaryByUrl(previousUrl);
-        tempUploadedUrlsRef.current.delete(previousUrl);
-      }
-
-      setFormData((prev) => ({ ...prev, image_url: secureUrl }));
-      tempUploadedUrlsRef.current.add(secureUrl);
+      // Import dynamique pour ne pas ralentir le chargement initial
+      const { pipeline, env } = await import('@xenova/transformers');
+      env.allowLocalModels = false;
+      const classifier = await pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32');
+      
+      // On teste contre quelques catégories mères
+      const labels = ['vêtement', 'chaussure', 'électronique', 'accessoire', 'beauté', 'meuble'];
+      const results = await classifier(imageUrl, labels);
+      console.log('IA Suggestion:', results);
+      // Logique simplifiée pour l'exemple : si c'est vêtement -> suggérer mode
     } catch (err) {
-      alert("Erreur upload image: " + (err?.message || "Impossible de televerser l'image"));
-    } finally {
-      setUploadingImage(false);
+      console.warn('IA Suggestion indisponible');
     }
   };
 
-  const handleRemoveImage = async () => {
-    const currentUrl = formData.image_url;
-    if (!currentUrl) return;
-
-    if (tempUploadedUrlsRef.current.has(currentUrl)) {
-      await deleteCloudinaryByUrl(currentUrl);
-      tempUploadedUrlsRef.current.delete(currentUrl);
+  const removeImage = async (index) => {
+    const urlToRemove = formData.images[index];
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    if (tempUploadedUrlsRef.current.has(urlToRemove)) {
+       await deleteCloudinaryByUrl(urlToRemove);
+       tempUploadedUrlsRef.current.delete(urlToRemove);
     }
+  };
 
-    setFormData((prev) => ({ ...prev, image_url: '' }));
+  const addVariant = (type) => {
+    setVariants([...variants, { type, value: '', stock: formData.stock_quantity || 1 }]);
+  };
+
+  const updateVariant = (index, field, val) => {
+    const newVariants = [...variants];
+    newVariants[index][field] = val;
+    setVariants(newVariants);
+  };
+
+  const removeVariant = (index) => {
+    setVariants(variants.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!storeId) {
-      alert("Aucune boutique liée !");
-      return;
-    }
+    if (!storeId) return alert("Aucune boutique liée !");
     
     setLoading(true);
-    const { error } = await supabase.from('products').insert([{
+
+    // Extraction embedding IA
+    let embeddingVector = null;
+    if (formData.images.length > 0) {
+      try {
+        const { pipeline, env } = await import('@xenova/transformers');
+        env.allowLocalModels = false;
+        const extractor = await pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32');
+        const output = await extractor(formData.images[0]);
+        embeddingVector = `[${Array.from(output.data).join(',')}]`;
+      } catch (err) { console.error('Erreur IA:', err); }
+    }
+
+    const newProduct = {
       store_id: storeId,
-      category_id: formData.category_id || null,
+      global_category_id: formData.global_category_id || null,
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
       stock_quantity: parseInt(formData.stock_quantity),
-      image_url: formData.image_url || null
-    }]);
+      image_url: formData.images[0] || null,
+      images: formData.images,
+      image_embedding: embeddingVector
+    };
 
-    setLoading(false);
+    const { data: product, error } = await supabase.from('products').insert([newProduct]).select().single();
+
     if (error) {
-      alert("Erreur lors de la création : " + error.message);
-    } else {
-      const currentImage = formData.image_url;
-      const staleTemps = Array.from(tempUploadedUrlsRef.current).filter((url) => url && url !== currentImage);
-      if (staleTemps.length > 0) {
-        await Promise.allSettled(staleTemps.map((url) => deleteCloudinaryByUrl(url)));
-      }
-
-      saveSucceededRef.current = true;
-      tempUploadedUrlsRef.current.clear();
-      router.push('/dashboard');
+      alert("Erreur création produit : " + error.message);
+      setLoading(false);
+      return;
     }
+
+    if (variants.length > 0) {
+      try {
+        const variantRecords = variants.map(v => ({
+          product_id: product.id,
+          variant_type: v.type,
+          variant_value: v.value,
+          stock_quantity: parseInt(v.stock)
+        }));
+        await supabase.from('product_variants').insert(variantRecords);
+      } catch (e) { console.warn("Erreur variantes:", e); }
+    }
+
+    saveSucceededRef.current = true;
+    router.push('/dashboard');
   };
 
-  if (session === undefined) return <div className="min-h-screen bg-wa-bg flex justify-center items-center"><Loader2 className="animate-spin text-wa-teal" size={48} /></div>;
-
   return (
-    <div className="space-y-8">
-      <Link href="/dashboard" className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6 font-medium transition-colors w-max">
-        <ArrowLeft size={16} /> Revenir au catalogue
-      </Link>
-      
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold text-wa-teal-dark flex items-center gap-3"><Package size={28} className="text-wa-teal"/> Ajouter un produit</h1>
-        <p className="text-neutral-500 mt-2 text-sm">Créez une nouvelle fiche produit qui sera immédiatement visible sur votre boutique Vestyle.</p>
-      </header>
-
-      <form onSubmit={handleSubmit} className="max-w-2xl bg-white border border-neutral-200 rounded-3xl p-8 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Nom du produit *</label>
-            <input required type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Ex: T-Shirt Vintage Oversize" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-3 focus:outline-none focus:border-wa-teal transition-colors" />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Description</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} rows="4" placeholder="Décrivez votre produit en détail (matière, conseils d&apos;entretien...)" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-3 focus:outline-none focus:border-wa-teal transition-colors"></textarea>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Prix (XAF) *</label>
-            <input required type="number" min="0" name="price" value={formData.price} onChange={handleChange} placeholder="Ex: 15000" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-3 focus:outline-none focus:border-wa-teal transition-colors" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Stock disponible *</label>
-            <input required type="number" min="1" name="stock_quantity" value={formData.stock_quantity} onChange={handleChange} placeholder="Ex: 10" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-3 focus:outline-none focus:border-wa-teal transition-colors" />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Catégorie</label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleChange}
-              className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl px-4 py-3 focus:outline-none focus:border-wa-teal"
-            >
-              <option value="">Aucune catégorie</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            {categories.length === 0 && (
-              <p className="text-xs text-neutral-500 mt-2">Aucune catégorie trouvée, le produit sera créé sans catégorie.</p>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-neutral-900 mb-2">Url de l&apos;image (Optionnel)</label>
-            <div className="flex gap-3 items-center">
-              <div className="flex-1 relative">
-                <ImagePlus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} placeholder="https://lien... (Ou connectez Supabase Storage plus tard)" className="w-full bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-wa-teal transition-colors" />
-              </div>
+    <div className="min-h-screen bg-neutral-50/50 pb-20">
+      <div className="max-w-4xl mx-auto px-4 pt-8">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-neutral-400 hover:text-wa-teal font-bold text-sm mb-8 transition-colors group">
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Retour au Dashboard
+        </Link>
+        
+        <header className="mb-10">
+          <h1 className="text-3xl font-black text-wa-teal-dark flex items-center gap-3">
+            <div className="w-12 h-12 bg-wa-teal/10 rounded-2xl flex items-center justify-center text-wa-teal">
+              <Package size={28} />
             </div>
-            <div className="mt-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-100 transition-colors">
-                  Choisir une image locale
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageFile(e.target.files?.[0])}
-                  />
-                </label>
-                {formData.image_url && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
-                  >
-                    Supprimer l&apos;image
-                  </button>
+            Nouveau Produit
+          </h1>
+          <p className="text-neutral-500 mt-2 font-medium">Ajoutez un article avec variantes et multi-photos.</p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* COLONNE GAUCHE: IMAGES */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-neutral-100">
+              <label className="block text-sm font-black text-neutral-900 mb-4 uppercase tracking-widest">Photos du produit (Max 4)</label>
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {formData.images.map((url, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group border border-neutral-100">
+                    <img src={url} className="w-full h-full object-cover" alt="" />
+                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-white/90 backdrop-blur-md p-1.5 rounded-full text-red-500 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X size={14} />
+                    </button>
+                    {idx === 0 && <div className="absolute bottom-1 left-1 bg-wa-teal text-white text-[8px] font-black px-1.5 py-0.5 rounded-md">PRINCIPALE</div>}
+                  </div>
+                ))}
+                
+                {formData.images.length < 4 && (
+                  <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-wa-teal hover:bg-wa-teal/5 transition-all text-neutral-400 hover:text-wa-teal">
+                    {uploadingImage ? <Loader2 className="animate-spin" /> : <ImagePlus size={24} />}
+                    <span className="text-[10px] font-black uppercase">Ajouter</span>
+                    <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
                 )}
               </div>
-              {uploadingImage && <p className="text-xs text-neutral-500 mt-2">Upload de l&apos;image en cours...</p>}
+              <p className="text-[10px] text-neutral-400 font-medium leading-relaxed">
+                Tip: La première image sera utilisée pour le Scan Live (Vestyle Lens).
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 pt-6 border-t border-neutral-100 flex items-center justify-end gap-4">
-          <Link href="/dashboard" className="px-6 py-3 rounded-xl font-bold text-neutral-600 hover:bg-neutral-100 transition-colors">Annuler</Link>
-          <button disabled={loading} type="submit" className="bg-wa-green disabled:bg-neutral-300 disabled:text-neutral-500 hover:bg-wa-teal text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm">
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Enregistrer le produit
-          </button>
-        </div>
-      </form>
+          {/* COLONNE DROITE: INFOS */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-neutral-100 space-y-6">
+              {/* NOM & DESCRIPTION */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">Nom de l'article</label>
+                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Robe de soirée en soie" className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 font-bold text-neutral-900 placeholder-neutral-300 focus:ring-2 focus:ring-wa-teal transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">Description</label>
+                  <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Détails du produit..." className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 font-bold text-neutral-900 placeholder-neutral-300 focus:ring-2 focus:ring-wa-teal transition-all resize-none" />
+                </div>
+              </div>
+
+              {/* CATÉGORIE & PRIX */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">Catégorie Standard</label>
+                  <CategorySearch 
+                    selectedId={formData.global_category_id} 
+                    onSelect={(cat) => setFormData({...formData, global_category_id: cat.id})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">Prix (FCFA)</label>
+                  <input type="number" required value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="0" className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 font-bold text-neutral-900 placeholder-neutral-300 focus:ring-2 focus:ring-wa-teal transition-all" />
+                </div>
+              </div>
+
+              {/* VARIANTES */}
+              <div className="pt-6 border-t border-neutral-50">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-xs font-black text-neutral-400 uppercase tracking-widest">Variantes (Tailles / Couleurs)</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => addVariant('Taille')} className="text-[10px] font-black bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                      <Maximize size={12} /> + Taille
+                    </button>
+                    <button type="button" onClick={() => addVariant('Couleur')} className="text-[10px] font-black bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                      <Palette size={12} /> + Couleur
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {variants.map((v, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-neutral-50 p-3 rounded-2xl animate-fade-in">
+                      <div className="bg-white px-3 py-2 rounded-xl text-[10px] font-black text-wa-teal border border-neutral-100">{v.type}</div>
+                      <input type="text" required placeholder="Ex: XL ou Rouge" value={v.value} onChange={e => updateVariant(i, 'value', e.target.value)} className="flex-1 bg-transparent border-none p-0 text-sm font-bold outline-none" />
+                      <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-neutral-100">
+                        <span className="text-[9px] font-black text-neutral-400">STOCK</span>
+                        <input type="number" value={v.stock} onChange={e => updateVariant(i, 'stock', e.target.value)} className="w-12 bg-transparent border-none p-0 text-sm font-black text-center outline-none" />
+                      </div>
+                      <button type="button" onClick={() => removeVariant(i)} className="text-neutral-300 hover:text-red-500 transition-colors p-1"><X size={16}/></button>
+                    </div>
+                  ))}
+                  {variants.length === 0 && (
+                    <div className="text-center py-6 border-2 border-dashed border-neutral-50 rounded-3xl text-neutral-300 text-[10px] font-bold uppercase tracking-widest">
+                      Aucune variante définie
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BOUTON SAUVEGARDER */}
+              <button type="submit" disabled={loading} className="w-full bg-wa-teal-dark text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-wa-teal-dark/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                {loading ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Certifier et Publier</>}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

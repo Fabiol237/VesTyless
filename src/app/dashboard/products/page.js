@@ -1,13 +1,12 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, Search, HelpCircle, Trash2, Package, Layers, 
+import {
+  Plus, Search, HelpCircle, Trash2, Package, Layers,
   TrendingUp, AlertCircle, Loader2, Edit3, MoreVertical, QrCode, X
 } from 'lucide-react';
 import { getProductQrUrl } from '@/lib/qrcode';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { productsIndex } from '@/lib/meilisearch';
 import AddProductModal from './AddProductModal';
 import Image from 'next/image';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
@@ -27,20 +26,20 @@ export default function ProductsPage() {
   const [qrModalProduct, setQrModalProduct] = useState(null);
 
   const fetchCategories = useCallback(async () => {
-    if (!store) return;
     const { data, error } = await supabase
-      .from('categories')
+      .from('global_categories')
       .select('*')
-      .eq('store_id', store.id);
+      .is('parent_id', null)
+      .order('name');
     if (!error && data) setCategories(data);
-  }, [store]);
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     if (!store) return;
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('*, categories(name)')
+      .select('*, global_categories(name)')
       .eq('store_id', store.id)
       .order('created_at', { ascending: false });
     if (!error && data) setProducts(data);
@@ -53,65 +52,37 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchCategories, fetchProducts, store]);
 
-  // Recherche Meilisearch avec Debounce
+  // Recherche locale avec Debounce
   useEffect(() => {
     if (!store) return;
-    
+
     if (search.trim() === '') {
       setMeiliResults(null);
       setIsSearching(false);
       return;
     }
 
-    const performSearch = async () => {
+    const performSearch = () => {
       setIsSearching(true);
-      try {
-        const response = await productsIndex.search(search, {
-          filter: `store_id = ${store.id}`,
-          limit: 50
-        });
-        setMeiliResults(response.hits);
-      } catch (err) {
-        console.error('Meilisearch search error:', err);
-      } finally {
-        setIsSearching(false);
-      }
+      const lowerSearch = search.toLowerCase();
+      const filtered = products.filter(p =>
+        p.name.toLowerCase().includes(lowerSearch) ||
+        (p.global_categories?.name || '').toLowerCase().includes(lowerSearch)
+      );
+      setMeiliResults(filtered);
+      setIsSearching(false);
     };
 
     const timer = setTimeout(performSearch, 300);
     return () => clearTimeout(timer);
-  }, [search, store]);
+  }, [search, store, products]);
 
-  const addCategory = async () => {
-    if (!catInput.trim() || !store) return;
-    setCategoryLoading(true);
-    
-    const strName = catInput.trim();
-    const slug = strName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-    const { data, error } = await supabase
-      .from('categories')
-      .insert([{ store_id: store.id, name: strName, slug }])
-      .select()
-      .single();
-
-    if (!error && data) {
-      setCategories([...categories, data]);
-      setCatInput('');
-    }
-    setCategoryLoading(false);
-  };
 
   const deleteProduct = async (id) => {
     if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) {
       setProducts(products.filter(p => p.id !== id));
-      try {
-        await productsIndex.deleteDocument(id);
-      } catch (err) {
-        console.error('Meilisearch delete error:', err);
-      }
     }
   };
 
@@ -125,9 +96,9 @@ export default function ProductsPage() {
     setShowAddModal(true);
   };
 
-  const displayProducts = meiliResults || products.filter(p => 
+  const displayProducts = meiliResults || products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.categories?.name || '').toLowerCase().includes(search.toLowerCase())
+    (p.global_categories?.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
@@ -149,7 +120,7 @@ export default function ProductsPage() {
             <HelpCircle size={18} className="text-wa-teal" />
             <span className="hidden sm:inline">Aide</span>
           </button>
-          <button 
+          <button
             onClick={openAddModal}
             className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
           >
@@ -179,69 +150,23 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Category Management */}
-        <div className="lg:col-span-1 space-y-4 text-left">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
-            <div>
-              <h3 className="text-lg font-black text-gray-900">Catégories</h3>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Organisez votre boutique</p>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Nom de la catégorie..." 
-                  className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-4 py-3 text-sm font-medium outline-none transition-all pr-12"
-                  value={catInput}
-                  onChange={(e) => setCatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-                />
-                <button 
-                  onClick={addCategory}
-                  disabled={categoryLoading}
-                  className="absolute right-2 top-2 p-1.5 bg-wa-teal text-white rounded-xl hover:bg-wa-teal-dark transition-all disabled:opacity-50"
-                >
-                  {categoryLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-                </button>
-              </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                {categories.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">Aucune catégorie...</p>
-                ) : (
-                  categories.map((c) => (
-                    <span key={c.id} className="px-3 py-1.5 bg-wa-chat text-wa-teal-dark text-[10px] font-black uppercase tracking-tight rounded-lg border border-wa-teal/10">
-                      {c.name}
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-wa-teal to-wa-teal-dark p-6 rounded-3xl text-white shadow-xl shadow-wa-teal/20 relative overflow-hidden group">
-            <TrendingUp size={80} className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform" />
-            <h4 className="text-sm font-bold opacity-80 uppercase tracking-widest mb-1">Astuce Pro</h4>
-            <p className="text-xs font-medium leading-relaxed">Utilisez des noms de catégories simples pour aider vos clients à trouver leurs produits plus rapidement.</p>
-          </div>
-        </div>
 
         {/* Products Grid/List */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-3 space-y-4">
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden text-left">
             <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center gap-3">
               <Search size={18} className="text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Chercher par nom ou catégorie..." 
+              <input
+                type="text"
+                placeholder="Chercher par nom ou catégorie..."
                 className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-gray-400 flex-1"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-              <VoiceSearchButton 
+              <VoiceSearchButton
                 onInterimResult={(text) => setSearch(text)}
-                onResult={(text) => setSearch(text)} 
+                onResult={(text) => setSearch(text)}
                 className="p-1"
               />
             </div>
@@ -278,12 +203,12 @@ export default function ProductsPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-gray-900 truncate">{p.name}</h4>
                           <span className="text-[10px] font-black text-wa-teal bg-wa-chat px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                            {p.categories?.name || 'Sans catégorie'}
+                            {p.global_categories?.name || 'Sans catégorie'}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 mt-1">
@@ -300,21 +225,21 @@ export default function ProductsPage() {
                       </div>
 
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
+                        <button
                           onClick={() => setQrModalProduct(p)}
                           className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
                           title="Voir QR Code"
                         >
                           <QrCode size={18} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => openEditModal(p)}
                           className="p-2 text-wa-teal hover:bg-wa-chat rounded-xl transition-all"
                           title="Modifier"
                         >
                           <Edit3 size={18} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => deleteProduct(p.id)}
                           className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                           title="Supprimer"
@@ -334,7 +259,7 @@ export default function ProductsPage() {
       {qrModalProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[32px] w-full max-w-sm shadow-2xl overflow-hidden relative">
-            <button 
+            <button
               onClick={() => setQrModalProduct(null)}
               className="absolute right-4 top-4 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors"
             >
@@ -343,15 +268,15 @@ export default function ProductsPage() {
             <div className="p-8 text-center">
               <h3 className="text-xl font-black text-gray-900 mb-1">QR Code</h3>
               <p className="text-sm font-medium text-gray-500 mb-6 truncate">{qrModalProduct.name}</p>
-              
+
               <div className="bg-gray-50 p-4 rounded-3xl inline-block border border-gray-100 shadow-inner">
-                <img 
-                  src={getProductQrUrl(qrModalProduct.id, store?.slug, 300)} 
+                <img
+                  src={getProductQrUrl(qrModalProduct.id, store?.slug, 300)}
                   alt={`QR Code for ${qrModalProduct.name}`}
                   className="w-48 h-48 rounded-xl object-contain"
                 />
               </div>
-              
+
               <p className="text-xs text-gray-400 mt-6 font-medium px-4">
                 Vos clients peuvent scanner ce code pour accéder directement à ce produit.
               </p>
@@ -361,9 +286,9 @@ export default function ProductsPage() {
       )}
 
       {showAddModal && (
-        <AddProductModal 
-          onClose={() => setShowAddModal(false)} 
-          categories={categories} 
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          categories={categories}
           storeId={store?.id}
           productToEdit={productToEdit}
           onSuccess={() => {
