@@ -86,15 +86,15 @@ export default function Navbar() {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 bg-wa-teal py-3 shadow-md`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm text-slate-900 border-b border-slate-100' : 'bg-transparent text-white'} py-3 sm:py-4`}>
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex items-center justify-between">
 
         {/* Left: LOGO */}
         <Link href="/" className="flex items-center gap-2 group z-50">
-          <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm">
-            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
+          <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm border border-slate-200 bg-white">
+            <img src="/icon-512.png" className="w-full h-full object-cover p-1" alt="Vestyle" />
           </div>
-          <span className="font-bold text-xl text-white hidden sm:block tracking-wide">
+          <span className={`font-bold text-xl hidden sm:block tracking-wide ${isScrolled ? 'text-slate-900' : 'text-white'}`}>
             Vestyle
           </span>
         </Link>
@@ -107,7 +107,7 @@ export default function Navbar() {
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/10 text-white placeholder-white/70 rounded-full pl-5 pr-20 py-2 text-sm focus:outline-none focus:bg-white/20 transition-colors border-none"
+              className={`w-full ${isScrolled ? 'bg-slate-100 text-slate-900 placeholder-slate-500 border-slate-200' : 'bg-white/10 text-white placeholder-white/70 border-white/20'} border rounded-full pl-5 pr-20 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner`}
             />
             <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
               <VoiceSearchButton
@@ -116,9 +116,9 @@ export default function Navbar() {
                   setSearchQuery(text);
                   router.push(`/search?q=${encodeURIComponent(text.trim())}`);
                 }}
-                className="p-1 text-white/80 hover:text-white transition-colors"
+                className={`p-1.5 rounded-full ${isScrolled ? 'text-slate-400 hover:text-emerald-600 hover:bg-slate-200' : 'text-white/80 hover:text-white hover:bg-white/20'} transition-colors`}
               />
-              <button type="submit" className="p-1 flex items-center justify-center text-white/80 hover:text-white transition-colors">
+              <button type="submit" className={`p-1.5 rounded-full flex items-center justify-center ${isScrolled ? 'text-slate-400 hover:text-emerald-600 hover:bg-slate-200' : 'text-white/80 hover:text-white hover:bg-white/20'} transition-colors`}>
                 <SearchIcon size={18} />
               </button>
             </div>
@@ -126,11 +126,11 @@ export default function Navbar() {
         )}
 
         {/* Right: DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-4 text-white">
-          <Link href="/cart" className="relative p-2 hover:bg-white/10 rounded-full transition-colors">
+        <nav className="hidden md:flex items-center gap-2">
+          <Link href="/cart" className={`relative p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`}>
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full shadow-sm">
+              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
                 {totalCartItems}
               </span>
             )}
@@ -138,55 +138,55 @@ export default function Navbar() {
 
           <button
             onClick={toggleDataSaver}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse' : 'bg-white/10 text-white/80 hover:bg-white/20'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse shadow-lg' : isScrolled ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`}
           >
             <ZapIcon size={12} /> {dataSaver ? 'Lite ON' : 'Lite Mode'}
           </button>
 
-          <Link href="/mes-commandes" className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest transition-all" title="Suivre mes commandes">
+          <Link href="/mes-commandes" className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${isScrolled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Suivre mes commandes">
             <PackageIcon size={14} /> Mes Commandes
           </Link>
 
           <Link
             href="/profile"
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`}
           >
             <UserIcon size={22} />
           </Link>
 
           {session ? (
-            <div className="flex items-center gap-2 pl-2">
-              <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord vendeur">
+            <div className="flex items-center gap-1 pl-2 border-l border-white/20 ml-1">
+              <Link href="/dashboard" className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`} title="Tableau de bord vendeur">
                 <StoreIcon size={20} />
               </Link>
-              <button onClick={() => signOut()} className="p-2 hover:bg-white/10 rounded-full text-white/80 transition-colors" title="Déconnexion">
+              <button onClick={() => signOut()} className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-rose-50 text-rose-500' : 'text-white hover:bg-white/20 hover:text-rose-200'}`} title="Déconnexion">
                 <LogOutIcon size={20} />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 pl-2">
-              <Link href="/login" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
-                Vendeur
+            <div className="flex items-center pl-2 ml-1">
+              <Link href="/login" className={`text-xs font-bold px-4 py-2 rounded-full transition-all ${isScrolled ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md' : 'bg-white text-emerald-900 hover:bg-emerald-50 shadow-md'}`}>
+                Vendre
               </Link>
             </div>
           )}
         </nav>
 
         {/* Right: MOBILE TOGGLE */}
-        <div className="flex md:hidden items-center gap-3 z-50 text-white">
-          <Link href="/cart" className="relative p-2">
+        <div className={`flex md:hidden items-center gap-2 z-50 ${isScrolled ? 'text-slate-700' : 'text-white'}`}>
+          <Link href="/cart" className={`relative p-2 rounded-full ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}>
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-wa-green text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
                 {totalCartItems}
               </span>
             )}
           </Link>
-          <button onClick={() => router.push('/profile')} className="p-2">
+          <button onClick={() => router.push('/profile')} className={`p-2 rounded-full ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}>
             <UserIcon size={22} />
           </button>
           <button
-            className="p-2 focus:outline-none"
+            className={`p-2 rounded-full focus:outline-none ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}

@@ -1,86 +1,128 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, X, Loader2, Image as ImageIcon, ScanSearch, AlertCircle } from 'lucide-react';
+import { Camera, X, Loader2, Image as ImageIcon, ScanSearch, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-// Paramétrage de Transformers.js pour utiliser le web
-const configureEnv = async () => {
-  const { env } = await import('@xenova/transformers');
-  env.allowLocalModels = false;
-};
-
 const AI_READY_KEY = 'vestyle_ai_ready';
+const MODEL_CACHE_KEY = 'vestyle_model_cache_time';
 
 export default function VisualSearchModal({ onClose, onResultsFound }) {
-  const [phase, setPhase] = useState('init'); // 'init' | 'consent' | 'loading' | 'ready' | 'analyzing' | 'results' | 'empty'
+  const [phase, setPhase] = useState('init');
   const [statusText, setStatusText] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
   const [results, setResults] = useState([]);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState(null);
 
   const extractorRef = useRef(null);
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
-  // -- Initialisation au montage (SANS CHARGEMENT AUTOMATIQUE) --
   useEffect(() => {
-    configureEnv();
-    setPhase('consent'); // On commence toujours par le consentement pour économiser la RAM
+    setPhase('consent');
   }, []);
 
-  const loadModel = useCallback(async (silent = false) => {
+  // Compression d'image optimisée pour Android
+  const compressImage = useCallback(async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+
+          // Redimensionner si trop grand (max 1024px)
+          if (width > height) {
+            if (width > 1024) {
+              height = Math.round((height * 1024) / width);
+              width = 1024;
+            }
+          } else {
+            if (height > 1024) {
+              width = Math.round((width * 1024) / height);
+              height = 1024;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(resolve, 'image/jpeg', 0.8);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  }, []);
+
+  const loadModel = useCallback(async () => {
     try {
       if (!extractorRef.current) {
-        setStatusText('Initialisation de l\'IA sécurisée…');
+        setStatusText('Téléchargement du modèle IA (150 Mo)…');
+        setPhase('loading');
+
         const { getAIExtractor } = await import('@/lib/aiService');
-        if (!silent) setPhase('loading');
-        
+
         extractorRef.current = await getAIExtractor((info) => {
-          if (info.status === 'progress' && !silent) {
-            setProgress(Math.round(info.progress || 0));
-            setStatusText(`Préparation… ${Math.round(info.progress || 0)}%`);
+          if (info.status === 'progress') {
+            const p = Math.round(info.progress || 0);
+            setProgress(p);
+            setStatusText(`Installation… ${p}%`);
           }
         });
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(AI_READY_KEY, 'true');
-        }
+        localStorage.setItem(AI_READY_KEY, 'true');
+        localStorage.setItem(MODEL_CACHE_KEY, Date.now().toString());
       }
       setPhase('ready');
     } catch (err) {
       console.error('Erreur IA:', err);
-      setPhase('consent');
-      setStatusText('Mémoire saturée ou erreur de connexion.');
+      setError('Impossible de charger l\'IA. Vérifiez votre connexion Wi-Fi.');
+      setPhase('error');
     }
   }, []);
 
-  const handleActivate = () => {
-    loadModel(false);
-  };
-
   const processImage = useCallback(async (file) => {
-    if (!file || !extractorRef.current) return;
-
-    const objectUrl = URL.createObjectURL(file);
-    setImagePreview(objectUrl);
-    setPhase('analyzing');
-    setStatusText('Analyse des couleurs et des formes…');
+    if (!file) return;
 
     try {
-      // Charger l'image
+      setError(null);
+      setPhase('analyzing');
+      setStatusText('Compression de l\'image…');
+
+      // Compresser l'image
+      const compressedFile = await compressImage(file);
+      const objectUrl = URL.createObjectURL(compressedFile);
+      setImagePreview(objectUrl);
+
+      if (!extractorRef.current) {
+        setStatusText('Initialisation du modèle…');
+        await loadModel();
+      }
+
+      setStatusText('Analyse des formes et couleurs…');
       const img = new Image();
       img.src = objectUrl;
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
 
-      setStatusText('Création de l\'empreinte visuelle IA…');
-      const output = await extractorRef.current(img.src);
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      setStatusText('Création de l\'empreinte IA…');
+      const output = await extractorRef.current(objectUrl);
       const vector = Array.from(output.data);
 
-      setStatusText('Recherche dans toutes les boutiques Vestyle…');
+      setStatusText('Recherche dans Vestyle…');
       const { data, error } = await supabase.rpc('search_products_visual', {
         query_embedding: `[${vector.join(',')}]`,
-        match_threshold: 0.55, // seuil assoupli pour plus de résultats
-        match_count: 16
+        match_threshold: 0.5,
+        match_count: 12
       });
 
       if (error) throw error;
@@ -88,241 +130,281 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
       if (data && data.length > 0) {
         setResults(data);
         setPhase('results');
-        setStatusText(`${data.length} produit(s) trouvé(s) !`);
+        setStatusText(`✅ ${data.length} produit(s) trouvé(s)!`);
 
-        // ✅ Envoyer les résultats au feed principal et fermer après 600ms
         if (onResultsFound) {
           setTimeout(() => {
             onResultsFound(data);
             onClose();
-          }, 600);
+          }, 800);
         }
       } else {
         setPhase('empty');
-        setStatusText('Aucun produit similaire trouvé dans le catalogue.');
+        setStatusText('Aucun produit similaire trouvé.');
       }
+
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
-      console.error('Erreur recherche visuelle:', err);
-      setPhase('empty');
-      setStatusText('Recherche échouée. Essayez avec une photo plus claire.');
+      console.error('Erreur:', err);
+      setError('Erreur lors de l\'analyse. Essayez avec une photo plus nette.');
+      setPhase('error');
     }
-  }, [onResultsFound, onClose]);
+  }, [compressImage, loadModel, onResultsFound, onClose]);
 
   const handleFileChange = (e) => processImage(e.target.files?.[0]);
-  const resetSearch = () => { setImagePreview(null); setResults([]); setPhase('ready'); };
+  const resetSearch = () => {
+    setImagePreview(null);
+    setResults([]);
+    setError(null);
+    setPhase('ready');
+  };
 
-  // ── Rendu par phase ─────────────────────────────────────────────────────────
+  // ── RENDU ──
 
-  const renderContent = () => {
-    if (phase === 'init') {
-      return (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="text-emerald-500 animate-spin" size={36} />
-        </div>
-      );
-    }
-
-    if (phase === 'consent') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-8 max-w-sm mx-auto">
-          <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[28px] flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/30">
-            <ScanSearch size={44} className="text-white" />
-          </div>
-          <h3 className="text-2xl font-black text-slate-900 mb-3">Recherche Visuelle IA</h3>
-          <p className="text-sm text-slate-500 font-medium mb-6 leading-relaxed">
-            Prenez en photo n'importe quel vêtement et l'IA trouve les produits correspondants dans toutes les boutiques Vestyle.
-          </p>
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-8 text-left w-full">
-            <p className="text-amber-800 text-xs font-black mb-1">📦 Téléchargement unique : ~150 Mo</p>
-            <p className="text-amber-700 text-[11px] leading-relaxed">L'IA s'installe dans votre appareil une seule fois, puis fonctionne instantanément. <strong>Wi-Fi recommandé.</strong></p>
-          </div>
-          <button
-            onClick={handleActivate}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all mb-3"
-          >
-            Activer l'IA Visuelle
-          </button>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-sm py-2 transition-colors">
-            Plus tard
-          </button>
-          {statusText && <p className="mt-3 text-xs text-red-500 font-bold">{statusText}</p>}
-        </div>
-      );
-    }
-
-    if (phase === 'loading') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 gap-6">
-          <div className="relative w-24 h-24">
-            <div className="absolute inset-0 bg-emerald-100 rounded-[28px] flex items-center justify-center">
-              <Loader2 size={42} className="text-emerald-500 animate-spin" />
+  if (phase === 'consent') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-8">
+            <div className="w-28 h-28 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[32px] flex items-center justify-center mb-6 shadow-2xl">
+              <ScanSearch size={48} className="text-white" />
             </div>
-          </div>
-          <div>
-            <p className="text-xl font-black text-emerald-600 mb-2">Installation en cours…</p>
-            {progress > 0 && (
-              <div className="w-64 bg-slate-100 rounded-full h-2 overflow-hidden mt-3">
-                <div
-                  className="h-2 bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
-            <p className="text-xs text-slate-400 font-bold mt-3 uppercase tracking-widest">
-              {statusText || 'Connexion au cerveau IA…'}
+            <h2 className="text-3xl font-black text-slate-900 mb-3">Recherche Visuelle IA</h2>
+            <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
+              📸 Photographiez un article ou importez une image → l'IA trouvera les produits similaires dans toutes les boutiques.
             </p>
-          </div>
-          <p className="text-[11px] text-slate-400 bg-slate-50 px-4 py-2 rounded-full">Ne quittez pas cette page</p>
-        </div>
-      );
-    }
 
-    if (phase === 'ready') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8 w-full max-w-sm mx-auto">
-          <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-1.5 rounded-full">✅ IA Prête</p>
-          
-          {/* Bouton caméra */}
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className="w-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-8 rounded-[32px] shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all group"
-          >
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-              <Camera size={32} />
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-[24px] p-4 mb-6 w-full text-left">
+              <p className="text-blue-900 text-xs font-black mb-2">⚡ Première utilisation</p>
+              <p className="text-blue-800 text-[12px] leading-relaxed">
+                L'IA (150 Mo) s'installe une seule fois sur votre téléphone. Wi-Fi requise.
+              </p>
             </div>
-            <h3 className="text-xl font-black mb-1">Prendre une photo</h3>
-            <p className="text-emerald-100 text-xs font-bold uppercase tracking-widest">Ouvrir l'appareil photo</p>
-          </button>
 
-          <div className="flex items-center gap-3 w-full">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">ou</span>
-            <div className="flex-1 h-px bg-slate-200" />
+            <button
+              onClick={loadModel}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black py-4 rounded-[24px] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mb-3"
+            >
+              ✨ Activer l'IA
+            </button>
+
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'loading') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md p-8 flex flex-col items-center text-center shadow-2xl">
+          <div className="relative w-28 h-28 mb-6">
+            <div className="absolute inset-0 bg-emerald-100 rounded-[28px] flex items-center justify-center">
+              <Loader2 size={48} className="text-emerald-600 animate-spin" />
+            </div>
           </div>
 
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className="w-full bg-white text-slate-700 p-5 rounded-[24px] shadow-sm border-2 border-slate-100 hover:border-emerald-400 hover:shadow-md transition-all flex items-center justify-center gap-3 font-black"
-          >
-            <ImageIcon className="text-emerald-500" size={22} />
-            Choisir dans la galerie / Autre
-          </button>
+          <h3 className="text-2xl font-black text-emerald-600 mb-4">Installation…</h3>
 
-          {/* Input unique pour Galerie et Caméra */}
-          <input 
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            ref={cameraInputRef} 
-            onChange={handleFileChange} 
-          />
+          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden mb-4">
+            <div
+              className="h-3 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <p className="text-sm font-bold text-slate-500 mb-2">{progress}%</p>
+          <p className="text-xs text-slate-400 font-medium">{statusText}</p>
+          <p className="text-[11px] text-slate-400 bg-slate-50 px-4 py-2 rounded-full mt-4">
+            Ne fermez pas cette page
+          </p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (phase === 'analyzing') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8">
+  if (phase === 'ready') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
+          <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white rounded-t-[40px]">
+            <h2 className="text-xl font-black text-slate-900">Recherche Visuelle</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-100 rounded-lg transition"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8">
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-[24px] px-4 py-2 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-emerald-600" />
+              <span className="text-emerald-700 text-xs font-black uppercase">IA Prête</span>
+            </div>
+
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              className="w-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-8 rounded-[32px] shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all group"
+            >
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <Camera size={36} />
+              </div>
+              <h3 className="text-xl font-black mb-1">Prendre une photo</h3>
+              <p className="text-emerald-100 text-xs font-bold uppercase">Ouvrir la caméra</p>
+            </button>
+
+            <div className="flex items-center gap-3 w-full">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="text-xs font-bold text-slate-400 uppercase">Ou</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+
+            <button
+              onClick={() => galleryInputRef.current?.click()}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-6 rounded-[24px] border-2 border-slate-200 hover:border-emerald-300 transition-all flex items-center justify-center gap-3 font-black"
+            >
+              <ImageIcon className="text-emerald-500" size={24} />
+              <span>Galerie</span>
+            </button>
+
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              ref={cameraInputRef}
+              onChange={handleFileChange}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={galleryInputRef}
+              onChange={handleFileChange}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'analyzing') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md p-8 flex flex-col items-center text-center shadow-2xl">
           {imagePreview && (
-            <div className="w-40 h-40 rounded-[28px] overflow-hidden border-4 border-white shadow-2xl relative">
+            <div className="w-48 h-48 rounded-[28px] overflow-hidden mb-6 border-4 border-slate-100 shadow-lg relative">
               <img src={imagePreview} className="w-full h-full object-cover" alt="Analyse" />
-              <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center">
-                <Loader2 className="text-white animate-spin" size={36} />
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+                <Loader2 className="text-white animate-spin" size={40} />
               </div>
             </div>
           )}
-          <div className="text-center">
-            <p className="text-xl font-black text-slate-900 mb-2">Analyse en cours…</p>
-            <p className="text-sm text-slate-500 font-medium">{statusText}</p>
-          </div>
-          <div className="flex gap-1.5">
-            {[0,1,2].map(i => (
-              <div key={i} className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+
+          <h3 className="text-2xl font-black text-slate-900 mb-2">Analyse…</h3>
+          <p className="text-sm text-slate-500 font-medium mb-6">{statusText}</p>
+
+          <div className="flex gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-3 h-3 bg-emerald-500 rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
             ))}
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (phase === 'results') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 py-8">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
-            <ScanSearch className="text-emerald-500" size={36} />
-          </div>
-          <p className="text-xl font-black text-emerald-600">{statusText}</p>
-          <p className="text-sm text-slate-500 font-medium">Redirection vers les résultats…</p>
-          <Loader2 className="text-emerald-400 animate-spin" size={24} />
-        </div>
-      );
-    }
-
-    if (phase === 'empty') {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8 text-center max-w-sm mx-auto">
-          {imagePreview && (
-            <div className="w-32 h-32 rounded-[24px] overflow-hidden border-4 border-white shadow-xl opacity-60">
-              <img src={imagePreview} className="w-full h-full object-cover" alt="Résultat" />
+  if (phase === 'results') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
+          <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white rounded-t-[40px]">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={24} className="text-emerald-600" />
+              <h2 className="text-xl font-black text-slate-900">{results.length} résultats</h2>
             </div>
-          )}
-          <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center">
-            <AlertCircle className="text-orange-400" size={30} />
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg">
+              <X size={24} />
+            </button>
           </div>
-          <div>
-            <h3 className="text-lg font-black text-slate-900 mb-2">Aucun produit correspondant</h3>
-            <p className="text-sm text-slate-500 font-medium leading-relaxed">
-              L'IA n'a pas trouvé de vêtement similaire dans notre catalogue. Essayez avec un autre angle ou une photo plus lumineuse.
-            </p>
+
+          <div className="flex-1 overflow-y-auto">
+            {results.map((product) => (
+              <div key={product.id} className="flex gap-4 p-4 border-b border-slate-100 hover:bg-slate-50 transition">
+                {product.image_url && (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-slate-900 line-clamp-2">{product.name}</h4>
+                  <p className="text-xs text-slate-500 mt-1">{product.store_name}</p>
+                  <p className="text-lg font-black text-emerald-600 mt-2">
+                    {Math.round(product.price || 0).toLocaleString('fr-FR', {
+                      style: 'currency',
+                      currency: 'XAF'
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-          <button
-            onClick={resetSearch}
-            className="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-emerald-600 active:scale-95 transition-all"
-          >
-            Réessayer
-          </button>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-sm transition-colors">
-            Fermer
-          </button>
-        </div>
-      );
-    }
 
-    return null;
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4"
-      style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}
-    >
-      <div className="bg-white w-full sm:max-w-lg max-h-[90vh] sm:rounded-[36px] rounded-t-[36px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center">
-              <ScanSearch size={18} className="text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="font-black text-slate-900 text-base leading-none">Recherche Visuelle IA</h2>
-              {(phase === 'ready' || phase === 'analyzing') && (
-                <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-0.5">Propulsé par CLIP</p>
-              )}
-            </div>
+          <div className="p-4 border-t border-slate-100 sticky bottom-0 bg-white rounded-b-[40px]">
+            <button
+              onClick={resetSearch}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-[16px] transition"
+            >
+              Nouvelle recherche
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          {renderContent()}
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (phase === 'empty' || phase === 'error') {
+    return (
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-[40px] w-full max-w-md p-8 flex flex-col items-center text-center shadow-2xl">
+          <div className="w-20 h-20 bg-amber-100 rounded-[20px] flex items-center justify-center mb-6">
+            <AlertCircle size={40} className="text-amber-600" />
+          </div>
+
+          <h3 className="text-2xl font-black text-slate-900 mb-2">
+            {phase === 'error' ? 'Erreur' : 'Aucun résultat'}
+          </h3>
+          <p className="text-sm text-slate-600 font-medium mb-6">{error || statusText}</p>
+
+          <div className="space-y-3 w-full">
+            <button
+              onClick={resetSearch}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-[16px] transition"
+            >
+              Réessayer
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3 rounded-[16px] transition"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

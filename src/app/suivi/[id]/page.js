@@ -97,21 +97,19 @@ export default function OrderTrackingPage() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-wa-teal selection:text-white">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
-        body { font-family: 'Outfit', sans-serif; }
-        
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; padding: 0 !important; margin: 0 !important; }
+          body { background: white !important; padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .invoice-card { 
             box-shadow: none !important; 
             border: none !important; 
-            width: 210mm !important;
-            height: 297mm !important;
-            padding: 20mm !important;
+            width: 100% !important;
+            max-height: 277mm !important;
+            padding: 10mm !important;
             margin: 0 !important;
+            overflow: hidden !important;
           }
-          .page-break { page-break-after: always; }
+          @page { size: A4; margin: 10mm; }
         }
       `}</style>
 

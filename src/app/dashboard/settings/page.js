@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   Settings, Save, Loader2, ArrowLeft, Image as ImageIcon,
   Palette, Type, Megaphone, Globe, Info, CheckCircle2,
-  Camera, Trash2, Smartphone, MapPin, Navigation, Bot, Truck, Plus, User, Send, TestTube
+  Camera, Trash2, Smartphone, MapPin, Navigation, Bot, Truck, Plus, User, Send, TestTube, Star
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
@@ -48,7 +48,10 @@ export default function StoreSettingsPage() {
     longitude: '',
     ai_enabled: false,
     ai_name: 'Assistant VesTyle',
-    ai_prompt: 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.'
+    ai_prompt: 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.',
+    supplier_level: 'Fournisseur Or',
+    positive_rating: 100,
+    response_time: '< 1h'
   });
 
   const { requestLocation, userLocation, isLocating, error: gpsError } = useDistance();
@@ -139,7 +142,10 @@ export default function StoreSettingsPage() {
           longitude: data.longitude || '',
           ai_enabled: data.ai_enabled || false,
           ai_name: data.ai_name || 'Assistant VesTyle',
-          ai_prompt: data.ai_prompt || 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.'
+          ai_prompt: data.ai_prompt || 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.',
+          supplier_level: data.supplier_level || 'Nouveau Vendeur',
+          positive_rating: data.positive_rating !== undefined ? data.positive_rating : 100,
+          response_time: data.response_time || '< 2h'
         });
       }
     }
@@ -493,6 +499,45 @@ export default function StoreSettingsPage() {
                     <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
                   </select>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Performance & Trust (Alibaba Style) Section */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-xl text-amber-500"><Star size={20} /></div>
+              <h2 className="text-xl font-black text-gray-900">Performance & Confiance</h2>
+            </div>
+            <p className="text-sm text-gray-500 font-medium mb-6">Paramétrez les indicateurs de confiance (façon fournisseur vérifié) qui s'affichent sur l'en-tête de votre boutique.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Niveau Fournisseur</label>
+                <select name="supplier_level" value={formData.supplier_level} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all">
+                  <option value="Nouveau Vendeur">Nouveau Vendeur</option>
+                  <option value="Fournisseur Or">Fournisseur Or</option>
+                  <option value="Vendeur Premium">Vendeur Premium</option>
+                  <option value="Boutique Officielle">Boutique Officielle</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Avis Positifs (%)</label>
+                <div className="relative">
+                  <input type="number" step="0.1" max="100" min="0" name="positive_rating" value={formData.positive_rating} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl pl-5 pr-10 py-3.5 text-sm font-bold outline-none transition-all" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Temps de Réponse</label>
+                <select name="response_time" value={formData.response_time} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all">
+                  <option value="< 1h">&lt; 1h (Très rapide)</option>
+                  <option value="< 2h">&lt; 2h (Rapide)</option>
+                  <option value="< 12h">&lt; 12h (Moyen)</option>
+                  <option value="< 24h">&lt; 24h (Lent)</option>
+                </select>
               </div>
             </div>
           </section>

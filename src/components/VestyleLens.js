@@ -59,7 +59,7 @@ export default function VestyleLens({ isOpen, onClose }) {
   useEffect(() => {
     let interval;
     if (isOpen && stream && !loadingIA && foundProducts.length === 0) {
-      interval = setInterval(performScan, 1500); // More frequent scan
+      interval = setInterval(performScan, 3000); // Scan every 3s to save battery
     }
     return () => clearInterval(interval);
   }, [isOpen, stream, loadingIA, foundProducts]);

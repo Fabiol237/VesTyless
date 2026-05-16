@@ -1,34 +1,143 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
-import VoiceSearchButton from '@/components/VoiceSearchButton';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ClientDiscovery from '@/components/ClientDiscovery';
 import VisualSearchModal from '@/components/VisualSearchModal';
-import VestyleLens from '@/components/VestyleLens';
 import Link from 'next/link';
-import { Search, MapPin, ShoppingBag, ArrowRight, Hash, Camera } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
 import { useOfflineData } from '@/hooks/useOfflineData';
+
+// ── Inline SVG Icons ──────────────────────────────────────────────────────────
+const SearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+const CameraIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+    <circle cx="12" cy="13" r="3"/>
+  </svg>
+);
+const MapPinIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const ArrowRightIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+  </svg>
+);
+const HashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/>
+    <line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>
+  </svg>
+);
+const LoaderIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+  </svg>
+);
+const ChevronDownIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m6 9 6 6 6-6"/>
+  </svg>
+);
+
+// ── Animated Particle Background ─────────────────────────────────────────────
+function ParticleBackground() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animId;
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = Array.from({ length: 60 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: 1 + Math.random() * 2.5,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.3,
+      alpha: 0.15 + Math.random() * 0.35,
+      color: Math.random() > 0.6 ? '#25D366' : Math.random() > 0.5 ? '#128C7E' : '#ffffff',
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+      // Draw connections
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(18,140,126,${0.06 * (1 - dist / 100)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
+// ── Stats flottants ───────────────────────────────────────────────────────────
+const STATS = [
+  { value: '10K+', label: 'Produits' },
+  { value: '500+', label: 'Boutiques' },
+  { value: '24/7', label: 'Disponible' },
+];
+
+// ── Badges animés ─────────────────────────────────────────────────────────────
+const BADGES = ['Mode', 'High-Tech', 'Alimentaire', 'Beauté', 'Maison', 'Loisirs'];
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [codeQuery, setCodeQuery] = useState('');
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState('');
-  const [locationStatus, setLocationStatus] = useState('');
+  const [showCodeModal, setShowCodeModal] = useState(false);
   const router = useRouter();
   const { requestLocation, userLocation, isLocating: isGpsLocating } = useDistance();
-
   const [suggestions, setSuggestions] = useState([]);
   const [visualSearchOpen, setVisualSearchOpen] = useState(false);
   const [visualResults, setVisualResults] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const reduceMotion = useReducedMotion();
 
-  // Cache-First Suggestions
   const { data: offlineSuggestions } = useOfflineData('home_suggestions', async () => {
     const [cats, strs, prods] = await Promise.all([
       supabase.from('global_categories').select('name').limit(8),
@@ -42,10 +151,7 @@ export default function Home() {
     return { data: items };
   });
 
-  useEffect(() => {
-    if (offlineSuggestions) setSuggestions(offlineSuggestions);
-  }, [offlineSuggestions]);
-
+  useEffect(() => { if (offlineSuggestions) setSuggestions(offlineSuggestions); }, [offlineSuggestions]);
   useEffect(() => { setMounted(true); }, []);
 
   const handleCodeSearch = async (e) => {
@@ -54,128 +160,287 @@ export default function Home() {
     if (code.length !== 5) return;
     setCodeLoading(true);
     const { data } = await supabase.from('stores').select('slug').eq('store_code', code).single();
-    if (data) router.push(`/boutique/${data.slug}`);
-    else setCodeError('Code inconnu.');
+    if (data) { router.push(`/boutique/${data.slug}`); setShowCodeModal(false); }
+    else setCodeError('Code inconnu. Vérifiez avec votre vendeur.');
     setCodeLoading(false);
   };
 
-  if (!mounted) return <div className="min-h-screen bg-slate-900" />;
+  const scrollToFeed = () => {
+    document.getElementById('discovery-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  if (!mounted) return <div className="min-h-screen" style={{ background: '#0a1628' }} />;
 
   return (
-    <div className="relative min-h-screen w-full font-sans text-slate-900 bg-white">
-      {/* Static Background for Performance */}
-      <div className="fixed inset-0 z-0 bg-slate-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-slate-900 to-wa-teal opacity-90" />
-      </div>
+    <div className="relative min-h-screen w-full font-sans" style={{ background: '#0a1628' }}>
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
+      {/* ── NAVBAR ─────────────────────────────────────────────────────────── */}
+      <Navbar />
 
-        {/* HERO SECTION - Simplified for speed */}
-        <section className="min-h-[90vh] flex flex-col justify-center items-center text-center px-4 relative">
+      {/* ── HERO ────────────────────────────────────────────────────────────── */}
+      <section
+        className="relative min-h-[100svh] flex flex-col justify-center items-center overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 40%, #0a2e20 100%)',
+        }}
+      >
+        {/* Particle canvas */}
+        <div className="absolute inset-0">
+          <ParticleBackground />
+        </div>
+
+        {/* Glow blobs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #25D366, transparent)' }} />
+        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #128C7E, transparent)' }} />
+
+        {/* Content */}
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-8 pt-24 pb-20">
+
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-black uppercase tracking-widest"
+            style={{ borderColor: 'rgba(37,211,102,0.3)', background: 'rgba(37,211,102,0.08)', color: '#25D366' }}
+          >
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            Marketplace N°1 du Cameroun
+          </motion.div>
+
+          {/* Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="bg-white/10 backdrop-blur-xl p-10 rounded-[50px] border border-white/10 shadow-2xl mb-10"
+            transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
           >
-            <img src="/icon-192.png" className="w-20 h-20 mx-auto mb-6 rounded-3xl shadow-xl" alt="Vestyle" />
-            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter mb-2">Ves<span className="text-wa-teal">Tyle</span></h1>
-            <p className="text-emerald-100/60 font-black text-[10px] uppercase tracking-[0.4em]">Le Commerce de Proximité</p>
+            <h1 className="text-6xl sm:text-8xl font-black tracking-tighter leading-none text-white">
+              Ves<span style={{ color: '#25D366' }}>Tyle</span>
+            </h1>
+            <p className="mt-4 text-lg sm:text-xl font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Découvrez, achetez et vendez en proximité.
+            </p>
           </motion.div>
 
-          <div className="w-full max-w-2xl px-2">
-            <form onSubmit={(e) => e.preventDefault()} className="bg-white p-2 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center border border-white/20 w-full group">
-              <SearchAutocomplete
-                value={searchQuery}
-                onChange={setSearchQuery}
-                suggestions={suggestions}
-                placeholder={userLocation ? "Prêt à explorer..." : "Que cherchez-vous ?"}
-                className="flex-1 w-full"
-                inputClassName="w-full outline-none text-slate-800 bg-transparent font-bold py-4 pl-12 pr-28 text-base"
-                leftIcon={<Search className="text-wa-teal w-5 h-5" />}
+          {/* Category badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="flex flex-wrap justify-center gap-2"
+          >
+            {BADGES.map((b, i) => (
+              <button
+                key={b}
+                onClick={() => { setSearchQuery(b); scrollToFeed(); }}
+                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.7)',
+                }}
               >
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center bg-slate-50 rounded-2xl p-1">
-                  <button type="button" onClick={() => setVisualSearchOpen(true)} className="p-2.5 text-slate-400 hover:text-wa-teal transition-colors">
-                    <Camera size={22} />
-                  </button>
-                  <button type="button" onClick={() => requestLocation()} className="p-2.5 text-wa-teal">
-                    {isGpsLocating ? <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin" /> : <MapPin size={22} />}
-                  </button>
-                  <div className="w-px h-6 bg-slate-200 mx-1" />
-                  <VoiceSearchButton onResult={setSearchQuery} className="p-2.5 text-wa-teal" />
-                </div>
-              </SearchAutocomplete>
-            </form>
-          </div>
-        </section>
+                {b}
+              </button>
+            ))}
+          </motion.div>
 
-        {/* FEED SECTION */}
-        <div className="bg-white rounded-t-[40px] md:rounded-t-[80px] shadow-2xl pt-16 pb-20 px-4 relative z-20">
-          <div className="max-w-6xl mx-auto space-y-20">
-            
-            {/* VIP Code Access */}
-            <section className="bg-slate-50 rounded-[40px] p-8 md:p-12 border border-slate-100 flex flex-col lg:flex-row items-center gap-10">
-               <div className="flex-1 text-center lg:text-left space-y-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-wa-teal bg-wa-teal/10 px-3 py-1 rounded-full">Accès Privé</span>
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">Accédez à une boutique</h3>
-                  <p className="text-slate-500 font-bold text-sm">Entrez le code à 5 chiffres de votre vendeur.</p>
-                  <form onSubmit={handleCodeSearch} className="flex gap-3 max-w-sm mx-auto lg:mx-0">
-                    <input
-                      type="text"
-                      maxLength={5}
-                      value={codeQuery}
-                      onChange={e => setCodeQuery(e.target.value.replace(/\D/g, ''))}
-                      placeholder="00000"
-                      className="w-full bg-white border-2 border-transparent focus:border-wa-teal rounded-2xl px-6 py-4 text-3xl font-black text-center outline-none shadow-sm"
-                    />
-                    <button type="submit" disabled={codeQuery.length !== 5 || codeLoading} className="bg-slate-900 text-white p-4 rounded-2xl hover:bg-wa-teal transition-all disabled:opacity-50">
-                      {codeLoading ? <Loader2 className="animate-spin" /> : <ArrowRight />}
-                    </button>
-                  </form>
-                  {codeError && <p className="text-rose-500 text-[10px] font-black uppercase">{codeError}</p>}
-               </div>
-               <div className="hidden lg:block w-px h-32 bg-slate-200" />
-               <div className="flex-1 text-center lg:text-left">
-                  <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
-                     <div className="w-12 h-12 bg-wa-teal/10 text-wa-teal rounded-2xl flex items-center justify-center">
-                        <ShoppingBag size={24} />
-                     </div>
-                     <div>
-                        <h4 className="font-black text-slate-900">VesTyle Pro</h4>
-                        <p className="text-xs text-slate-400 font-bold">Commerce de proximité</p>
-                     </div>
-                  </div>
-                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Découvrez les meilleures boutiques de votre ville et commandez en un clic avec suivi en temps réel.</p>
-               </div>
-            </section>
+          {/* ── SEARCH BAR ──────────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
+            className="w-full max-w-2xl"
+          >
+            <div
+              className="flex flex-col sm:flex-row items-center gap-2 p-2 rounded-2xl shadow-2xl"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              <div className="flex-1 w-full relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#25D366' }}>
+                  <SearchIcon />
+                </span>
+                <SearchAutocomplete
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  suggestions={suggestions}
+                  placeholder={userLocation ? 'Prêt à explorer...' : 'Que cherchez-vous ?'}
+                  className="w-full"
+                  inputClassName="w-full outline-none bg-transparent font-semibold py-4 pl-12 pr-4 text-sm sm:text-base text-white placeholder:text-white/40"
+                >
+                  {/* children slot vide */}
+                </SearchAutocomplete>
+              </div>
 
-            {/* Main Discovery Feed */}
-            <div id="discovery-section" className="scroll-mt-20">
-               <ClientDiscovery
-                 externalSearchQuery={searchQuery}
-                 onExternalSearchChange={setSearchQuery}
-                 overrideProducts={visualResults}
-                 onClearVisualSearch={() => setVisualResults(null)}
-               />
+              <div className="flex items-center gap-2 w-full sm:w-auto px-1 pb-1 sm:pb-0 sm:pr-1">
+                <button
+                  type="button"
+                  onClick={() => setVisualSearchOpen(true)}
+                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  title="Recherche par photo"
+                >
+                  <CameraIcon /> <span className="sm:hidden">Photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={requestLocation}
+                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: isGpsLocating ? '#25D366' : 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  title="Activer ma position"
+                >
+                  {isGpsLocating ? <LoaderIcon /> : <MapPinIcon />} <span className="sm:hidden">GPS</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={scrollToFeed}
+                  className="flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-black transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: '#fff' }}
+                >
+                  <span className="hidden sm:inline">Explorer</span>
+                  <span className="sm:hidden">Go</span>
+                  <ArrowRightIcon />
+                </button>
+              </div>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="flex items-center gap-8 sm:gap-12"
+          >
+            {STATS.map((s, i) => (
+              <div key={s.label} className="flex flex-col items-center gap-0.5">
+                <span className="text-2xl sm:text-3xl font-black text-white">{s.value}</span>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Code boutique - Discret */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            onClick={() => setShowCodeModal(true)}
+            className="flex items-center gap-2 text-xs font-bold transition-all hover:opacity-80"
+            style={{ color: 'rgba(255,255,255,0.35)' }}
+          >
+            <HashIcon /> Accéder à une boutique par code
+          </motion.button>
         </div>
 
-        <footer className="bg-slate-900 text-white py-20 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col items-center gap-10">
-            <h2 className="text-4xl font-black tracking-tighter">Ves<span className="text-wa-teal">Tyle</span></h2>
-            <div className="flex gap-10 text-[10px] font-black uppercase tracking-widest text-slate-500">
-               <Link href="/login" className="hover:text-wa-teal">Vendre sur Vestyle</Link>
-               <Link href="/suivi" className="hover:text-wa-teal">Suivre une commande</Link>
-               <Link href="#" className="hover:text-wa-teal">Aide</Link>
-            </div>
-            <p className="text-[10px] text-slate-700 font-black uppercase tracking-[0.5em]">Cameroun Excellence • {new Date().getFullYear()}</p>
-          </div>
-        </footer>
+        {/* Scroll indicator */}
+        <motion.button
+          onClick={scrollToFeed}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-all hover:opacity-80"
+          style={{ color: 'rgba(255,255,255,0.3)' }}
+          animate={reduceMotion ? {} : { y: [0, 6, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest">Découvrir</span>
+          <ChevronDownIcon />
+        </motion.button>
+      </section>
+
+      {/* ── FEED SECTION ──────────────────────────────────────────────────── */}
+      <div
+        id="discovery-section"
+        className="relative min-h-screen pt-8 pb-24 px-4 scroll-mt-20"
+        style={{ background: '#F8F9FA' }}
+      >
+        <div className="max-w-6xl mx-auto">
+          <ClientDiscovery
+            externalSearchQuery={searchQuery}
+            onExternalSearchChange={setSearchQuery}
+            overrideProducts={visualResults}
+            onClearVisualSearch={() => setVisualResults(null)}
+          />
+        </div>
       </div>
 
-      {visualSearchOpen && <VisualSearchModal onClose={() => setVisualSearchOpen(false)} onResultsFound={setVisualResults} />}
+      {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
+      <footer style={{ background: '#070f1c', color: 'rgba(255,255,255,0.5)' }} className="py-16 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-8">
+          <h2 className="text-4xl font-black tracking-tighter text-white">
+            Ves<span style={{ color: '#25D366' }}>Tyle</span>
+          </h2>
+          <div className="flex flex-wrap justify-center gap-8 text-[10px] font-black uppercase tracking-widest">
+            <Link href="/login" className="hover:text-white transition-colors">Vendre sur Vestyle</Link>
+            <Link href="/suivi" className="hover:text-white transition-colors">Suivre une commande</Link>
+            <Link href="/boutiques" className="hover:text-white transition-colors">Boutiques</Link>
+            <Link href="#" className="hover:text-white transition-colors">Aide</Link>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.4em]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            Cameroun Excellence • {new Date().getFullYear()}
+          </p>
+        </div>
+      </footer>
+
+      {/* ── CODE MODAL ──────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCodeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
+            onClick={() => setShowCodeModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl"
+            >
+              <h3 className="text-2xl font-black text-slate-900 mb-2">Accès boutique</h3>
+              <p className="text-sm text-slate-500 mb-6">Entrez le code à 5 chiffres de votre vendeur.</p>
+              <form onSubmit={handleCodeSearch} className="flex gap-3">
+                <input
+                  type="text"
+                  maxLength={5}
+                  value={codeQuery}
+                  onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
+                  placeholder="00000"
+                  className="flex-1 border-2 border-slate-200 focus:border-emerald-500 rounded-2xl px-4 py-4 text-3xl font-black text-center outline-none transition-colors"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={codeQuery.length !== 5 || codeLoading}
+                  className="bg-slate-900 text-white px-5 rounded-2xl hover:bg-emerald-600 transition-all disabled:opacity-40 flex items-center justify-center"
+                >
+                  {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
+                </button>
+              </form>
+              {codeError && <p className="mt-3 text-rose-500 text-xs font-bold">{codeError}</p>}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── VISUAL SEARCH MODAL ─────────────────────────────────────────────── */}
+      {visualSearchOpen && (
+        <VisualSearchModal
+          onClose={() => setVisualSearchOpen(false)}
+          onResultsFound={(results) => {
+            setVisualResults(results);
+            setVisualSearchOpen(false);
+            scrollToFeed();
+          }}
+        />
+      )}
     </div>
   );
 }

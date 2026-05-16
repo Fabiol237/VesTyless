@@ -47,7 +47,7 @@ export default function PwaRegistry() {
       try {
         const reg = await navigator.serviceWorker.register('/sw.js');
         console.log('[Vestyle PWA] Service Worker enregistré:', reg.scope);
-        
+
         // --- FORCE UPDATE LOGIC ---
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
@@ -61,12 +61,35 @@ export default function PwaRegistry() {
           });
         });
 
-        // --- SYNC AUTH & PUSH (Delayed to avoid race conditions with main app) ---
+        // --- SYNC AUTH & PUSH (Wait for Service Worker to be active) ---
+        const waitForActivation = () => {
+          return new Promise((resolve) => {
+            if (reg.active) {
+              resolve();
+            } else {
+              const checkActive = setInterval(() => {
+                if (reg.active) {
+                  clearInterval(checkActive);
+                  resolve();
+                }
+              }, 100);
+              setTimeout(() => clearInterval(checkActive), 5000);
+            }
+          });
+        };
+
+        await waitForActivation();
+
         setTimeout(async () => {
           try {
+            if (!VAPID_PUBLIC_KEY) {
+              console.warn('[Vestyle PWA] VAPID_PUBLIC_KEY non configurée.');
+              return;
+            }
+
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) throw sessionError;
-            
+
             const user = session?.user;
             if (user && Notification.permission === 'granted') {
               await syncPushSubscription(reg, user);
@@ -77,7 +100,7 @@ export default function PwaRegistry() {
               console.warn('[Vestyle PWA] Auth sync skipped:', err.message);
             }
           }
-        }, 1000);
+        }, 500);
 
       } catch (err) {
         if (!err.message?.includes('lock')) {

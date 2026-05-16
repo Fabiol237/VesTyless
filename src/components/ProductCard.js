@@ -88,9 +88,9 @@ const ProductCard = memo(({ item, idx, trackProductView, formatDistance }) => {
           
           <button 
             onClick={handleAdd}
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-90 ${added ? 'bg-green-500 text-white' : 'bg-wa-teal text-white hover:bg-wa-teal-dark shadow-wa-teal/20'}`}
+            className={`w-11 h-11 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-90 ${added ? 'bg-green-500 text-white' : 'bg-wa-teal text-white hover:bg-wa-teal-dark shadow-wa-teal/20'}`}
           >
-            {added ? <CheckCircle2 size={18} /> : <ShoppingCart size={18} />}
+            {added ? <CheckCircle2 size={20} /> : <ShoppingCart size={20} />}
           </button>
         </div>
       </div>

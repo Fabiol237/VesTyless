@@ -2,7 +2,8 @@ import { supabase } from '@/lib/supabase';
 import StorefrontClient from './StorefrontClient';
 
 export async function generateMetadata({ params }) {
-  const { slug } = params;
+  const resolvedParams = await params;
+  const { slug } = resolvedParams;
   
   const { data: store } = await supabase
     .from('stores')
