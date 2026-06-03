@@ -224,28 +224,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* Category badges */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-            className="flex flex-wrap justify-center gap-2"
-          >
-            {BADGES.map((b, i) => (
-              <button
-                key={b}
-                onClick={() => { setSearchQuery(b); scrollToFeed(); }}
-                className="px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: 'rgba(255,255,255,0.7)',
-                }}
-              >
-                {b}
-              </button>
-            ))}
-          </motion.div>
+
 
           {/* ── SEARCH BAR ──────────────────────────────────────────────────── */}
           <motion.div
@@ -326,16 +305,28 @@ export default function Home() {
             ))}
           </motion.div>
 
-          {/* Code boutique - Discret */}
+          {/* Code boutique - Recommandé */}
           <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
             onClick={() => setShowCodeModal(true)}
-            className="flex items-center gap-2 text-xs font-bold transition-all hover:opacity-80"
-            style={{ color: 'rgba(255,255,255,0.35)' }}
+            className="relative flex items-center gap-3 px-6 py-3 rounded-2xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95 group overflow-hidden"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+              border: '1px solid rgba(37,211,102,0.5)',
+              color: '#fff',
+              backdropFilter: 'blur(10px)'
+            }}
           >
-            <HashIcon /> Accéder à une boutique par code
+            <div className="absolute inset-0 bg-gradient-to-r from-[#25D366]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#25D366] text-white shadow-[0_0_15px_rgba(37,211,102,0.5)]">
+              <HashIcon />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-sm tracking-wide">Accéder à une boutique par code</span>
+              <span className="text-[10px] uppercase tracking-widest text-[#25D366] font-bold mt-0.5">✨ Recommandé</span>
+            </div>
           </motion.button>
         </div>
 
