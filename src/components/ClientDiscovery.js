@@ -530,7 +530,7 @@ export default function ClientDiscovery({
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-8 bg-wa-teal rounded-full" />
                   <div>
-                    <h2 className="text-xl font-black text-neutral-900 tracking-tight">Vestyle <span className="text-wa-teal">Life</span></h2>
+                    <h2 className="text-xl font-black text-neutral-900 tracking-tight">Boutiques <span className="text-wa-teal">à la Une</span></h2>
                     <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em]">En direct des boutiques</p>
                   </div>
                 </div>
@@ -615,8 +615,8 @@ export default function ClientDiscovery({
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-10 bg-wa-teal rounded-full shadow-[0_0_10px_#128c7e]" />
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Découverte <span className="text-wa-teal">Live</span></h2>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{filteredProducts.length} pépites disponibles</p>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Tous les <span className="text-wa-teal">Produits</span></h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{filteredProducts.length} produits disponibles</p>
                     </div>
                   </div>
                   </>
