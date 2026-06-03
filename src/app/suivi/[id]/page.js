@@ -261,68 +261,70 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
-            {/* A4 INVOICE */}
-            <div className="invoice-card bg-white w-full max-w-[210mm] min-h-[297mm] shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[4px] relative overflow-hidden text-slate-900 p-16 sm:p-24 flex flex-col">
+            {/* A4 INVOICE (Responsive & Print) */}
+            <div className="invoice-card bg-white w-full max-w-4xl shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-2xl relative overflow-hidden text-slate-900 p-6 sm:p-14 md:p-20 flex flex-col print:shadow-none print:rounded-none">
               
               {/* Header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-12 mb-12">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <img src="/icon-512.png" className="w-12 h-12 grayscale" alt="" />
-                    <h1 className="text-3xl font-black tracking-tighter">VESTYLE <span className="font-light text-slate-400">PRO</span></h1>
+              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-6 sm:pb-12 mb-6 sm:mb-12 gap-6">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <img src="/icon-512.png" className="w-10 h-10 sm:w-12 sm:h-12 grayscale" alt="" />
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">VESTYLE <span className="font-light text-slate-400">PRO</span></h1>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest">Marketplace de Proximité</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Douala, Cameroun • www.vestyle.cm</p>
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Marketplace de Proximité</p>
+                    <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Douala, Cameroun • www.vestyle.cm</p>
                   </div>
                 </div>
-                <div className="text-right space-y-2">
-                  <h2 className="text-5xl font-black tracking-tighter text-slate-200">FACTURE</h2>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest">Réf: #{(order.id||'').slice(0,8).toUpperCase()}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })}</p>
+                <div className="text-left sm:text-right space-y-1 sm:space-y-2 w-full sm:w-auto">
+                  <h2 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-200">FACTURE</h2>
+                  <div className="space-y-1 mt-2 sm:mt-0 border-t border-slate-100 pt-2 sm:border-0 sm:pt-0">
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Réf: #{(order.id||'').slice(0,8).toUpperCase()}</p>
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })}</p>
                   </div>
                 </div>
               </div>
 
               {/* Addresses */}
-              <div className="grid grid-cols-2 gap-20 mb-20">
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest border-b pb-2">Vendeur</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-20 mb-10 sm:mb-20">
+                <div className="space-y-3 sm:space-y-4 bg-slate-50 p-4 rounded-xl sm:bg-transparent sm:p-0">
+                  <h3 className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-widest border-b pb-2">Vendeur</h3>
                   <div>
-                    <p className="text-2xl font-black tracking-tight">{store?.name}</p>
-                    <p className="text-xs text-slate-500 font-bold uppercase mt-1">{store?.city || 'Localisation certifiée'}</p>
-                    {store?.phone && <p className="text-xs text-slate-500 mt-2 font-mono">{store.phone}</p>}
+                    <p className="text-xl sm:text-2xl font-black tracking-tight">{store?.name}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase mt-1">{store?.city || 'Localisation certifiée'}</p>
+                    {store?.phone && <p className="text-[10px] sm:text-xs text-slate-500 mt-1 sm:mt-2 font-mono">{store.phone}</p>}
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest border-b pb-2">Client</h3>
+                <div className="space-y-3 sm:space-y-4 bg-slate-50 p-4 rounded-xl sm:bg-transparent sm:p-0">
+                  <h3 className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-widest border-b pb-2">Client</h3>
                   <div>
-                    <p className="text-2xl font-black tracking-tight">{order.customer_name}</p>
-                    <p className="text-xs text-slate-500 font-bold mt-1">N° de téléphone: {order.customer_phone}</p>
-                    <p className="text-xs text-slate-500 mt-1">Adresse de livraison: {order.delivery_address || 'Non spécifiée'}</p>
+                    <p className="text-xl sm:text-2xl font-black tracking-tight">{order.customer_name}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-bold mt-1">N° de téléphone: {order.customer_phone}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Adresse de livraison: {order.delivery_address || 'Non spécifiée'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Items Table */}
-              <div className="flex-1">
-                <table className="w-full">
+              <div className="flex-1 overflow-x-auto no-scrollbar">
+                <table className="w-full min-w-[400px]">
                   <thead>
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-100">
-                      <th className="py-4 text-left">Article</th>
-                      <th className="py-4 text-center">Quantité</th>
-                      <th className="py-4 text-right">Prix Unitaire</th>
-                      <th className="py-4 text-right">Sous-total</th>
+                    <tr className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 border-b-2 border-slate-100">
+                      <th className="py-3 sm:py-4 text-left">Article</th>
+                      <th className="py-3 sm:py-4 text-center w-16 sm:w-24">Qté</th>
+                      <th className="py-3 sm:py-4 text-right w-24 sm:w-32">P.U.</th>
+                      <th className="py-3 sm:py-4 text-right w-28 sm:w-32">Sous-total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {(order.order_items||[]).map((item, i) => (
-                      <tr key={i} className="text-sm font-bold">
-                        <td className="py-6 text-slate-900">{item.name}</td>
-                        <td className="py-6 text-center text-slate-500">× {item.quantity}</td>
-                        <td className="py-6 text-right text-slate-500">{Number(item.price).toLocaleString()} F</td>
-                        <td className="py-6 text-right font-black">{Number(item.price * item.quantity).toLocaleString()} F</td>
+                      <tr key={i} className="text-xs sm:text-sm font-bold">
+                        <td className="py-4 sm:py-6 text-slate-900">
+                           <span className="line-clamp-2 leading-tight">{item.name}</span>
+                        </td>
+                        <td className="py-4 sm:py-6 text-center text-slate-500">× {item.quantity}</td>
+                        <td className="py-4 sm:py-6 text-right text-slate-500">{Number(item.price).toLocaleString()} F</td>
+                        <td className="py-4 sm:py-6 text-right font-black">{Number(item.price * item.quantity).toLocaleString()} F</td>
                       </tr>
                     ))}
                   </tbody>
@@ -330,39 +332,39 @@ export default function OrderTrackingPage() {
               </div>
 
               {/* Totals & Security */}
-              <div className="relative mt-auto pt-16">
+              <div className="relative mt-8 sm:mt-auto pt-8 sm:pt-16">
                 {/* SECURITY WATERMARK */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 opacity-[0.03] pointer-events-none rotate-[-15deg] select-none">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 opacity-[0.02] pointer-events-none rotate-[-15deg] select-none hidden sm:block">
                    <h1 className="text-[150px] font-black tracking-[0.2em]">VESTYLE</h1>
                 </div>
 
-                <div className="flex flex-col md:flex-row justify-between items-end gap-12 relative z-10 border-t-2 border-slate-900 pt-12">
-                  <div className="flex items-center gap-8">
-                    <div className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm relative group">
-                      <img src={qrUrl} className="w-28 h-28" alt="Verif" />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-wa-teal text-white rounded-full flex items-center justify-center shadow-lg">
-                        <Verified size={14} />
+                <div className="flex flex-col-reverse md:flex-row justify-between items-center md:items-end gap-8 md:gap-12 relative z-10 border-t-2 border-slate-900 pt-8 sm:pt-12">
+                  <div className="flex items-center gap-4 sm:gap-8 w-full md:w-auto border-t md:border-t-0 pt-6 md:pt-0 border-slate-100">
+                    <div className="p-2 sm:p-3 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm relative group shrink-0">
+                      <img src={qrUrl} className="w-16 h-16 sm:w-28 sm:h-28" alt="Verif" />
+                      <div className="absolute -top-2 -right-2 w-5 h-5 sm:w-6 sm:h-6 bg-wa-teal text-white rounded-full flex items-center justify-center shadow-lg">
+                        <Verified size={12} className="sm:w-[14px] sm:h-[14px]" />
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-wa-teal font-black text-[10px] uppercase tracking-widest bg-wa-teal/5 px-3 py-1 rounded-full border border-wa-teal/10 w-fit">
-                        <ShieldCheck size={14} />
+                    <div className="space-y-2 sm:space-y-4">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-wa-teal font-black text-[8px] sm:text-[10px] uppercase tracking-widest bg-wa-teal/5 px-2 sm:px-3 py-1 rounded-full border border-wa-teal/10 w-fit">
+                        <ShieldCheck size={12} className="sm:w-[14px] sm:h-[14px]" />
                         <span>Authenticité Garantie</span>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-mono text-slate-400 break-all max-w-[220px]">REF: {order.id.replace(/-/g, '').toUpperCase()}</p>
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Généré via Vestyle Network Authority</p>
+                      <div className="space-y-0.5 sm:space-y-1">
+                        <p className="text-[7px] sm:text-[9px] font-mono text-slate-400 break-all max-w-[150px] sm:max-w-[220px]">REF: {order.id.replace(/-/g, '').toUpperCase()}</p>
+                        <p className="text-[7px] sm:text-[9px] font-black text-slate-300 uppercase tracking-widest">Généré via Vestyle Network Authority</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Total Net à payer</p>
-                    <p className="text-7xl font-black tracking-tighter text-slate-900 leading-none">
-                      {Number(order.total_amount).toLocaleString()} <span className="text-xl font-light text-slate-400 ml-1">F</span>
+                  <div className="text-center md:text-right w-full md:w-auto bg-slate-900 text-white md:bg-transparent md:text-slate-900 p-6 rounded-2xl md:p-0 md:rounded-none">
+                    <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 sm:mb-3">Total Net à payer</p>
+                    <p className="text-4xl sm:text-7xl font-black tracking-tighter leading-none">
+                      {Number(order.total_amount).toLocaleString()} <span className="text-lg sm:text-xl font-light text-emerald-400 md:text-slate-400 ml-1">F</span>
                     </p>
-                    <div className="flex items-center justify-end gap-2 mt-6 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <div className="flex items-center justify-center md:justify-end gap-2 mt-4 sm:mt-6 text-emerald-400 md:text-emerald-600 font-black text-[9px] sm:text-[10px] uppercase tracking-widest">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 md:bg-emerald-500 rounded-full md:animate-pulse" />
                       Paiement Sécurisé & Confirmé
                     </div>
                   </div>
@@ -370,8 +372,8 @@ export default function OrderTrackingPage() {
               </div>
 
               {/* Footer A4 */}
-              <div className="mt-20 text-center border-t border-slate-50 pt-8">
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">Merci de votre confiance • Vestyle Marketplace Excellence</p>
+              <div className="mt-10 sm:mt-20 text-center border-t border-slate-100 sm:border-slate-50 pt-6 sm:pt-8">
+                <p className="text-[7px] sm:text-[9px] font-black text-slate-400 sm:text-slate-300 uppercase tracking-[0.4em]">Merci de votre confiance • Vestyle Marketplace Excellence</p>
               </div>
             </div>
           </motion.div>

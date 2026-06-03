@@ -100,68 +100,70 @@ export default function InvoicePage() {
         </div>
       </div>
 
-      {/* INVOICE — A4 Single Page */}
-      <div className="flex justify-center py-8 px-4 no-print-wrapper">
-        <div className="invoice-page bg-white w-full max-w-[210mm] shadow-2xl rounded-lg overflow-hidden" style={{ minHeight: '297mm', maxHeight: '297mm' }}>
-          <div className="flex flex-col h-full p-10 sm:p-14" style={{ minHeight: '273mm' }}>
+      {/* INVOICE — Responsive & Print Ready */}
+      <div className="flex justify-center py-6 sm:py-8 px-2 sm:px-4 no-print-wrapper w-full">
+        <div className="invoice-page bg-white w-full max-w-3xl shadow-2xl rounded-2xl overflow-hidden print:w-full print:shadow-none print:rounded-none">
+          <div className="flex flex-col h-full p-6 sm:p-14 print:p-0">
 
             {/* === HEADER === */}
-            <div className="flex justify-between items-start pb-6 border-b-2 border-slate-900 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end pb-4 sm:pb-6 border-b-2 border-slate-900 mb-6 gap-4">
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <img src="/icon-512.png" className="w-10 h-10" alt="VesTyle" />
-                  <h1 className="text-2xl font-black tracking-tight text-slate-900">VESTYLE <span className="font-light text-slate-400">PRO</span></h1>
+                <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                  <img src="/icon-512.png" className="w-8 h-8 sm:w-10 sm:h-10" alt="VesTyle" />
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">VESTYLE <span className="font-light text-slate-400">PRO</span></h1>
                 </div>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Marketplace de Proximité • Douala, Cameroun</p>
+                <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Marketplace de Proximité • Douala, Cameroun</p>
               </div>
-              <div className="text-right">
-                <h2 className="text-4xl font-black text-slate-200 tracking-tighter mb-1">FACTURE</h2>
-                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">N° {invoiceNum}</p>
-                <p className="text-[10px] font-bold text-slate-400">Date : {invoiceDate}</p>
+              <div className="text-left sm:text-right w-full sm:w-auto flex flex-row sm:flex-col justify-between sm:justify-end items-end sm:items-end">
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-200 tracking-tighter sm:mb-1">FACTURE</h2>
+                <div className="text-right">
+                  <p className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-widest">N° {invoiceNum}</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400">Date : {invoiceDate}</p>
+                </div>
               </div>
             </div>
 
             {/* === ADDRESSES === */}
-            <div className="grid grid-cols-2 gap-12 mb-8">
-              <div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 border-b pb-1">Vendeur</p>
-                <p className="text-lg font-black text-slate-900 leading-tight">{store?.name || 'Vendeur Agréé'}</p>
-                <p className="text-[11px] text-slate-500 font-bold mt-1">{store?.city || 'Cameroun'}</p>
-                {store?.whatsapp_number && <p className="text-[11px] text-slate-400 mt-0.5">{store.whatsapp_number}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-12 mb-6 sm:mb-8">
+              <div className="bg-slate-50 sm:bg-transparent p-4 sm:p-0 rounded-xl">
+                <p className="text-[8px] sm:text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 border-b pb-1">Vendeur</p>
+                <p className="text-base sm:text-lg font-black text-slate-900 leading-tight">{store?.name || 'Vendeur Agréé'}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold mt-1">{store?.city || 'Cameroun'}</p>
+                {store?.whatsapp_number && <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{store.whatsapp_number}</p>}
               </div>
-              <div className="text-right">
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 border-b pb-1">Client</p>
-                <p className="text-lg font-black text-slate-900 leading-tight">{order.customer_name}</p>
-                <p className="text-[11px] text-slate-500 font-bold mt-1">Tél : {order.customer_phone}</p>
-                {order.shipping_address && <p className="text-[11px] text-slate-400 mt-0.5">{order.shipping_address}</p>}
+              <div className="sm:text-right bg-slate-50 sm:bg-transparent p-4 sm:p-0 rounded-xl">
+                <p className="text-[8px] sm:text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 border-b pb-1">Client</p>
+                <p className="text-base sm:text-lg font-black text-slate-900 leading-tight">{order.customer_name}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold mt-1">Tél : {order.customer_phone}</p>
+                {order.shipping_address && <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{order.shipping_address}</p>}
               </div>
             </div>
 
             {/* === ITEMS TABLE === */}
-            <div className="flex-1">
-              <table className="w-full">
+            <div className="flex-1 overflow-x-auto no-scrollbar mb-6">
+              <table className="w-full min-w-[300px] sm:min-w-[400px]">
                 <thead>
                   <tr className="border-b-2 border-slate-100">
-                    <th className="py-3 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">Désignation</th>
-                    <th className="py-3 text-center text-[9px] font-black uppercase tracking-widest text-slate-400 w-20">Qté</th>
-                    <th className="py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400 w-28">P.U.</th>
-                    <th className="py-3 text-right text-[9px] font-black uppercase tracking-widest text-slate-400 w-28">Total</th>
+                    <th className="py-2 sm:py-3 text-left text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400">Désignation</th>
+                    <th className="py-2 sm:py-3 text-center text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400 w-10 sm:w-20">Qté</th>
+                    <th className="py-2 sm:py-3 text-right text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400 w-16 sm:w-28">P.U.</th>
+                    <th className="py-2 sm:py-3 text-right text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400 w-20 sm:w-28">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, i) => (
                     <tr key={i} className="border-b border-slate-50">
-                      <td className="py-3">
-                        <p className="text-sm font-bold text-slate-900">{item.name}</p>
+                      <td className="py-2 sm:py-3">
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 leading-tight line-clamp-2">{item.name}</p>
                         {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
-                          <p className="text-[9px] text-slate-400 mt-0.5">
+                          <p className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5">
                             {Object.entries(item.selectedVariants).map(([k,v]) => `${k}: ${v}`).join(' • ')}
                           </p>
                         )}
                       </td>
-                      <td className="py-3 text-center text-sm font-bold text-slate-500">× {item.quantity}</td>
-                      <td className="py-3 text-right text-sm font-bold text-slate-500">{Number(item.price).toLocaleString()} F</td>
-                      <td className="py-3 text-right text-sm font-black text-slate-900">{(item.price * item.quantity).toLocaleString()} F</td>
+                      <td className="py-2 sm:py-3 text-center text-xs sm:text-sm font-bold text-slate-500">× {item.quantity}</td>
+                      <td className="py-2 sm:py-3 text-right text-xs sm:text-sm font-bold text-slate-500">{Number(item.price).toLocaleString()} F</td>
+                      <td className="py-2 sm:py-3 text-right text-xs sm:text-sm font-black text-slate-900">{(item.price * item.quantity).toLocaleString()} F</td>
                     </tr>
                   ))}
                 </tbody>
@@ -169,36 +171,36 @@ export default function InvoicePage() {
             </div>
 
             {/* === TOTAL + QR === */}
-            <div className="border-t-2 border-slate-900 pt-6 mt-6 flex justify-between items-end">
-              <div className="flex items-center gap-5">
-                <div className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm">
-                  <img src={qrUrl} className="w-20 h-20" alt="QR Vérification" />
+            <div className="border-t-2 border-slate-900 pt-4 sm:pt-6 mt-auto flex flex-col-reverse sm:flex-row justify-between items-center sm:items-end gap-6 sm:gap-6">
+              <div className="flex flex-row items-center gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100">
+                <div className="bg-white border border-slate-200 rounded-xl p-1.5 sm:p-2 shadow-sm shrink-0">
+                  <img src={qrUrl} className="w-12 h-12 sm:w-20 sm:h-20" alt="QR Vérification" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5 text-emerald-600 mb-1">
+                  <div className="flex items-center gap-1.5 text-emerald-600 mb-0.5 sm:mb-1">
                     <Verified size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Authenticité Garantie</span>
+                    <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Authenticité Garantie</span>
                   </div>
-                  <p className="text-[8px] font-mono text-slate-400">REF: {authHash}</p>
-                  <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">Vestyle Network Authority</p>
+                  <p className="text-[7px] sm:text-[8px] font-mono text-slate-400">REF: {authHash}</p>
+                  <p className="text-[7px] sm:text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">Vestyle Network Authority</p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Net à Payer</p>
-                <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                  {Number(order.total_amount).toLocaleString()} <span className="text-sm text-slate-400 font-bold">FCFA</span>
+              <div className="text-right w-full sm:w-auto bg-slate-900 sm:bg-transparent text-white sm:text-slate-900 p-4 sm:p-0 rounded-2xl sm:rounded-none">
+                <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 sm:mb-1">Total Net à Payer</p>
+                <p className="text-3xl sm:text-4xl font-black tracking-tighter">
+                  {Number(order.total_amount).toLocaleString()} <span className="text-xs sm:text-sm text-emerald-400 sm:text-slate-400 font-bold">FCFA</span>
                 </p>
-                <div className="flex items-center justify-end gap-1.5 mt-2 text-emerald-600">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Transaction Confirmée</span>
+                <div className="flex items-center justify-end gap-1.5 mt-2 text-emerald-400 sm:text-emerald-600">
+                  <div className="w-1.5 h-1.5 bg-emerald-400 sm:bg-emerald-500 rounded-full" />
+                  <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Transaction Confirmée</span>
                 </div>
               </div>
             </div>
 
             {/* === FOOTER === */}
-            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-              <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.4em]">
+            <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-100 text-center">
+              <p className="text-[7px] sm:text-[8px] font-black text-slate-300 uppercase tracking-[0.4em]">
                 Merci de votre confiance • VesTyle Marketplace • {new Date().getFullYear()}
               </p>
             </div>
