@@ -44,16 +44,8 @@ export default function VestyleLens({ isOpen, onClose }) {
   };
 
   const initIA = async () => {
-    if (extractorRef.current) return;
-    setLoadingIA(true);
-    try {
-      const { getAIExtractor } = await import('@/lib/aiService');
-      extractorRef.current = await getAIExtractor();
-    } catch (e) {
-      setError("Impossible de charger l'IA de scan.");
-    } finally {
-      setLoadingIA(false);
-    }
+    // Plus besoin d'init local (Xenova), on utilise l'API Gemini
+    setLoadingIA(false);
   };
 
   useEffect(() => {
@@ -65,7 +57,7 @@ export default function VestyleLens({ isOpen, onClose }) {
   }, [isOpen, stream, loadingIA, foundProducts]);
 
   const performScan = async () => {
-    if (!videoRef.current || !extractorRef.current || scanning) return;
+    if (!videoRef.current || scanning) return;
 
     setScanning(true);
     setScanPulse(true);
@@ -79,18 +71,20 @@ export default function VestyleLens({ isOpen, onClose }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, 224, 224);
       
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      const output = await extractorRef.current(imageData);
-      const vector = `[${Array.from(output.data).join(',')}]`;
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+      if (!blob) throw new Error("Erreur de capture d'image");
 
-      const { data, error } = await supabase.rpc('match_products_v2', {
-        query_embedding: vector,
-        match_threshold: 0.70, // Slightly lower for more power
-        match_count: 3
+      const formData = new FormData();
+      formData.append('image', blob, 'scan.jpg');
+
+      const res = await fetch('/api/search/visual', {
+        method: 'POST',
+        body: formData,
       });
+      const result = await res.json();
 
-      if (data && data.length > 0) {
-        setFoundProducts(data);
+      if (result.success && result.products && result.products.length > 0) {
+        setFoundProducts(result.products);
         if (navigator.vibrate) navigator.vibrate([50, 30, 50]); // Powerful vibration pattern
       }
     } catch (e) {
