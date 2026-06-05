@@ -77,20 +77,9 @@ export default function AddProductPage() {
   };
 
   const suggestCategory = async (imageUrl) => {
-    try {
-      // Import dynamique pour ne pas ralentir le chargement initial
-      const { pipeline, env } = await import('@xenova/transformers');
-      env.allowLocalModels = false;
-      const classifier = await pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32');
-      
-      // On teste contre quelques catégories mères
-      const labels = ['vêtement', 'chaussure', 'électronique', 'accessoire', 'beauté', 'meuble'];
-      const results = await classifier(imageUrl, labels);
-      console.log('IA Suggestion:', results);
-      // Logique simplifiée pour l'exemple : si c'est vêtement -> suggérer mode
-    } catch (err) {
-      console.warn('IA Suggestion indisponible');
-    }
+    // Suggestion de catégorie désactivée (Xenova supprimé)
+    // L'embedding est généré côté serveur via Gemini lors de la sauvegarde
+    console.log('[AddProduct] Image prête pour indexation Gemini:', imageUrl);
   };
 
   const removeImage = async (index) => {
@@ -125,16 +114,26 @@ export default function AddProductPage() {
     
     setLoading(true);
 
-    // Extraction embedding IA
+    // Génération de l'embedding via Gemini API (côté serveur)
     let embeddingVector = null;
-    if (formData.images.length > 0) {
+    if (formData.images.length > 0 && formData.name) {
       try {
-        const { pipeline, env } = await import('@xenova/transformers');
-        env.allowLocalModels = false;
-        const extractor = await pipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32');
-        const output = await extractor(formData.images[0]);
-        embeddingVector = `[${Array.from(output.data).join(',')}]`;
-      } catch (err) { console.error('Erreur IA:', err); }
+        const embedRes = await fetch('/api/products/generate-embeddings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            description: formData.description || '',
+            imageUrl: formData.images[0]
+          })
+        });
+        if (embedRes.ok) {
+          const embedData = await embedRes.json();
+          if (embedData.embedding) {
+            embeddingVector = JSON.stringify(embedData.embedding);
+          }
+        }
+      } catch (err) { console.warn('[AddProduct] Embedding Gemini échoué (non bloquant):', err); }
     }
 
     const newProduct = {
