@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { CohereClient } from "cohere-ai";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -10,21 +10,27 @@ export async function POST(req) {
       return NextResponse.json({ error: "La requête (query) est requise." }, { status: 400 });
     }
 
-    // 1. Initialiser les clients
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    // 1. Initialiser Cohere
+    const cohere = new CohereClient({
+      token: process.env.COHERE_API_KEY,
+    });
 
-    // Note: on utilise la clé anonyme ici car c'est une requête publique
+    // 2. Générer l'embedding avec Cohere
+    const embedResult = await cohere.embed({
+      texts: [query],
+      model: "embed-multilingual-v3.0",
+      inputType: "search_query",
+    });
+
+    const queryEmbedding = embedResult.embeddings[0]; // Array de floats
+
+    // 3. Recherche Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    // 2. Générer l'embedding pour la recherche de l'utilisateur
-    const result = await model.embedContent(query);
-    const queryEmbedding = result.embedding.values;
-
-    // 3. Appeler la fonction Supabase pour chercher les produits similaires
+    // Adapter la requête RPC pour Cohere (dimensions peuvent varier)
     const { data: products, error } = await supabase.rpc('search_products_text', {
       query_embedding: queryEmbedding,
       match_threshold: threshold,
@@ -39,7 +45,7 @@ export async function POST(req) {
     return NextResponse.json({ success: true, products });
 
   } catch (error) {
-    console.error("Erreur sémantique search:", error);
+    console.error("Erreur recherche sémantique (Cohere):", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

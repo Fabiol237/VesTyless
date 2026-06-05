@@ -78,8 +78,8 @@ export default function AddProductPage() {
 
   const suggestCategory = async (imageUrl) => {
     // Suggestion de catégorie désactivée (Xenova supprimé)
-    // L'embedding est généré côté serveur via Gemini lors de la sauvegarde
-    console.log('[AddProduct] Image prête pour indexation Gemini:', imageUrl);
+    // L'embedding est généré côté serveur via Cohere lors de la sauvegarde
+    console.log('[AddProduct] Image prête pour indexation Cohere:', imageUrl);
   };
 
   const removeImage = async (index) => {
@@ -114,7 +114,7 @@ export default function AddProductPage() {
     
     setLoading(true);
 
-    // Génération de l'embedding via Gemini API (côté serveur)
+    // Génération de l'embedding via Cohere API (côté serveur)
     let embeddingVector = null;
     if (formData.images.length > 0 && formData.name) {
       try {
@@ -133,7 +133,7 @@ export default function AddProductPage() {
             embeddingVector = embedData.embedding;
           }
         }
-      } catch (err) { console.warn('[AddProduct] Embedding Gemini échoué (non bloquant):', err); }
+      } catch (err) { console.warn('[AddProduct] Embedding Cohere échoué (non bloquant):', err); }
     }
 
     const newProduct = {

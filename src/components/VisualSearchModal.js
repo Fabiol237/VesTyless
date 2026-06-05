@@ -50,7 +50,7 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
       const objectUrl = URL.createObjectURL(compressed);
       setImagePreview(objectUrl);
 
-      setStatusText('Gemini analyse votre image…');
+      setStatusText('Cohere analyse votre image…');
 
       const formData = new FormData();
       formData.append('image', compressed, 'search.jpg');
@@ -117,14 +117,14 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8">
-            {/* Badge Gemini */}
-            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-full px-4 py-2">
-              <Sparkles size={14} className="text-blue-600" />
-              <span className="text-blue-700 text-xs font-bold">Propulsé par Google Gemini AI</span>
+            {/* Badge Cohere */}
+            <div className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-full px-4 py-2">
+              <Sparkles size={14} className="text-emerald-600" />
+              <span className="text-emerald-700 text-xs font-bold">Propulsé par Cohere AI</span>
             </div>
 
             <p className="text-sm text-slate-500 font-medium text-center leading-relaxed">
-              📸 Photographiez ou importez un article → Gemini l'analyse et trouve les produits similaires <strong>instantanément</strong>.
+              📸 Photographiez ou importez un article → Cohere l'analyse et trouve les produits similaires <strong>instantanément</strong>.
             </p>
 
             {/* Bouton caméra */}
@@ -172,7 +172,7 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent backdrop-blur-[2px] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="text-white animate-spin" size={36} />
-                  <span className="text-white text-xs font-bold bg-black/30 px-3 py-1 rounded-full">Gemini analyse…</span>
+                  <span className="text-white text-xs font-bold bg-black/30 px-3 py-1 rounded-full">Cohere analyse…</span>
                 </div>
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
           {description && (
             <div className="mx-4 mt-4 bg-blue-50 border border-blue-200 rounded-2xl p-3 flex items-start gap-2">
               <Sparkles size={14} className="text-blue-500 mt-0.5 shrink-0" />
-              <p className="text-blue-700 text-xs font-medium leading-relaxed">Gemini a détecté : <em>"{description}"</em></p>
+              <p className="text-emerald-700 text-xs font-medium leading-relaxed">Cohere a détecté : <em>"{description}"</em></p>
             </div>
           )}
 

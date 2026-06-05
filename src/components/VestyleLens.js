@@ -44,7 +44,7 @@ export default function VestyleLens({ isOpen, onClose }) {
   };
 
   const initIA = async () => {
-    // Plus besoin d'init local (Xenova), on utilise l'API Gemini
+    // Plus besoin d'init local (Xenova), on utilise l'API Cohere
     setLoadingIA(false);
   };
 
