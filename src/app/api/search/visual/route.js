@@ -41,8 +41,8 @@ export async function POST(req) {
 
     const embedResult = await cohere.embed({
       texts: [imageDescription],
-      model: "embed-multilingual-v3.0",
-      inputType: "search_query",
+      model: "embed-english-v3.0",
+      inputType: "search_document",
     });
 
     const queryEmbedding = embedResult.embeddings[0];

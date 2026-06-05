@@ -18,7 +18,7 @@ export async function POST(req) {
     // 2. Générer l'embedding avec Cohere
     const embedResult = await cohere.embed({
       texts: [query],
-      model: "embed-multilingual-v3.0",
+      model: "embed-english-v3.0",
       inputType: "search_query",
     });
 

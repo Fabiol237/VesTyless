@@ -29,7 +29,7 @@ export async function POST(req) {
     // === Embedding via Cohere ===
     const embedResult = await cohere.embed({
       texts: [fullText],
-      model: "embed-multilingual-v3.0",
+      model: "embed-english-v3.0",
       inputType: "search_document",
     });
 
