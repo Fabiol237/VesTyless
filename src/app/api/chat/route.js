@@ -17,18 +17,19 @@ export async function POST(req) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
+    // Séparer le system prompt des messages utilisateur
+    const systemMsg = messages.find((m) => m.role === "system");
+    const chatMessages = messages.filter((m) => m.role !== "system");
+
     // Modèle économique : gemini-1.5-flash (rapide + peu cher)
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
+      systemInstruction: systemMsg ? systemMsg.content : undefined,
       generationConfig: {
         maxOutputTokens: 512,
         temperature: 0.7,
       },
     });
-
-    // Séparer le system prompt des messages utilisateur
-    const systemMsg = messages.find((m) => m.role === "system");
-    const chatMessages = messages.filter((m) => m.role !== "system");
 
     // Convertir l'historique au format Gemini
     const history = chatMessages.slice(0, -1).map((m) => ({
@@ -41,9 +42,6 @@ export async function POST(req) {
 
     const chat = model.startChat({
       history,
-      systemInstruction: systemMsg
-        ? { role: "user", parts: [{ text: systemMsg.content }] }
-        : undefined,
     });
 
     const result = await chat.sendMessage(lastUserMessage);

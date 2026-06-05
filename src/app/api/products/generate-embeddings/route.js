@@ -48,9 +48,9 @@ export async function POST(req) {
     // === ÉTAPE 3 : Embedding via text-embedding-004 ===
     const embedModel = genAI.getGenerativeModel({ model: 'text-embedding-004' });
     const embedResult = await embedModel.embedContent(fullText);
-    const embedding = embedResult.embedding.values;
+    const embedding = embedResult.embedding.values.slice(0, 512);
 
-    return NextResponse.json({ success: true, embedding, text: fullText });
+    return NextResponse.json({ success: true, embedding: `[${embedding.join(',')}]`, text: fullText });
 
   } catch (error) {
     console.error('[generate-embeddings] Erreur:', error);

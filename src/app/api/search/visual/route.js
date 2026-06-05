@@ -54,7 +54,7 @@ Exemple : "robe longue rouge fluide à motifs floraux col V style bohème"`,
     });
 
     const embedResult = await embedModel.embedContent(imageDescription);
-    const queryEmbedding = embedResult.embedding.values;
+    const queryEmbedding = embedResult.embedding.values.slice(0, 512); // text-embedding-004 gère Matryoshka, on coupe à 512 pour coller à la BDD existante
 
     // === ÉTAPE 3 : Recherche vectorielle Supabase ===
     const supabase = createClient(
@@ -63,9 +63,9 @@ Exemple : "robe longue rouge fluide à motifs floraux col V style bohème"`,
     );
 
     const { data: products, error } = await supabase.rpc(
-      "search_products_text",
+      "match_products_v2",
       {
-        query_embedding: queryEmbedding,
+        query_embedding: `[${queryEmbedding.join(",")}]`, // Format attendu par l'ancienne fonction (string array)
         match_threshold: 0.45,
         match_count: 12,
       }

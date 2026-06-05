@@ -130,7 +130,7 @@ export default function AddProductPage() {
         if (embedRes.ok) {
           const embedData = await embedRes.json();
           if (embedData.embedding) {
-            embeddingVector = JSON.stringify(embedData.embedding);
+            embeddingVector = embedData.embedding;
           }
         }
       } catch (err) { console.warn('[AddProduct] Embedding Gemini échoué (non bloquant):', err); }
