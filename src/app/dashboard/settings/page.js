@@ -768,39 +768,6 @@ export default function StoreSettingsPage() {
             </div>
           </section>
 
-          {/* Live Preview Card (Simulation of the store card) */}
-          <section className="bg-white p-6 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600"><Smartphone size={20} /></div>
-              <h2 className="text-lg font-black text-gray-900">Aperçu en direct</h2>
-            </div>
-            
-            <div className="relative group w-full aspect-[4/5] bg-slate-50 rounded-[32px] overflow-hidden border border-slate-100 shadow-inner flex flex-col p-4">
-               {/* Mockup Store Card */}
-               <div className="bg-white rounded-[24px] overflow-hidden shadow-xl flex flex-col h-full border border-slate-50">
-                  <div className="h-24 w-full bg-slate-100 relative">
-                     {formData.banner_url ? <img src={formData.banner_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-100" />}
-                     <div className="absolute -bottom-6 left-4 w-12 h-12 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-white">
-                        {formData.logo_url ? <img src={formData.logo_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black bg-slate-50">{formData.name?.[0] || 'V'}</div>}
-                     </div>
-                  </div>
-                  <div className="pt-8 px-4 pb-4 flex-1 flex flex-col justify-between">
-                     <div>
-                        <h4 className="font-bold text-sm text-slate-900 truncate" style={{ color: formData.theme_color }}>{formData.name || 'Nom de la boutique'}</h4>
-                        <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-1">{formData.description || 'Description courte de votre boutique...'}</p>
-                     </div>
-                     <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[9px] font-black text-slate-300 uppercase tracking-widest"><MapPin size={10} /> {formData.city || 'Douala'}</div>
-                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ backgroundColor: formData.theme_color }}>
-                           <ArrowLeft className="rotate-180" size={12} />
-                        </div>
-                     </div>
-                  </div>
-               </div>
-               <p className="mt-4 text-[10px] text-center font-black text-slate-300 uppercase tracking-widest">Apparence de votre carte boutique</p>
-            </div>
-          </section>
-
           {/* Action Card (Auto-Save Indicator) */}
           <div className="bg-gray-900 p-8 rounded-[40px] shadow-2xl space-y-6">
             <div className="flex items-center gap-3">

@@ -17,10 +17,12 @@ export async function POST(req) {
       );
     }
 
-    // === ÉTAPE 1 : Analyser l'image avec Mistral Pixtral (Vision IA) ===
     const imageBytes = await imageFile.arrayBuffer();
     const base64Image = Buffer.from(imageBytes).toString("base64");
-    const mimeType = imageFile.type || "image/jpeg";
+    let mimeType = imageFile.type || "image/jpeg";
+    if (!mimeType.startsWith("image/")) {
+      mimeType = "image/jpeg";
+    }
 
     let imageDescription = "";
 

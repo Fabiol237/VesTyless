@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 require('dotenv').config({ path: '.env.local' });
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3002';
 
 async function testAPIs() {
   console.log('🧪 TESTS DES ENDPOINTS\n');

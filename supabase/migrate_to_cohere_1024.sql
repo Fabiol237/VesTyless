@@ -29,11 +29,11 @@ CREATE OR REPLACE FUNCTION match_products_v2(
   match_count INT
 )
 RETURNS TABLE(
-  id BIGINT,
+  id UUID,
   name TEXT,
   price DECIMAL,
   image_url TEXT,
-  store_id BIGINT,
+  store_id UUID,
   similarity FLOAT
 ) AS $$
 BEGIN
@@ -60,11 +60,11 @@ CREATE OR REPLACE FUNCTION search_products_text(
   match_count INT
 )
 RETURNS TABLE(
-  id BIGINT,
+  id UUID,
   name TEXT,
   price DECIMAL,
   image_url TEXT,
-  store_id BIGINT,
+  store_id UUID,
   similarity FLOAT
 ) AS $$
 BEGIN
@@ -91,11 +91,11 @@ CREATE OR REPLACE FUNCTION search_products_visual(
   match_count INT
 )
 RETURNS TABLE(
-  id BIGINT,
+  id UUID,
   name TEXT,
   price DECIMAL,
   image_url TEXT,
-  store_id BIGINT,
+  store_id UUID,
   similarity FLOAT
 ) AS $$
 BEGIN
