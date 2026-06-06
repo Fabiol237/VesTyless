@@ -83,6 +83,27 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     };
 
     try {
+      // Générer l'embedding via Cohere
+      let embeddingVector = null;
+      try {
+        const embedRes = await fetch('/api/products/generate-embeddings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, imageUrl })
+        });
+        if (embedRes.ok) {
+          const embedData = await embedRes.json();
+          if (embedData.embedding) embeddingVector = embedData.embedding;
+        }
+      } catch (e) {
+        console.warn('Embedding error', e);
+      }
+      
+      if (embeddingVector) {
+        productData.text_embedding_1024 = embeddingVector;
+        productData.image_embedding_1024 = embeddingVector;
+      }
+
       const isOnline = navigator.onLine;
       if (!isOnline) {
         await offlineStore.addToQueue({
@@ -113,7 +134,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
       <div className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden">
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-black text-gray-900">{isEdit ? 'Modifier' : 'Nouveau Produit'}</h2>
+            <h2 className="text-2xl font-black text-gray-900">{isEdit ? 'Modifier le Produit' : 'Nouveau Produit'}</h2>
           </div>
           <button onClick={onClose} className="p-2 bg-gray-50 rounded-xl"><X size={20}/></button>
         </div>

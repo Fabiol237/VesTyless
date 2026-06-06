@@ -38,11 +38,37 @@ const OfflineSyncProvider = ({ children }) => {
 
     for (const op of queue) {
       try {
+        let productData = { ...op.data };
+
+        // Generate embeddings if they don't exist
+        if (!productData.text_embedding_1024 && productData.name) {
+          try {
+            const embedRes = await fetch('/api/products/generate-embeddings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: productData.name,
+                description: productData.description || '',
+                imageUrl: productData.image_url || null
+              })
+            });
+            if (embedRes.ok) {
+              const embedData = await embedRes.json();
+              if (embedData.embedding) {
+                productData.text_embedding_1024 = embedData.embedding;
+                productData.image_embedding_1024 = embedData.embedding;
+              }
+            }
+          } catch (e) {
+            console.warn('[Offline Sync] Failed to generate embedding', e);
+          }
+        }
+
         if (op.type === 'create_product') {
-          const { error } = await supabase.from('products').insert([op.data]);
+          const { error } = await supabase.from('products').insert([productData]);
           if (!error) await offlineStore.removeFromQueue(op.id);
         } else if (op.type === 'update_product') {
-          const { error } = await supabase.from('products').update(op.data).eq('id', op.productId);
+          const { error } = await supabase.from('products').update(productData).eq('id', op.productId);
           if (!error) await offlineStore.removeFromQueue(op.id);
         }
       } catch (err) {

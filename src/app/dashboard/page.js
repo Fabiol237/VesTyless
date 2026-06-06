@@ -289,9 +289,9 @@ export default function SellerDashboard() {
             </div>
             <Link
               href="/dashboard/add-product"
-              className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white rounded-2xl font-bold shadow-lg shadow-wa-teal/20 hover:scale-105 transition-all"
+              className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
             >
-              <Plus size={18} /> Nouveau Produit
+              <Plus size={20} /> Nouveau Produit
             </Link>
           </div>
         </div>

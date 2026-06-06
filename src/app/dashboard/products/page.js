@@ -86,11 +86,6 @@ export default function ProductsPage() {
     }
   };
 
-  const openAddModal = () => {
-    setProductToEdit(null);
-    setShowAddModal(true);
-  };
-
   const openEditModal = (product) => {
     setProductToEdit(product);
     setShowAddModal(true);
@@ -120,13 +115,13 @@ export default function ProductsPage() {
             <HelpCircle size={18} className="text-wa-teal" />
             <span className="hidden sm:inline">Aide</span>
           </button>
-          <button
-            onClick={openAddModal}
+          <Link
+            href="/dashboard/add-product"
             className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
           >
             <Plus size={20} />
             <span>Nouveau Produit</span>
-          </button>
+          </Link>
         </div>
       </div>
 

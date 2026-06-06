@@ -145,7 +145,8 @@ export default function AddProductPage() {
       stock_quantity: parseInt(formData.stock_quantity),
       image_url: formData.images[0] || null,
       images: formData.images,
-      image_embedding: embeddingVector
+      text_embedding_1024: embeddingVector,
+      image_embedding_1024: embeddingVector
     };
 
     const { data: product, error } = await supabase.from('products').insert([newProduct]).select().single();
