@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import AddProductModal from './AddProductModal';
 import Image from 'next/image';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
+import Link from 'next/link';
 
 export default function ProductsPage() {
   const { store } = useAuth();
