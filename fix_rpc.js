@@ -29,7 +29,8 @@ BEGIN
     (1 - (products.image_embedding_1024 <=> query_embedding))::FLOAT AS similarity
   FROM products
   WHERE image_embedding_1024 IS NOT NULL
-  ORDER BY image_embedding_1024 <=> query_embedding
+    AND (1 - (products.image_embedding_1024 <=> query_embedding)) > match_threshold
+  ORDER BY products.image_embedding_1024 <=> query_embedding
   LIMIT match_count;
 END;
 $$ LANGUAGE plpgsql;
@@ -58,7 +59,8 @@ BEGIN
     (1 - (products.text_embedding_1024 <=> query_embedding))::FLOAT AS similarity
   FROM products
   WHERE text_embedding_1024 IS NOT NULL
-  ORDER BY text_embedding_1024 <=> query_embedding
+    AND (1 - (products.text_embedding_1024 <=> query_embedding)) > match_threshold
+  ORDER BY products.text_embedding_1024 <=> query_embedding
   LIMIT match_count;
 END;
 $$ LANGUAGE plpgsql;
@@ -87,7 +89,8 @@ BEGIN
     (1 - (products.image_embedding_1024 <=> query_embedding))::FLOAT AS similarity
   FROM products
   WHERE image_embedding_1024 IS NOT NULL
-  ORDER BY image_embedding_1024 <=> query_embedding
+    AND (1 - (products.image_embedding_1024 <=> query_embedding)) > match_threshold
+  ORDER BY products.image_embedding_1024 <=> query_embedding
   LIMIT match_count;
 END;
 $$ LANGUAGE plpgsql;
