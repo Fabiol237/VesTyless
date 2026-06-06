@@ -377,6 +377,7 @@ Panier actuel du client: ${
       if (Array.isArray(data.actions)) {
         for (const action of data.actions) {
           if (action.type === 'add_to_cart' && action.product?.id) {
+            const qty = Math.max(1, parseInt(action.quantity) || 1);
             const productToAdd = {
               id: action.product.id,
               name: action.product.name,
@@ -384,9 +385,10 @@ Panier actuel du client: ${
               image_url: action.product.image_url || null,
               store_id: store.id,
               store_name: store.name,
-              quantity: 1,
+              quantity: qty,
             };
-            addToCart(productToAdd);
+            // Ajouter avec la quantité exacte demandée
+            addToCart(productToAdd, qty);
             addedProducts.push(productToAdd);
             showCart = true;
           }

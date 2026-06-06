@@ -30,7 +30,7 @@ export function CartProvider({ children }) {
     }
   }, [cart, isLoaded]);
 
-  const addToCart = (product) => {
+  const addToCart = (product, forceQuantity = null) => {
     setCart(current => {
       // Un produit est identique seulement s'il a les mêmes variantes
       const existing = current.find(item => 
@@ -38,14 +38,16 @@ export function CartProvider({ children }) {
         JSON.stringify(item.selectedVariants) === JSON.stringify(product.selectedVariants)
       );
       
+      const qty = forceQuantity !== null ? forceQuantity : (product.quantity || 1);
+
       if (existing) {
         return current.map(item => 
           (item.id === product.id && JSON.stringify(item.selectedVariants) === JSON.stringify(product.selectedVariants)) 
-          ? { ...item, quantity: item.quantity + 1 } 
+          ? { ...item, quantity: forceQuantity !== null ? qty : item.quantity + qty } 
           : item
         );
       }
-      return [...current, { ...product, quantity: 1 }];
+      return [...current, { ...product, quantity: qty }];
     });
   };
 

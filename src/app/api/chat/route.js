@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 30;
+export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
@@ -87,7 +88,7 @@ Tu DOIS TOUJOURS répondre en JSON valide avec exactement ce format :
 ACTIONS DISPONIBLES dans le tableau "actions" :
 
 [Ajouter au panier]
-{ "type": "add_to_cart", "product": { "id": "PRODUCT_ID_EXACT_DU_CATALOGUE", "name": "nom exact", "price": PRIX_NUMERIQUE, "store_id": "${storeId || ""}", "image_url": "URL_OU_NULL" } }
+{ "type": "add_to_cart", "product": { "id": "PRODUCT_ID_EXACT_DU_CATALOGUE", "name": "nom exact", "price": PRIX_NUMERIQUE, "store_id": "${storeId || ""}", "image_url": "URL_OU_NULL" }, "quantity": QUANTITE_ENTIERE_MIN_1 }
 
 [Passer une commande — SEULEMENT si tu as nom ET téléphone confirmés]
 { "type": "place_order", "customer_name": "prénom nom complet", "customer_phone": "numéro de téléphone" }
@@ -101,9 +102,9 @@ RÈGLES STRICTES :
 - Si un produit est "ÉPUISÉ", informe le client et n'ajoute pas au panier.
 - Pour place_order : demande d'abord le nom puis le téléphone si tu ne les as pas.
 - N'inclus "place_order" que si tu as les DEUX informations dans la conversation.
-- Tu peux combiner plusieurs actions (ex: add_to_cart x2 + show_cart).
-- Sois chaleureux, précis et professionnel en français.
-- Ne propose JAMAIS de produit hors catalogue.`;
+- QUANTITÉ : Si le client demande "ajoute 7 couteaux", utilise la propriété "quantity": 7 dans l'action add_to_cart. La quantité est TOUJOURS un nombre entier >= 1.
+- Tu peux combiner plusieurs actions dans le tableau (ex: add_to_cart avec quantity 5 + show_cart).
+- Sois chaleureux, précis et concis en français. Réponses courtes et directes.`;
 
     // ── Appel Mistral ──
     const client = new Mistral({ apiKey });
@@ -116,8 +117,8 @@ RÈGLES STRICTES :
     const response = await client.chat.complete({
       model: "mistral-small-latest",
       messages: formattedMessages,
-      maxTokens: 700,
-      temperature: 0.4,
+      maxTokens: 500,
+      temperature: 0.3,
       responseFormat: { type: "json_object" },
     });
 

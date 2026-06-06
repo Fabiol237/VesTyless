@@ -41,18 +41,20 @@ export async function POST(req) {
               },
               {
                 type: "text",
-                text: `Décris précisément cet article en 1 à 2 phrases courtes pour une recherche produit. 
-                Concentre-toi sur : type d'article, couleur(s), matière si visible, style (sport, casual, formel, etc.), 
-                usage probable. Réponds UNIQUEMENT en anglais (pour les embeddings). 
-                Exemple : "Red casual cotton t-shirt with round neck and short sleeves" 
-                ou "Blue denim jeans slim fit with slight distress".
-                Sois très précis et ne dépasse pas 30 mots.`,
+                text: `You are a fashion product search assistant. Describe this clothing/fashion item precisely for semantic search.
+Focus on: exact item type, primary color, secondary colors, fabric/material if visible, cut/fit (slim, oversized, etc.), neckline, sleeves, patterns (stripes, floral, plain), style category (sportswear, casual, formal, streetwear, etc.).
+Respond ONLY in English, in 1 concise sentence, max 40 words. Be highly specific and descriptive.
+Examples:
+- "Dark navy blue slim-fit chino pants with straight hem and flat front"
+- "White oversized cotton hoodie with kangaroo pocket and drawstring hood"
+- "Red floral summer dress midi length with short puff sleeves"
+Now describe the item in the image:`,
               },
             ],
           },
         ],
-        maxTokens: 80,
-        temperature: 0.1,
+        maxTokens: 120,
+        temperature: 0.05,
       });
 
       imageDescription =
@@ -91,8 +93,8 @@ export async function POST(req) {
 
     const { data: products, error } = await supabase.rpc("match_products_v2", {
       query_embedding: queryEmbedding,
-      match_threshold: 0.55, // ✅ Plus strict (était 0.45) → moins de faux positifs
-      match_count: 12,
+      match_threshold: 0.40, // ✅ Seuil optimisé → plus de résultats pertinents
+      match_count: 20,
     });
 
     if (error) {
