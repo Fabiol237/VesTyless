@@ -9,7 +9,15 @@
     "vercel-build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "git add . && git commit -m 'Mise à jour en temps réel' && git push"
+    "deploy": "git add . && git commit -m 'Mise à jour en temps réel' && git push",
+    "fill-embeddings": "node fill-embeddings.mjs",
+    "verify-setup": "node verify-setup.mjs",
+    "seed:categories": "node scripts/seed-global-categories.js",
+    "insert:test-product": "node scripts/insert-test-product.js"
+  },
+  "bin": {
+    "seed-global-categories": "scripts/seed-global-categories.js",
+    "insert-test-product": "scripts/insert-test-product.js"
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.15",

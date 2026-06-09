@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import BackNavigation from '@/components/BackNavigation';
 import Footer from '@/components/Footer';
 import { 
   Package, Search, ChevronRight, Clock, 
@@ -93,6 +94,7 @@ export default function MyOrdersPage() {
       <Navbar />
       
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 pt-32 pb-24">
+        <BackNavigation title="Mes Commandes" />
         
         <div className="text-center mb-12">
           <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-3">Mes Commandes</h1>

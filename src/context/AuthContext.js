@@ -114,11 +114,25 @@ export function AuthProvider({ children }) {
       if (!storeError && storeData) {
         setStore(storeData);
       } else if (storeError?.code === 'PGRST116' || !storeData) {
-        // No store found for this user, let's create a default one
-        // Try to get store_name from auth metadata
+        // No store found for this user
+        // ⚠️ IMPORTANT: Seulement créer UNE FOIS (check if recent creation exists)
         const { data: { user } } = await supabase.auth.getUser();
         const storeNameFromMeta = user?.user_metadata?.store_name;
         
+        // Check if user already tried to create a store recently (avoid duplicates on reconnect)
+        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+        const { data: recentDelete } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('owner_id', userId)
+          .gt('created_at', oneHourAgo)
+          .limit(1);
+
+        if (recentDelete && recentDelete.length > 0) {
+          console.log('Store creation déjà tentée récemment, skip');
+          return;
+        }
+
         const randomString = Math.random().toString(36).substring(2, 8);
         const defaultName = storeNameFromMeta || `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
         const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
@@ -130,6 +144,7 @@ export function AuthProvider({ children }) {
               owner_id: userId,
               name: defaultName,
               slug: defaultSlug,
+              is_active: true,
             }
           ])
           .select()
@@ -137,10 +152,11 @@ export function AuthProvider({ children }) {
 
         if (!insertError && newStore) {
           setStore(newStore);
-          // Initialisation de la boutique sans Meilisearch
-          console.log('Boutique créée', newStore);
+          console.log('✅ Boutique créée (nouvelle)', newStore.id);
         } else {
-          console.error("Erreur lors de la creation de la boutique auto:", insertError);
+          console.error("❌ Erreur store creation:", insertError?.message);
+          // Ne pas bloquer l'app si la création échoue
+          setStore(null);
         }
       }
     } catch (err) {

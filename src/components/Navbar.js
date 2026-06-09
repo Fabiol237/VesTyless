@@ -90,11 +90,27 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex items-center justify-between">
 
         {/* Left: LOGO */}
-        <Link href="/" className="flex items-center gap-2 group z-50">
-          <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm border border-slate-200 bg-white">
-            <img src="/icon-512.png" className="w-full h-full object-cover p-1" alt="Vestyle" />
+        <Link href="/" className="flex items-center gap-3 group z-50">
+          <div className="relative w-14 h-14 rounded-xl overflow-visible shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-300">
+            {/* Gradient background ultra-lumineux */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500"></div>
+            
+            {/* Effet de lueur externe */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-300 to-teal-400 rounded-xl blur-md opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
+            
+            {/* Bordure brillante */}
+            <div className="absolute inset-0 border-3 border-white/60 rounded-xl group-hover:border-white transition-all duration-300"></div>
+            
+            {/* Image avec contraste amélioré */}
+            <img src="/icon-512.png" className="w-11 h-11 object-cover relative z-10 contrast-150 brightness-110" alt="Vestyle" />
+            
+            {/* Reflet blanc */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-white/60 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+            
+            {/* Animation pulse */}
+            <div className="absolute inset-0 rounded-xl animate-pulse bg-white/10"></div>
           </div>
-          <span className={`font-bold text-xl hidden sm:block tracking-wide ${isScrolled ? 'text-slate-900' : 'text-white'}`}>
+          <span className={`text-2xl font-black hidden sm:block tracking-wide ${isScrolled ? 'bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent' : 'bg-gradient-to-r from-emerald-300 to-white bg-clip-text text-transparent'} group-hover:from-emerald-200 group-hover:to-cyan-200 transition-all duration-300`} style={{fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontWeight: '800', letterSpacing: '0.06em'}}>
             Vestyle
           </span>
         </Link>

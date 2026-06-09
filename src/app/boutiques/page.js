@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
+import BackNavigation from '@/components/BackNavigation';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase';
 import { Store, MapPin, ChevronRight, Search } from 'lucide-react';
@@ -21,7 +22,12 @@ export default function BoutiquesPage() {
 
   useEffect(() => {
     async function fetchStores() {
-      const { data } = await supabase.from('stores').select('*');
+      const { data } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('is_active', true)
+        .order('daily_views', { ascending: false })
+        .limit(100);
       if (data) setStores(data);
       setLoading(false);
     }
@@ -38,6 +44,7 @@ export default function BoutiquesPage() {
       <Navbar />
       
       <div className="pt-28 pb-12 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+        <BackNavigation title="Boutiques" />
         <header className="mb-12 text-center sm:text-left">
           <h1 className="text-4xl font-black text-neutral-900 tracking-tight mb-4">Toutes les Boutiques</h1>
           <p className="text-neutral-600 font-medium max-w-2xl">Découvrez les créateurs, vendeurs et artisans qui font battre le cœur de votre ville.</p>

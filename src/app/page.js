@@ -7,9 +7,12 @@ import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ClientDiscovery from '@/components/ClientDiscovery';
 import VisualSearchModal from '@/components/VisualSearchModal';
 import Link from 'next/link';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
 import { useOfflineData } from '@/hooks/useOfflineData';
+import { Outfit } from 'next/font/google';
+
+const artFont = Outfit({ subsets: ['latin'], weight: ['900'] });
 
 // ── Inline SVG Icons ──────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -138,6 +141,19 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
 
+  // ── WOW EFFECT: 3D Mouse Tracking ──
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+  const rotateX = useSpring(useTransform(mouseY, [-500, 500], [15, -15]), { damping: 30, stiffness: 100 });
+  const rotateY = useSpring(useTransform(mouseX, [-500, 500], [-15, 15]), { damping: 30, stiffness: 100 });
+
   const { data: offlineSuggestions } = useOfflineData('home_suggestions', async () => {
     const [cats, strs, prods] = await Promise.all([
       supabase.from('global_categories').select('name').limit(8),
@@ -179,9 +195,12 @@ export default function Home() {
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
         className="relative min-h-[100svh] flex flex-col justify-center items-center overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 40%, #0a2e20 100%)',
+          perspective: 1200
         }}
       >
         {/* Particle canvas */}
@@ -210,15 +229,20 @@ export default function Home() {
             Marketplace N°1 du Cameroun
           </motion.div>
 
-          {/* Title */}
+          {/* Title with 3D Tilt Wow Effect */}
           <motion.div
+            style={reduceMotion ? {} : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
+            className="will-change-transform flex flex-col items-center"
           >
-            <h1 className="text-6xl sm:text-8xl font-black tracking-tighter leading-none text-white">
+            <motion.h1 
+              style={reduceMotion ? {} : { transform: 'translateZ(60px)' }} 
+              className={`text-6xl sm:text-[100px] tracking-tight leading-none text-white ${artFont.className}`}
+            >
               Ves<span style={{ color: '#25D366' }}>Tyle</span>
-            </h1>
+            </motion.h1>
             <p className="mt-4 text-lg sm:text-xl font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Découvrez, achetez et vendez en proximité.
             </p>
@@ -305,29 +329,53 @@ export default function Home() {
             ))}
           </motion.div>
 
-          {/* Code boutique - Recommandé */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+          {/* ── CODE BOUTIQUE DIRECT INPUT ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
-            onClick={() => setShowCodeModal(true)}
-            className="relative flex items-center gap-3 px-6 py-3 rounded-2xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95 group overflow-hidden"
-            style={{ 
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-              border: '1px solid rgba(37,211,102,0.5)',
-              color: '#fff',
-              backdropFilter: 'blur(10px)'
-            }}
+            className="w-full max-w-lg mt-2"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#25D366]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#25D366] text-white shadow-[0_0_15px_rgba(37,211,102,0.5)]">
-              <HashIcon />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-sm tracking-wide">Accéder à une boutique par code</span>
-              <span className="text-[10px] uppercase tracking-widest text-[#25D366] font-bold mt-0.5">✨ Recommandé</span>
-            </div>
-          </motion.button>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Accès direct par code vendeur (5 chiffres)
+            </p>
+            <form onSubmit={handleCodeSearch} className="relative flex items-center gap-2 p-2 rounded-2xl overflow-hidden shadow-2xl transition-all"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+                border: '1px solid rgba(37,211,102,0.4)',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 30px rgba(37,211,102,0.15)',
+              }}
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0 ml-1 text-white"
+                style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 0 20px rgba(37,211,102,0.5)' }}>
+                <HashIcon />
+              </div>
+              <input
+                type="text"
+                maxLength={5}
+                value={codeQuery}
+                onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
+                placeholder="Ex: 12345"
+                className="flex-1 bg-transparent border-none outline-none text-3xl font-black text-white placeholder:text-white/20 text-center tracking-[0.2em] w-full"
+              />
+              <button
+                type="submit"
+                disabled={codeQuery.length !== 5 || codeLoading}
+                className="flex items-center justify-center w-12 h-12 rounded-xl text-white transition-all disabled:opacity-30 disabled:scale-95 hover:scale-105 active:scale-95 mr-1"
+                style={{ background: 'rgba(37,211,102,0.2)', border: '1px solid rgba(37,211,102,0.5)' }}
+              >
+                {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
+              </button>
+            </form>
+            <AnimatePresence>
+              {codeError && (
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-3 text-[#ff6b6b] text-xs font-bold text-center">
+                  {codeError}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
 
         {/* Scroll indicator */}
@@ -362,7 +410,7 @@ export default function Home() {
       {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
       <footer style={{ background: '#070f1c', color: 'rgba(255,255,255,0.5)' }} className="py-16 px-6">
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-8">
-          <h2 className="text-4xl font-black tracking-tighter text-white">
+          <h2 className={`text-5xl sm:text-[70px] tracking-tight text-white ${artFont.className}`}>
             Ves<span style={{ color: '#25D366' }}>Tyle</span>
           </h2>
           <div className="flex flex-wrap justify-center gap-8 text-[10px] font-black uppercase tracking-widest">
@@ -377,49 +425,8 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* ── CODE MODAL ──────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showCodeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
-            onClick={() => setShowCodeModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl"
-            >
-              <h3 className="text-2xl font-black text-slate-900 mb-2">Accès boutique</h3>
-              <p className="text-sm text-slate-500 mb-6">Entrez le code à 5 chiffres de votre vendeur.</p>
-              <form onSubmit={handleCodeSearch} className="flex gap-3">
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={codeQuery}
-                  onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
-                  placeholder="00000"
-                  className="flex-1 border-2 border-slate-200 focus:border-emerald-500 rounded-2xl px-4 py-4 text-3xl font-black text-center outline-none transition-colors"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  disabled={codeQuery.length !== 5 || codeLoading}
-                  className="bg-slate-900 text-white px-5 rounded-2xl hover:bg-emerald-600 transition-all disabled:opacity-40 flex items-center justify-center"
-                >
-                  {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
-                </button>
-              </form>
-              {codeError && <p className="mt-3 text-rose-500 text-xs font-bold">{codeError}</p>}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── CODE MODAL (REMOVED: Form is now directly inline in the hero) ── */}
+
 
       {/* ── VISUAL SEARCH MODAL ─────────────────────────────────────────────── */}
       {visualSearchOpen && (

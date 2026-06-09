@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BackNavigation from '@/components/BackNavigation';
 import Link from 'next/link';
 import { ShoppingCart, ArrowLeft, Store, MapPin, CheckCircle2, Package, Loader2, Zap, Shield, ChevronRight } from 'lucide-react';
 
@@ -109,20 +110,23 @@ export default function ProductClient({ params }) {
   return (
     <main className="bg-wa-bg min-h-screen flex flex-col font-sans">
       <Navbar />
-      <div className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 sm:pt-32 pb-32">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 pt-24 pb-24">
+        <BackNavigation title={product?.name || 'Produit'} />
 
-        <nav className="flex items-center gap-2 text-xs text-neutral-400 mb-6">
+        <nav className="flex items-center gap-2 text-xs text-neutral-400 mb-4">
           <Link href="/" className="hover:text-wa-teal">Accueil</Link>
           <ChevronRight size={12} />
           {product.stores?.slug && <><Link href={`/boutique/${product.stores.slug}`} className="hover:text-wa-teal truncate max-w-[120px]">{product.stores.name}</Link><ChevronRight size={12} /></>}
           <span className="text-neutral-600 font-medium truncate max-w-[160px]">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* MULTI-IMAGE CAROUSEL */}
-          <div className="flex flex-col gap-4">
-            <div className="relative aspect-square w-full rounded-[2.5rem] overflow-hidden bg-white shadow-xl border border-neutral-100">
-               <img src={images[activeImage]} className="w-full h-full object-cover transition-all duration-500" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          {/* MULTI-IMAGE CAROUSEL - Meilleur responsive */}
+          <div className="md:col-span-1 flex flex-col gap-3 order-1 md:order-1">
+            <div className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-white shadow-xl border border-neutral-100">
+               <div style={{paddingBottom: '100%'}} className="relative md:rounded-3xl">
+                 <img src={images[activeImage]} className="absolute inset-0 w-full h-full object-cover transition-all duration-500" />
+               </div>
                <div className="absolute top-4 left-4 flex flex-col gap-2">
                  {product.is_boosted && <span className="bg-wa-teal text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1"><Zap size={10}/>SPONSORISÉ</span>}
                  {product.is_promo && <span className="bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg">PROMO</span>}
@@ -130,12 +134,12 @@ export default function ProductClient({ params }) {
             </div>
             {/* THUMBNAILS */}
             {images.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {images.map((img, i) => (
                   <button 
                     key={i} 
                     onClick={() => setActiveImage(i)}
-                    className={`w-16 h-16 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeImage === i ? 'border-wa-teal scale-105' : 'border-transparent opacity-60'}`}
+                    className={`w-14 h-14 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${activeImage === i ? 'border-wa-teal scale-105' : 'border-transparent opacity-50 hover:opacity-75'}`}
                   >
                     <img src={img} className="w-full h-full object-cover" />
                   </button>
@@ -144,37 +148,37 @@ export default function ProductClient({ params }) {
             )}
           </div>
 
-          {/* Info */}
-          <div className="flex flex-col">
+          {/* Info - Mieux organisé sur toutes les tailles */}
+          <div className="md:col-span-2 flex flex-col order-2 md:order-2">
             {product.stores && (
               <Link href={`/boutique/${product.stores.slug || ''}`} className="inline-flex items-center gap-2 mb-4 group w-fit">
                 {product.stores.logo_url
-                  ? <img src={product.stores.logo_url} alt={product.stores.name} className="w-8 h-8 rounded-full object-cover border border-neutral-100" />
-                  : <div className="w-8 h-8 rounded-full bg-wa-teal/10 flex items-center justify-center"><Store size={14} className="text-wa-teal" /></div>}
-                <span className="text-sm font-bold text-neutral-500 group-hover:text-wa-teal transition-colors">{product.stores.name}</span>
-                {product.stores.city && <span className="flex items-center gap-1 text-xs text-neutral-400"><MapPin size={10}/>{product.stores.city}</span>}
+                  ? <img src={product.stores.logo_url} alt={product.stores.name} className="w-7 h-7 rounded-full object-cover border border-neutral-100" />
+                  : <div className="w-7 h-7 rounded-full bg-wa-teal/10 flex items-center justify-center"><Store size={12} className="text-wa-teal" /></div>}
+                <span className="text-xs font-bold text-neutral-500 group-hover:text-wa-teal transition-colors">{product.stores.name}</span>
+                {product.stores.city && <span className="flex items-center gap-1 text-xs text-neutral-400"><MapPin size={9}/>{product.stores.city}</span>}
               </Link>
             )}
 
-            <h1 className="text-3xl sm:text-4xl font-black text-neutral-900 leading-tight mb-4 tracking-tight">{product.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-neutral-900 leading-tight mb-3 tracking-tight">{product.name}</h1>
 
-            <div className="flex items-baseline gap-3 mb-8">
-              <span className="text-4xl font-black text-wa-teal">{Number(product.price).toLocaleString()} F</span>
-              {product.promo_price && <span className="text-xl text-neutral-400 line-through">{Number(product.promo_price).toLocaleString()} F</span>}
+            <div className="flex items-baseline gap-2 mb-6 pb-6 border-b border-neutral-100">
+              <span className="text-3xl md:text-4xl font-black text-wa-teal">{Number(product.price).toLocaleString()} F</span>
+              {product.promo_price && <span className="text-lg text-neutral-400 line-through">{Number(product.promo_price).toLocaleString()} F</span>}
             </div>
 
             {/* VARIANTES SELECTOR */}
             {variantTypes.length > 0 && (
-              <div className="space-y-6 mb-8 bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm">
+              <div className="space-y-4 mb-6">
                 {variantTypes.map(type => (
                   <div key={type}>
-                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3">Choisir {type}</p>
+                    <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Choisir {type}</p>
                     <div className="flex flex-wrap gap-2">
                       {variants.filter(v => v.variant_type === type).map(v => (
                         <button
                           key={v.id}
                           onClick={() => setSelectedVariants({...selectedVariants, [type]: v.variant_value})}
-                          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all border-2 ${selectedVariants[type] === v.variant_value ? 'bg-wa-teal text-white border-wa-teal shadow-lg scale-105' : 'bg-neutral-50 text-neutral-600 border-neutral-100 hover:border-wa-teal/30'}`}
+                          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all border-2 ${selectedVariants[type] === v.variant_value ? 'bg-wa-teal text-white border-wa-teal shadow-lg scale-105' : 'bg-neutral-50 text-neutral-600 border-neutral-100 hover:border-wa-teal/30'}`}
                         >
                           {v.variant_value}
                         </button>
@@ -186,34 +190,34 @@ export default function ProductClient({ params }) {
             )}
 
             {product.description && (
-              <div className="bg-white rounded-3xl p-6 border border-neutral-100 mb-8 shadow-sm">
-                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3">À propos de l&apos;article</p>
-                <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+              <div className="bg-white/70 rounded-2xl p-4 border border-neutral-100 mb-6 shadow-sm">
+                <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">À propos</p>
+                <p className="text-xs text-neutral-700 leading-relaxed line-clamp-3">{product.description}</p>
               </div>
             )}
 
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-white border border-neutral-100 rounded-2xl overflow-hidden shadow-sm">
-                  <button onClick={() => setQty(q => Math.max(1, q - 1))} className="px-5 py-3 text-neutral-400 hover:text-wa-teal font-black text-lg">−</button>
-                  <span className="px-4 py-3 font-black text-neutral-900 min-w-[50px] text-center">{qty}</span>
-                  <button onClick={() => setQty(q => q + 1)} className="px-5 py-3 text-neutral-400 hover:text-wa-teal font-black text-lg">+</button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-white border border-neutral-100 rounded-xl overflow-hidden shadow-sm">
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))} className="px-4 py-2 text-neutral-400 hover:text-wa-teal font-bold text-base">−</button>
+                  <span className="px-3 py-2 font-bold text-neutral-900 min-w-[45px] text-center text-sm">{qty}</span>
+                  <button onClick={() => setQty(q => q + 1)} className="px-4 py-2 text-neutral-400 hover:text-wa-teal font-bold text-base">+</button>
                 </div>
                 <button
                   onClick={handleAdd}
                   disabled={product.stock_quantity === 0}
-                  className={`flex-1 h-14 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${added ? 'bg-green-500 text-white' : product.stock_quantity === 0 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-wa-teal text-white hover:bg-wa-teal-dark shadow-wa-teal/20'}`}
+                  className={`flex-1 h-12 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${added ? 'bg-green-500 text-white' : product.stock_quantity === 0 ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-wa-teal text-white hover:bg-wa-teal-dark shadow-wa-teal/20'}`}
                 >
-                  {added ? <><CheckCircle2 size={22}/>Ajouté !</> : <><ShoppingCart size={22}/>{product.stock_quantity === 0 ? 'Rupture de stock' : 'Ajouter au panier'}</>}
+                  {added ? <><CheckCircle2 size={16}/>Ajouté !</> : <><ShoppingCart size={16}/><span className="hidden sm:inline">{product.stock_quantity === 0 ? 'Rupture' : 'Ajouter au panier'}</span><span className="sm:hidden">{product.stock_quantity === 0 ? 'Rupture' : 'Panier'}</span></>}
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mt-10">
+            <div className="grid grid-cols-3 gap-2 md:gap-3 mt-6 md:mt-8">
               {[{icon: Shield, label: 'Vérifié'}, {icon: Zap, label: 'Rapide'}, {icon: CheckCircle2, label: 'Confiance'}].map(({icon: Icon, label}) => (
-                <div key={label} className="bg-white/50 border border-neutral-100 rounded-2xl p-3 flex flex-col items-center gap-1 text-center">
-                  <Icon size={18} className="text-wa-teal"/>
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-tighter">{label}</span>
+                <div key={label} className="bg-white/60 border border-neutral-100 rounded-lg p-2 md:p-3 flex flex-col items-center gap-0.5 md:gap-1 text-center">
+                  <Icon size={14} className="text-wa-teal"/>
+                  <span className="text-[8px] md:text-[9px] font-black text-neutral-500 uppercase tracking-tighter">{label}</span>
                 </div>
               ))}
             </div>

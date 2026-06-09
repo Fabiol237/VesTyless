@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import Navbar from '@/components/Navbar';
+import BackNavigation from '@/components/BackNavigation';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -45,6 +46,9 @@ export default function ProfilePage() {
         </div>
 
         <div className="max-w-6xl mx-auto relative z-10 text-center space-y-6">
+          <div className="flex justify-center">
+            <BackNavigation title="Mon Profil" />
+          </div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

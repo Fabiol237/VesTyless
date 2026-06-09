@@ -36,6 +36,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const catRef = useRef(null);
 
   const isEdit = !!productToEdit;
@@ -52,38 +53,57 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     try {
       setUploadingImage(true);
       setError('');
+      setSuccess('');
+      setStatusText('Upload de l\'image...');
+      
       const { secureUrl } = await uploadImage(file, { folder: 'vestyle/products' });
-      if (!secureUrl) throw new Error('Upload échoué');
+      if (!secureUrl) throw new Error('Upload échoué - pas d\'URL retournée');
+      
       setImageUrl(secureUrl);
+      setSuccess(`✅ Image uploadée avec succès!`);
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(`Erreur upload: ${err.message}`);
+      console.error('Image upload error:', err);
+      setError(`❌ Erreur upload image: ${err.message}`);
     } finally {
       setUploadingImage(false);
+      setStatusText('');
     }
   };
 
   const handleSave = async () => {
-    if (!name || !price || !globalCategoryId) {
-      setError('Champs obligatoires manquants.');
+    // Validation complète
+    if (!name?.trim()) {
+      setError('❌ Le nom du produit est obligatoire.');
+      return;
+    }
+    if (!price || parseFloat(price) <= 0) {
+      setError('❌ Le prix est obligatoire et doit être positif.');
+      return;
+    }
+    if (!globalCategoryId) {
+      setError('❌ Veuillez sélectionner une catégorie.');
       return;
     }
     
     setLoading(true);
     setStatusText('Enregistrement...');
+    setError('');
 
     const productData = {
       store_id: storeId,
       global_category_id: globalCategoryId,
-      name,
-      description,
+      name: name.trim(),
+      description: description?.trim() || '',
       price: parseFloat(price),
-      stock_quantity: parseInt(stock) || 0,
+      stock_quantity: Math.max(0, parseInt(stock) || 0),
       image_url: imageUrl || null,
       is_active: true
     };
 
     try {
       // Générer l'embedding via Cohere
+      setStatusText('Génération de l\'embedding...');
       let embeddingVector = null;
       try {
         const embedRes = await fetch('/api/products/generate-embeddings', {
@@ -96,7 +116,7 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
           if (embedData.embedding) embeddingVector = embedData.embedding;
         }
       } catch (e) {
-        console.warn('Embedding error', e);
+        console.warn('Embedding warning (non-bloquant):', e);
       }
       
       if (embeddingVector) {
@@ -104,26 +124,34 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
         productData.image_embedding_1024 = embeddingVector;
       }
 
-      const isOnline = navigator.onLine;
-      if (!isOnline) {
-        await offlineStore.addToQueue({
-          type: isEdit ? 'update_product' : 'create_product',
-          data: productData,
-          productId: productToEdit?.id
-        });
-        onSuccess(productData);
-        return;
+      setStatusText(isEdit ? 'Modification...' : 'Création...');
+      
+      if (isEdit) {
+        const { error: updateErr } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', productToEdit.id)
+          .select()
+          .single();
+        
+        if (updateErr) throw new Error(`Erreur modification: ${updateErr.message}`);
+      } else {
+        const { data, error: insertErr } = await supabase
+          .from('products')
+          .insert([productData])
+          .select()
+          .single();
+        
+        if (insertErr) throw new Error(`Erreur création: ${insertErr.message}`);
       }
 
-      if (isEdit) {
-        await supabase.from('products').update(productData).eq('id', productToEdit.id);
-      } else {
-        await supabase.from('products').insert([productData]);
-      }
-      onSuccess(productData);
+      setStatusText('✅ Succès!');
+      setTimeout(() => {
+        onSuccess(productData);
+      }, 500);
     } catch (err) {
-      setError('Erreur lors de la sauvegarde.');
-    } finally {
+      console.error('Save error:', err);
+      setError(`❌ ${err.message || 'Erreur lors de la sauvegarde. Vérifiez les données et réessayez.'}`);
       setLoading(false);
     }
   };
@@ -140,20 +168,58 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
         </div>
         
         <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto text-left">
-           {error && <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl font-bold">{error}</div>}
+           {error && <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl font-bold text-sm">{error}</div>}
+           {success && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl font-bold text-sm">{success}</div>}
            
-           <div className="space-y-2" ref={catRef}>
-               <label className="text-sm font-black text-gray-700 uppercase">Catégorie *</label>
-               <button onClick={() => setShowCatDropdown(!showCatDropdown)} className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 font-bold bg-gray-50">
-                 {selectedCat ? selectedCat.name : 'Choisir...'}
-                 <ChevronDown size={18}/>
+           <div className="space-y-2 relative z-20" ref={catRef}>
+               <label className="text-sm font-black text-gray-700 uppercase">Catégorie * ({categories.length})</label>
+               <button 
+                 type="button"
+                 onClick={() => setShowCatDropdown(!showCatDropdown)} 
+                 className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 border-gray-200 font-bold bg-white hover:border-wa-teal hover:bg-wa-teal/5 transition-all"
+               >
+                 <div className="flex items-center gap-3">
+                   {selectedCat && CAT_ICONS[selectedCat.icon] ? (
+                     <div className="flex-shrink-0">
+                       {(() => {
+                         const Icon = CAT_ICONS[selectedCat.icon];
+                         return <Icon size={18} className="text-wa-teal" />;
+                       })()}
+                     </div>
+                   ) : null}
+                   <span className={selectedCat ? 'text-gray-900' : 'text-gray-400'}>
+                     {selectedCat ? selectedCat.name : 'Sélectionner une catégorie...'}
+                   </span>
+                 </div>
+                 <ChevronDown size={18} className={`text-gray-400 transition-transform ${showCatDropdown ? 'rotate-180' : ''}`}/>
                </button>
                {showCatDropdown && (
-                 <div className="absolute z-50 w-full left-0 px-8 mt-1">
-                   <div className="bg-white rounded-2xl shadow-2xl border border-gray-100">
-                     {categories.map(cat => (
-                       <button key={cat.id} onClick={() => { setGlobalCategoryId(cat.id); setShowCatDropdown(false); }} className="w-full p-4 text-left font-bold hover:bg-gray-50">{cat.name}</button>
-                     ))}
+                 <div className="absolute top-full left-0 right-0 mt-2 w-full bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                   <div className="max-h-60 overflow-y-auto">
+                     {categories.length === 0 ? (
+                       <div className="p-4 text-center text-gray-400 text-sm">Aucune catégorie disponible</div>
+                     ) : (
+                       categories.map(cat => {
+                         const Icon = CAT_ICONS[cat.icon];
+                         const isSelected = selectedCat?.id === cat.id;
+                         return (
+                           <button 
+                             key={cat.id} 
+                             type="button"
+                             onClick={() => { setGlobalCategoryId(cat.id); setShowCatDropdown(false); }} 
+                             className={`w-full px-5 py-4 text-left font-bold flex items-center gap-3 transition-all ${
+                               isSelected 
+                                 ? 'bg-wa-teal/10 text-wa-teal border-l-4 border-wa-teal' 
+                                 : 'hover:bg-gray-50 text-gray-900'
+                             }`}
+                           >
+                             {Icon && <Icon size={18} />}
+                             <span className="flex-1">{cat.name}</span>
+                             {isSelected && <CheckCircle2 size={18} className="text-wa-teal" />}
+                           </button>
+                         );
+                       })
+                     )}
                    </div>
                  </div>
                )}
@@ -182,11 +248,40 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
 
            <div className="space-y-4">
               <label className="text-sm font-black text-gray-700 uppercase">Image</label>
-              <div className="flex gap-4">
-                <input type="file" className="hidden" id="img-up" onChange={e => handleImageFile(e.target.files[0])}/>
-                <label htmlFor="img-up" className="px-6 py-4 bg-gray-100 rounded-2xl cursor-pointer font-bold flex items-center gap-2"><Upload size={20}/> Upload</label>
-                {imageUrl && <img src={imageUrl} className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-lg"/>}
+              <div className="flex gap-4 items-center">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  id="img-up"
+                  accept="image/*"
+                  onChange={e => handleImageFile(e.target.files[0])}
+                  disabled={uploadingImage}
+                />
+                <label 
+                  htmlFor="img-up" 
+                  className={`px-6 py-4 rounded-2xl cursor-pointer font-bold flex items-center gap-2 transition-all ${
+                    uploadingImage 
+                      ? 'bg-gray-50 text-gray-400 cursor-wait' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {uploadingImage ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
+                  {uploadingImage ? 'Upload...' : 'Upload Image'}
+                </label>
+                {imageUrl && (
+                  <div className="relative group">
+                    <img src={imageUrl} alt="Preview" className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-lg" />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
+              {imageUrl && <p className="text-xs text-emerald-600 font-bold">✅ Image sélectionnée</p>}
            </div>
         </div>
 

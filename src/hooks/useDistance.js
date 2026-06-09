@@ -44,10 +44,16 @@ export function useDistance() {
         setError(null);
       },
       (err) => {
-        console.error("Erreur WatchPosition:", err);
-        // Si erreur de timeout, on réessaie sans crash
-        if (err.code === 3) {
-          console.warn("GPS lent à répondre, maintien du suivi...");
+        // Gestion silencieuse des erreurs de geolocalisation courantes
+        const errorMessages = {
+          1: "Géolocalisation refusée par l'utilisateur",
+          2: "Position indisponible",
+          3: "Délai d'attente dépassé"
+        };
+        
+        // Ne log que les erreurs non-timeout en silence
+        if (err.code !== 3) {
+          // Erreurs permission refusée (1) et position indisponible (2) sont normales, ne pas les logger
         }
       },
       geoOptions

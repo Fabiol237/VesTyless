@@ -1,10 +1,21 @@
 'use client';
 import Link from 'next/link';
-import { WifiOff, Home, RefreshCw } from 'lucide-react';
+import { WifiOff, Home, RefreshCw, ChevronLeft } from 'lucide-react';
 
 export default function OfflinePage() {
   return (
-    <div className="min-h-screen bg-[#111B21] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+    <div className="min-h-screen bg-[#111B21] text-white flex flex-col p-6 text-center font-sans">
+      <div className="mb-8 pt-4 flex justify-start">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1 text-wa-teal hover:text-wa-teal-dark transition-colors"
+          title="Retour à la page précédente"
+        >
+          <ChevronLeft size={20} />
+          <span className="text-sm font-medium">Retour</span>
+        </button>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center">
       <div className="w-24 h-24 bg-wa-teal/10 rounded-full flex items-center justify-center mb-8 animate-pulse">
         <WifiOff size={48} className="text-wa-teal" />
       </div>
@@ -33,11 +44,12 @@ export default function OfflinePage() {
         </Link>
       </div>
 
-      <div className="mt-16 pt-8 border-t border-white/5 w-full max-w-md">
-        <p className="text-xs text-neutral-500 uppercase tracking-widest font-bold mb-4">Conseil Pro</p>
-        <p className="text-sm text-neutral-400 italic">
-          "Vous pouvez toujours passer des commandes par téléphone directement auprès des vendeurs si vous avez enregistré leur numéro !"
-        </p>
+        <div className="mt-16 pt-8 border-t border-white/5 w-full max-w-md">
+          <p className="text-xs text-neutral-500 uppercase tracking-widest font-bold mb-4">Conseil Pro</p>
+          <p className="text-sm text-neutral-400 italic">
+            "Vous pouvez toujours passer des commandes par téléphone directement auprès des vendeurs si vous avez enregistré leur numéro !"
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import BackNavigation from '@/components/BackNavigation';
 import { supabase } from '@/lib/supabase';
 import {
   TrendingUp, ShoppingCart, AlertTriangle, CheckCircle,
@@ -247,6 +248,7 @@ export default function SellerDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="max-w-7xl mx-auto pt-6 px-6">
+        <BackNavigation title="Tableau de Bord" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">

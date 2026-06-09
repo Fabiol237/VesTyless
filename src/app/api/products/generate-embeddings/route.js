@@ -31,9 +31,10 @@ export async function POST(req) {
       texts: [fullText],
       model: "embed-english-v3.0",
       inputType: "search_document",
+      embeddingTypes: ["float"]
     });
 
-    const embedding = embedResult.embeddings[0]; // Array de floats
+    const embedding = embedResult.embeddings.float ? embedResult.embeddings.float[0] : embedResult.embeddings[0];
 
     return NextResponse.json({ 
       success: true, 

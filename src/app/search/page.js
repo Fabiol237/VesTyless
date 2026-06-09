@@ -2,6 +2,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import Navbar from '@/components/Navbar';
+import BackNavigation from '@/components/BackNavigation';
 import Footer from '@/components/Footer';
 import ClientDiscovery from '@/components/ClientDiscovery';
 
@@ -13,6 +14,7 @@ function SearchResults() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="mb-8 pt-8">
+        <BackNavigation title="Résultats" />
         <h1 className="text-3xl font-bold text-wa-teal-dark mb-4">
           {query ? `Résultats pour "${query}"` : "Explorer tout l'annuaire"}
         </h1>

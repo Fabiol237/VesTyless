@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import BackNavigation from '@/components/BackNavigation';
 import Footer from '@/components/Footer';
 import {
   Trash2, ShoppingBag, Plus, Minus, ArrowRight, Loader2,
@@ -245,6 +246,7 @@ export default function CartPage() {
     <main className="bg-wa-bg min-h-screen flex flex-col font-sans">
       <Navbar />
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 sm:pt-32 pb-32">
+        <BackNavigation title="Mon Panier" />
         <div className="mb-8">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 bg-wa-teal rounded-full flex items-center justify-center shadow-sm">

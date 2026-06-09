@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import BackNavigation from '@/components/BackNavigation';
 import Link from 'next/link';
 
 // ─── SVG Icons (bulletproof, no lucide-react) ──────────────────────────────
@@ -191,6 +192,7 @@ export default function DeliveryPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 pb-24">
+        <BackNavigation title="Livraisons" />
 
         {/* ── Stats rapides ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-3">

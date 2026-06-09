@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import BackNavigation from '@/components/BackNavigation';
 import {
   ShoppingCart, Search, Loader2, CheckCircle2,
   DollarSign, MessageCircle, Calendar, Phone, MapPin,
@@ -398,7 +399,8 @@ export default function OrdersPage() {
   const revenue = orders.filter(o=>norm(o.status)==='delivered').reduce((s,o)=>s+Number(o.total_amount||0),0);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-20">
+    <div className="space-y-6 max-w-6xl mx-auto pb-20 px-4 pt-6">
+      <BackNavigation title="Gestion des Flux" />
       
       {/* HEADER SECTION */}
       <div className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm border border-amber-100 flex flex-col md:flex-row items-center justify-between gap-6">

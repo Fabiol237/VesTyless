@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import ProductClient from './ProductClient';
 
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  const { id } = await params;
   
   const { data: product } = await supabase
     .from('products')
