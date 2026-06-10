@@ -255,6 +255,25 @@ export default function SellerDashboard() {
               Bonjour, {store?.name || store?.store_name} 👋
             </h1>
             <p className="text-slate-500 font-medium mt-1">Vue d'ensemble de votre activité.</p>
+            {/* ─── CODE BOUTIQUE ─────────────────────────────────── */}
+            {store?.store_code && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Code boutique</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(store.store_code).then(() => {
+                      const btn = document.getElementById('copy-code-btn');
+                      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { btn.textContent = store.store_code; }, 2000); }
+                    });
+                  }}
+                  className="flex items-center gap-1.5 bg-wa-teal/10 hover:bg-wa-teal/20 border border-wa-teal/20 px-3 py-1 rounded-xl transition-all group"
+                  title="Cliquer pour copier"
+                >
+                  <span id="copy-code-btn" className="font-mono font-black text-wa-teal tracking-[0.35em] text-sm">{store.store_code}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-wa-teal/50 group-hover:text-wa-teal transition-colors"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex gap-3 items-center flex-wrap">
             {/* PERIOD SELECTOR */}

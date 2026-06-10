@@ -20,13 +20,13 @@ export const maxDuration = 30;
 
 // Prompts spécialisés par catégorie
 const CATEGORY_PROMPTS = {
-  1: `Describe this clothing item precisely for visual search. Focus on: exact type, PRIMARY COLOR (be very specific), secondary colors, fabric/material, fit/cut, neckline, sleeves, patterns, style. Respond in 1 sentence max 50 words in English.`,
-  2: `Analyze this footwear item. Include: shoe type, color details, material (leather/canvas/synthetic), sole type, lace style if applicable, heel height, closure type. One sentence max 50 words in English.`,
-  3: `Describe this accessory. Focus on: type (bag/belt/hat/jewelry), color(s), material, size impression, design details, embellishments. Max 50 words in English.`,
-  4: `Analyze this outerwear piece. Include: coat/jacket type, exact color, lapel style, button count, pocket style, length, sleeve type, collar. Max 50 words in English.`,
-  5: `Describe these pants/bottoms. Focus on: exact type, color, fit (slim/skinny/regular/wide), material, length (crop/ankle/full), waist style, embellishments. Max 50 words in English.`,
-  6: `Analyze this dress/skirt. Include: garment type, exact color, pattern, length (mini/knee/midi/maxi), neckline, sleeve type, waist style, material. Max 50 words in English.`,
-  7: `Describe this active/sportswear item. Focus on: type, color scheme, material (performance fabric), fit, design features, branding visible. Max 50 words in English.`,
+  1: `You are a fashion cataloger. Describe this clothing item for a search index. Include: exact item type (be ultra-specific), primary color (precise shade), secondary colors, fabric/material, fit/silhouette, neckline, sleeve style, length, patterns, embellishments, and any visible brand. English only, max 70 words.`,
+  2: `You are a footwear cataloger. Describe these shoes/boots for a search index. Include: exact shoe type, primary color, material (leather/suede/canvas/synthetic), sole type, heel height, toe shape, closure (lace/zip/slip-on/buckle), ankle coverage, and any visible brand. English only, max 70 words.`,
+  3: `You are an accessories cataloger. Describe this accessory for a search index. Include: exact type (bag/belt/hat/jewelry/scarf/watch), primary color, secondary colors, material, size impression, shape, design details, hardware color, closures, and any visible brand. English only, max 70 words.`,
+  4: `You are an outerwear cataloger. Describe this coat/jacket for a search index. Include: exact type (trench/parka/blazer/puffer/denim), color (precise shade), material, collar/lapel style, closure type, pocket style, length (waist/hip/knee/maxi), lining visible, and any visible brand. English only, max 70 words.`,
+  5: `You are a bottomwear cataloger. Describe these pants/shorts/skirt for a search index. Include: exact type (skinny jeans/cargo pants/midi skirt/etc.), color, material, fit (slim/regular/wide/relaxed), rise (high/mid/low), length, embellishments/distressing, waistband type, and any visible brand. English only, max 70 words.`,
+  6: `You are a dress/skirt cataloger. Describe this garment for a search index. Include: exact type (wrap dress/slip dress/maxi skirt/etc.), primary color, pattern (solid/floral/striped/etc.), length (mini/knee/midi/maxi), neckline, sleeve style, silhouette (A-line/fitted/flowy/etc.), material, and any visible brand. English only, max 70 words.`,
+  7: `You are a sportswear cataloger. Describe this athletic item for a search index. Include: exact type (leggings/sports bra/joggers/cycling shorts/etc.), color scheme, fabric (compression/moisture-wicking/etc.), fit, design features (mesh panels/reflective strips/etc.), and any visible brand/logo. English only, max 70 words.`,
 };
 
 export async function POST(req) {
@@ -86,8 +86,8 @@ export async function POST(req) {
             ],
           },
         ],
-        maxTokens: 80,
-        temperature: 0.05,
+        maxTokens: 100,
+        temperature: 0,
       });
 
       detailedDescription = visionResponse.choices[0]?.message?.content?.trim() || '';

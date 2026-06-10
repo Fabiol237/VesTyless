@@ -18,17 +18,25 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 45;
 
-const VISION_PROMPT = `You are a fashion product expert. Analyze this image precisely for semantic search.
-Describe: exact item type, PRIMARY COLOR (very specific), secondary colors, fabric/material if visible, fit/cut, 
-special features (pockets, patterns, embellishments, neckline, sleeve type, length).
-Respond in 1 clear English sentence, max 60 words. Be very specific about colors and style.
+const VISION_PROMPT = `You are a professional fashion product cataloger for a visual search engine. Analyze this image with extreme precision.
 
-Examples of good responses:
-- "Navy blue slim-fit cotton chinos with flat front and straight hem"
-- "White oversized hoodie with kangaroo pocket and drawstring hood, pure cotton"
-- "Burgundy floral midi dress with short puff sleeves and V-neckline, lightweight material"
+Output format: [ITEM_TYPE] [EXACT_COLOR] [SECONDARY_COLORS_IF_ANY] [MATERIAL/FABRIC_IF_VISIBLE] [FIT_OR_CUT] [KEY_FEATURES]
 
-Now analyze the image:`;
+Rules:
+- ITEM_TYPE: be ultra-specific (e.g., "bomber jacket", "palazzo pants", NOT just "jacket" or "pants")
+- EXACT_COLOR: use precise shade names (e.g., "navy blue", "dusty rose", "camel brown", NOT just "blue" or "pink")
+- Include: patterns (floral, striped, plaid, solid, camo), neckline, sleeve length, hemline, embellishments, logos/brand if visible
+- If multiple items visible, focus on the MAIN/FOREGROUND item
+- Language: English only
+- Length: max 70 words, 1-2 sentences
+
+Examples:
+- "Oversized burgundy velvet blazer with peak lapels, gold buttons, single-breasted, padded shoulders, below-hip length"
+- "High-waist sky-blue denim wide-leg jeans with distressed knees, frayed hem, five-pocket design"
+- "Fitted forest-green ribbed turtleneck sweater, long sleeves, cropped length above waist, stretch fabric"
+- "Black leather ankle boots with chunky block heel 5cm, almond toe, side zip closure, matte finish"
+
+Now analyze:`;
 
 export async function POST(req) {
   try {
@@ -78,8 +86,8 @@ export async function POST(req) {
             ],
           },
         ],
-        maxTokens: 100,
-        temperature: 0.05,
+        maxTokens: 130,
+        temperature: 0,
       });
 
       imageDescription = visionResponse.choices[0]?.message?.content?.trim() || "";
@@ -136,8 +144,8 @@ export async function POST(req) {
       // Appel RPC avec threshold optimisé
       const { data: products, error } = await supabase.rpc("match_products_v2", {
         query_embedding: queryEmbedding,
-        match_threshold: 0.35, // Seuil bas pour capturer plus de variantes
-        match_count: 30, // Récupérer 30 pour ensuite filtrer
+        match_threshold: 0.28, // Seuil abaissé pour meilleur rappel
+        match_count: 40, // Récupérer plus pour filtrer ensuite
       });
 
       if (error) {

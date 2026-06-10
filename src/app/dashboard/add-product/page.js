@@ -26,7 +26,7 @@ export default function AddProductPage() {
     global_category_id: '',
     price: '',
     stock_quantity: '1',
-    images: [] // Tableau pour multi-images
+    images: [] // Tableau pour multi-images (URLs strings uniquement)
   });
 
   const [variants, setVariants] = useState([]); // [{type: 'taille', value: 'M', stock: 10}]
@@ -59,11 +59,17 @@ export default function AddProductPage() {
     for (const file of files) {
       if (newImages.length >= 4) break;
       try {
-        const url = await uploadImage(file);
-        newImages.push(url);
-        tempUploadedUrlsRef.current.add(url);
+        // uploadImage() returns { secureUrl, publicId } — extract secureUrl
+        const result = await uploadImage(file);
+        const imageUrl = result?.secureUrl || result;
+        if (!imageUrl || typeof imageUrl !== 'string') {
+          throw new Error('URL invalide reçue de Cloudinary');
+        }
+        newImages.push(imageUrl);
+        tempUploadedUrlsRef.current.add(imageUrl);
       } catch (err) {
         console.error('Upload failed:', err);
+        alert('❌ Erreur upload image: ' + (err?.message || 'Cloudinary indisponible'));
       }
     }
     
@@ -77,7 +83,7 @@ export default function AddProductPage() {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-    if (tempUploadedUrlsRef.current.has(urlToRemove)) {
+    if (urlToRemove && tempUploadedUrlsRef.current.has(urlToRemove)) {
        await deleteCloudinaryByUrl(urlToRemove);
        tempUploadedUrlsRef.current.delete(urlToRemove);
     }

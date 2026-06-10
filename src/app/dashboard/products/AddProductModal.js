@@ -90,13 +90,25 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     setStatusText('Enregistrement...');
     setError('');
 
+    const parsedPrice = parseFloat(price);
+    const parsedStock = Math.max(0, parseInt(stock) || 0);
+
+    if (parsedPrice > 999999999) {
+      setError('❌ Le prix ne peut pas dépasser 999 999 999.');
+      return;
+    }
+    if (parsedStock > 99999) {
+      setError('❌ Le stock ne peut pas dépasser 99 999.');
+      return;
+    }
+
     const productData = {
       store_id: storeId,
       global_category_id: globalCategoryId,
       name: name.trim(),
       description: description?.trim() || '',
-      price: parseFloat(price),
-      stock_quantity: Math.max(0, parseInt(stock) || 0),
+      price: parsedPrice,
+      stock_quantity: parsedStock,
       image_url: imageUrl || null,
       is_active: true
     };

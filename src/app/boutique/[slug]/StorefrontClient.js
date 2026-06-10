@@ -194,6 +194,15 @@ export default function StorefrontClient({ params }) {
                   <span className="flex items-center gap-1">
                     <Clock size={14} className="text-slate-400" /> Rép: {store.response_time || '< 2h'}
                   </span>
+                  {store.store_code && (
+                    <>
+                      <span className="hidden sm:block w-1 h-1 bg-slate-300 rounded-full" />
+                      <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-lg" title="Code unique de la boutique">
+                        <span className="text-slate-400 text-[9px] font-black uppercase">Code</span>
+                        <span className="font-mono font-black text-slate-700 tracking-widest text-xs">#{store.store_code}</span>
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

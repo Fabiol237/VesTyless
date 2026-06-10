@@ -35,22 +35,8 @@ export default function DashboardShell({ children }) {
       return;
     }
 
-    // Vérifier le rôle : si c'est un livreur pur → rediriger vers son espace dédié
     if (session?.id) {
-      supabase
-        .from('livreurs')
-        .select('id')
-        .eq('user_id', session.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          // Si c'est un livreur ET qu'il n'a pas de boutique active, on le redirige
-          if (data && !store) {
-            router.replace('/delivery');
-          } else {
-            // C'est soit un vendeur pur, soit un vendeur-livreur
-            setRoleChecked(true);
-          }
-        });
+      setRoleChecked(true);
     }
   }, [session, loading, router, store, isClient]);
 
