@@ -1,18 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
-// Use admin client (service role gives full DDL access)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  { auth: { persistSession: false } }
-);
-
 export async function GET(request) {
   const authHeader = request.headers.get('x-migration-key');
   if (authHeader !== 'vestyle-migrate-2026') {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Move initialization inside the route handler to avoid build-time crashes on Vercel
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+  
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false }
+  });
 
   const results = [];
   
