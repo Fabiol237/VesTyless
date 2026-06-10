@@ -54,20 +54,30 @@ export default function AddProductPage() {
     if (!files.length) return;
     
     setUploadingImage(true);
-    const newImages = [...formData.images];
+    
+    const uploadPromises = [];
+    let remainingSlots = 4 - formData.images.length;
     
     for (const file of files) {
-      if (newImages.length >= 4) break;
-      try {
-        const url = await uploadImage(file);
-        newImages.push(url);
-        tempUploadedUrlsRef.current.add(url);
-      } catch (err) {
-        console.error('Upload failed:', err);
-      }
+      if (remainingSlots <= 0) break;
+      remainingSlots--;
+      
+      uploadPromises.push(
+        uploadImage(file)
+          .then(url => {
+            tempUploadedUrlsRef.current.add(url);
+            return url;
+          })
+          .catch(err => {
+            console.error('Upload failed:', err);
+            return null;
+          })
+      );
     }
     
-    setFormData(prev => ({ ...prev, images: newImages }));
+    const uploadedUrls = (await Promise.all(uploadPromises)).filter(url => url !== null);
+    
+    setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
     setUploadingImage(false);
   };
 
@@ -124,57 +134,41 @@ export default function AddProductPage() {
     
     setLoading(true);
 
-    // ============ ÉTAPE 1: Générer les embeddings pour CHAQUE image ============
-    const embeddingResults = {};
+    // ============ ÉTAPE 1: Générer l'embedding pour l'image PRINCIPALE ============
+    let primaryEmbedding = null;
+    let primaryText = '';
     
-    for (let i = 0; i < formData.images.length; i++) {
-      const imageUrl = formData.images[i];
-      console.log(`[AddProduct] Génération embedding ${i + 1}/${formData.images.length}...`);
-      
-      try {
-        const embedRes = await fetch('/api/products/generate-embeddings-v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageUrl,
-            categoryId: parseInt(formData.global_category_id) || 1,
-            name: formData.name,
-            description: formData.description || ''
-          })
-        });
+    const primaryImageUrl = formData.images[0];
+    console.log(`[AddProduct] Génération embedding pour l'image principale...`);
+    
+    try {
+      const embedRes = await fetch('/api/products/generate-embeddings-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: primaryImageUrl,
+          categoryId: parseInt(formData.global_category_id) || 1,
+          name: formData.name,
+          description: formData.description || ''
+        })
+      });
 
-        if (!embedRes.ok) {
-          throw new Error(`HTTP ${embedRes.status}`);
-        }
-
-        const embedData = await embedRes.json();
-        
-        if (!embedData.success || !embedData.embedding) {
-          throw new Error(embedData.error || 'Invalid embedding response');
-        }
-
-        embeddingResults[i] = {
-          embedding: embedData.embedding,
-          text: embedData.visionAnalysis,
-          success: true
-        };
-
-        console.log(`[AddProduct] Image ${i + 1} ✅:`, embedData.visionAnalysis);
-      } catch (err) {
-        console.error(`[AddProduct] Embedding failed for image ${i + 1}:`, err.message);
-        embeddingResults[i] = {
-          success: false,
-          error: err.message
-        };
+      if (!embedRes.ok) {
+        throw new Error(`HTTP ${embedRes.status}`);
       }
 
-      // Petit délai pour respecter les rate limits
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+      const embedData = await embedRes.json();
+      
+      if (!embedData.success || !embedData.embedding) {
+        throw new Error(embedData.error || 'Invalid embedding response');
+      }
 
-    // Utiliser l'embedding de la première image (principale)
-    const primaryEmbedding = embeddingResults[0]?.embedding || null;
-    const primaryText = embeddingResults[0]?.text || '';
+      primaryEmbedding = embedData.embedding;
+      primaryText = embedData.visionAnalysis;
+      console.log(`[AddProduct] Embedding image principale ✅`);
+    } catch (err) {
+      console.error(`[AddProduct] Embedding failed for primary image:`, err.message);
+    }
 
     if (!primaryEmbedding) {
       alert("❌ Impossible de générer l'embedding. Vérifiez votre image et réessayez.");
@@ -233,7 +227,7 @@ export default function AddProductPage() {
     
     const successMsg = `✅ Produit créé avec succès!
     
-📸 Embedding: ${embeddingResults.filter(r => r?.success).length}/${formData.images.length} images
+📸 Embedding: généré pour l'image principale
 🔍 Description: ${primaryText.substring(0, 60)}...
 🎯 Prêt pour la recherche visuelle!`;
     

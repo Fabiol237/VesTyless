@@ -164,23 +164,25 @@ export default function SellerDashboard() {
   }, [storeId, store?.owner_id]);
 
   useEffect(() => {
-    if (!authLoading && storeId) {
+    if (!authLoading) {
       loadDashboardData();
 
       // REAL-TIME: Throttled refresh to avoid infinite loops and UI lag
-      let timeout;
-      const channel = supabase
-        .channel(`dashboard-rt-${storeId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` }, () => {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => loadDashboardData(true), 1000); // Silent refresh after 1s stability
-        })
-        .subscribe();
+      if (storeId) {
+        let timeout;
+        const channel = supabase
+          .channel(`dashboard-rt-${storeId}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` }, () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => loadDashboardData(true), 1000); // Silent refresh after 1s stability
+          })
+          .subscribe();
 
-      return () => {
-        clearTimeout(timeout);
-        supabase.removeChannel(channel);
-      };
+        return () => {
+          clearTimeout(timeout);
+          supabase.removeChannel(channel);
+        };
+      }
     }
   }, [authLoading, storeId, loadDashboardData]);
 
