@@ -109,11 +109,13 @@ export function AuthProvider({ children }) {
         .from('stores')
         .select('*')
         .eq('owner_id', userId)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
       if (!storeError && storeData) {
         setStore(storeData);
-      } else if (storeError?.code === 'PGRST116' || !storeData) {
+      } else if (!storeData) {
         // No store found for this user
         // ⚠️ IMPORTANT: Seulement créer UNE FOIS (check if recent creation exists)
         const { data: { user } } = await supabase.auth.getUser();

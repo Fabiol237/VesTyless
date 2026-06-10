@@ -14,4 +14,7 @@ export const isSupabaseConfigured = Boolean(
   supabaseAnonKey !== 'your_supabase_anon_key'
 );
 
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder'
+);
