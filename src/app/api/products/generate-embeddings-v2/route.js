@@ -12,8 +12,7 @@
  * Objectif: < 5 secondes, haute précision
  */
 
-import { CohereClient } from "cohere-ai";
-import { Mistral } from "@mistralai/mistralai";
+// Removed Cohere and Mistral
 import { NextResponse } from "next/server";
 
 export const maxDuration = 30;
@@ -60,87 +59,63 @@ export async function POST(req) {
       }
     }
 
-    // ============ ÉTAPE 2: Analyser avec Pixtral Vision ============
-    let detailedDescription = '';
+    // ============ ÉTAPE 2: Générer embedding avec Voyage AI ============
+    let queryEmbedding = null;
+    const content = [];
+    if (name || description) {
+      const textContext = [name, description].filter(Boolean).join(" - ");
+      content.push({ type: "text", text: textContext });
+    }
     
-    try {
-      const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY });
-      const categoryPrompt = CATEGORY_PROMPTS[categoryId] || CATEGORY_PROMPTS[1];
-
-      const visionResponse = await mistral.chat.complete({
-        model: "pixtral-12b-2409",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                imageUrl: {
-                  url: imageData.startsWith('data:') ? imageData : imageUrl,
-                },
-              },
-              {
-                type: "text",
-                text: categoryPrompt,
-              },
-            ],
-          },
-        ],
-        maxTokens: 100,
-        temperature: 0,
-      });
-
-      detailedDescription = visionResponse.choices[0]?.message?.content?.trim() || '';
-      console.log('[Embeddings] Pixtral:', detailedDescription);
-    } catch (visionErr) {
-      console.warn('[Embeddings] Pixtral failed:', visionErr.message);
-      // Fallback: utiliser le nom du produit
-      detailedDescription = name || 'fashion clothing item';
+    // Convert to base64 if it's not already
+    let finalBase64 = imageData;
+    if (!imageData.startsWith('data:')) {
+      finalBase64 = `data:image/jpeg;base64,${Buffer.from(await (await fetch(imageData)).arrayBuffer()).toString('base64')}`;
     }
 
-    // ============ ÉTAPE 3: Combiner les infos pour le texte de recherche ============
-    // Enrichir avec le nom et la description fournie
-    const searchText = [
-      name,
-      detailedDescription,
-      description
-    ].filter(Boolean).join(' ').substring(0, 500);
-
-    // ============ ÉTAPE 4: Générer embedding avec Cohere ============
-    let queryEmbedding = null;
+    content.push({ type: "image_base64", image_base64: finalBase64 });
 
     try {
-      const cohere = new CohereClient({
-        token: process.env.COHERE_API_KEY,
+      const res = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "voyage-multimodal-3",
+          inputs: [{ content }],
+          input_type: "document"
+        })
       });
 
-      const embedResult = await cohere.embed({
-        texts: [searchText],
-        model: "embed-english-v3.0",
-        inputType: "search_document", // "search_document" pour les produits stockés
-      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Voyage API ${res.status}: ${errText}`);
+      }
 
-      queryEmbedding = embedResult.embeddings[0];
+      const data = await res.json();
+      queryEmbedding = data.data[0].embedding;
 
       if (!Array.isArray(queryEmbedding) || queryEmbedding.length !== 1024) {
         throw new Error(`Invalid embedding dimensions: ${queryEmbedding?.length}`);
       }
 
-      console.log('[Embeddings] Cohere OK:', queryEmbedding.length, 'D');
+      console.log('[Embeddings] Voyage OK:', queryEmbedding.length, 'D');
     } catch (embedErr) {
-      console.error('[Embeddings] Cohere failed:', embedErr.message);
+      console.error('[Embeddings] Voyage failed:', embedErr.message);
       return NextResponse.json(
         { error: `Embedding generation failed: ${embedErr.message}` },
         { status: 500 }
       );
     }
 
-    // ============ ÉTAPE 5: Retourner les résultats ============
+    // ============ ÉTAPE 3: Retourner les résultats ============
     return NextResponse.json({
       success: true,
       embedding: queryEmbedding,
-      text: searchText.substring(0, 200),
-      visionAnalysis: detailedDescription,
+      text: [name, description].filter(Boolean).join(" "),
+      visionAnalysis: "Voyage AI Multimodal", // Maintained for compatibility
       dimensions: queryEmbedding.length,
     });
   } catch (err) {

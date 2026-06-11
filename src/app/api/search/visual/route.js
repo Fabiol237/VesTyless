@@ -11,7 +11,7 @@
  * Objectif: < 5 secondes, résultats précis
  */
 
-import { CohereClient } from "cohere-ai";
+// Removed CohereClient
 import { Mistral } from "@mistralai/mistralai";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -108,18 +108,32 @@ export async function POST(req) {
     let queryEmbedding = null;
 
     try {
-      const cohere = new CohereClient({
-        token: process.env.COHERE_API_KEY,
+      const content = [];
+      if (imageDescription) {
+        content.push({ type: "text", text: imageDescription });
+      }
+      content.push({ type: "image_base64", image_base64: `data:${mimeType};base64,${base64Image}` });
+
+      const res = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "voyage-multimodal-3",
+          inputs: [{ content }],
+          input_type: "query"
+        })
       });
 
-      const embedResult = await cohere.embed({
-        texts: [imageDescription],
-        model: "embed-english-v3.0",
-        inputType: "search_query", // "search_query" pour les recherches
-        embeddingTypes: ["float"]
-      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Voyage API ${res.status}: ${errText}`);
+      }
 
-      queryEmbedding = embedResult.embeddings.float ? embedResult.embeddings.float[0] : embedResult.embeddings[0];
+      const data = await res.json();
+      queryEmbedding = data.data[0].embedding;
       
       if (!Array.isArray(queryEmbedding) || queryEmbedding.length !== 1024) {
         throw new Error(`Invalid embedding: ${queryEmbedding?.length}D`);

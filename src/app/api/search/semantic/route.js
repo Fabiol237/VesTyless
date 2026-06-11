@@ -1,4 +1,4 @@
-import { CohereClient } from "cohere-ai";
+// Removed CohereClient
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -10,19 +10,27 @@ export async function POST(req) {
       return NextResponse.json({ error: "La requête (query) est requise." }, { status: 400 });
     }
 
-    // 1. Initialiser Cohere
-    const cohere = new CohereClient({
-      token: process.env.COHERE_API_KEY,
+    // 1. Générer l'embedding avec Voyage AI
+    const res = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "voyage-multimodal-3",
+        inputs: [{ content: [{ type: "text", text: query }] }],
+        input_type: "query"
+      })
     });
 
-    // 2. Générer l'embedding avec Cohere
-    const embedResult = await cohere.embed({
-      texts: [query],
-      model: "embed-english-v3.0",
-      inputType: "search_query",
-    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Erreur Voyage API: ${res.status} ${errText}`);
+    }
 
-    const queryEmbedding = embedResult.embeddings[0]; // Array de floats
+    const data = await res.json();
+    const queryEmbedding = data.data[0].embedding; // Array de floats
 
     // 3. Recherche Supabase
     const supabase = createClient(

@@ -1,4 +1,4 @@
-import { CohereClient } from "cohere-ai";
+// Removed Cohere
 import { NextResponse } from "next/server";
 
 export const maxDuration = 15;
@@ -19,22 +19,30 @@ export async function POST(req) {
       return NextResponse.json({ error: "Le nom du produit est requis." }, { status: 400 });
     }
 
-    const cohere = new CohereClient({
-      token: process.env.COHERE_API_KEY,
-    });
-
     // === Texte complet pour embedding ===
     const fullText = [name, description].filter(Boolean).join(" | ");
 
-    // === Embedding via Cohere ===
-    const embedResult = await cohere.embed({
-      texts: [fullText],
-      model: "embed-english-v3.0",
-      inputType: "search_document",
-      embeddingTypes: ["float"]
+    // === Embedding via Voyage AI ===
+    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "voyage-3", // Standard text model
+        input: [fullText],
+        input_type: "document"
+      })
     });
 
-    const embedding = embedResult.embeddings.float ? embedResult.embeddings.float[0] : embedResult.embeddings[0];
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Voyage API ${res.status}: ${errText}`);
+    }
+
+    const data = await res.json();
+    const embedding = data.data[0].embedding;
 
     return NextResponse.json({ 
       success: true, 
