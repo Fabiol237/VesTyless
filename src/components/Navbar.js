@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import VoiceSearchButton from '@/components/VoiceSearchButton';
-import { useUserPreferences } from '@/hooks/useUserPreferences';
+
 
 // Bulletproof SVG Icons (Bypassing Lucide/Turbopack bug)
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -17,9 +16,7 @@ const MenuIcon = ({ size = 24 }) => (
 const XIcon = ({ size = 24 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
 );
-const SearchIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-);
+
 const StoreIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" /><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" /><path d="M2 7h20" /><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2.7 2.7 0 0 1-4.8 0v0a2 2 0 0 1-2-2V7" /></svg>
 );
@@ -42,10 +39,7 @@ const ZapIcon = ({ size = 16, className = "" }) => (
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const isHomePage = pathname === '/';
-  const [searchQuery, setSearchQuery] = useState("");
-  const { addSearch } = useUserPreferences();
+
   const { session, signOut } = useAuth();
   const { cart } = useCart();
   const [dataSaver, setDataSaver] = useState(false);
@@ -76,17 +70,8 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      addSearch(searchQuery.trim());
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setIsMobileMenuOpen(false);
-    }
-  };
-
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm text-slate-900 border-b border-slate-100' : 'bg-transparent text-white'} py-3 sm:py-4`}>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl shadow-sm text-slate-900 border-b border-slate-200 py-3 sm:py-4 transition-all duration-300">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex items-center justify-between">
 
         {/* Left: LOGO */}
@@ -110,40 +95,14 @@ export default function Navbar() {
             {/* Animation pulse */}
             <div className="absolute inset-0 rounded-xl animate-pulse bg-white/10"></div>
           </div>
-          <span className={`text-2xl font-black hidden sm:block tracking-wide ${isScrolled ? 'bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent' : 'bg-gradient-to-r from-emerald-300 to-white bg-clip-text text-transparent'} group-hover:from-emerald-200 group-hover:to-cyan-200 transition-all duration-300`} style={{fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontWeight: '800', letterSpacing: '0.06em'}}>
+          <span className="text-2xl font-black hidden sm:block tracking-wide bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent group-hover:from-emerald-500 group-hover:to-cyan-500 transition-all duration-300" style={{fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontWeight: '800', letterSpacing: '0.06em'}}>
             Vestyle
           </span>
         </Link>
 
-        {/* Center: SEARCH (Desktop) - Hide on home page to avoid redundancy with Hero search */}
-        {!isHomePage && (
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full ${isScrolled ? 'bg-slate-100 text-slate-900 placeholder-slate-500 border-slate-200' : 'bg-white/10 text-white placeholder-white/70 border-white/20'} border rounded-full pl-5 pr-20 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner`}
-            />
-            <div className="absolute right-2 top-1.5 bottom-1.5 flex items-center gap-1">
-              <VoiceSearchButton
-                onInterimResult={(text) => setSearchQuery(text)}
-                onResult={(text) => {
-                  setSearchQuery(text);
-                  router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-                }}
-                className={`p-1.5 rounded-full ${isScrolled ? 'text-slate-400 hover:text-emerald-600 hover:bg-slate-200' : 'text-white/80 hover:text-white hover:bg-white/20'} transition-colors`}
-              />
-              <button type="submit" className={`p-1.5 rounded-full flex items-center justify-center ${isScrolled ? 'text-slate-400 hover:text-emerald-600 hover:bg-slate-200' : 'text-white/80 hover:text-white hover:bg-white/20'} transition-colors`}>
-                <SearchIcon size={18} />
-              </button>
-            </div>
-          </form>
-        )}
-
         {/* Right: DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-2">
-          <Link href="/cart" className={`relative p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`}>
+          <Link href="/cart" className="relative p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600">
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
               <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
@@ -154,34 +113,34 @@ export default function Navbar() {
 
           <button
             onClick={toggleDataSaver}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse shadow-lg' : isScrolled ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse shadow-lg' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
           >
             <ZapIcon size={12} /> {dataSaver ? 'Lite ON' : 'Lite Mode'}
           </button>
 
-          <Link href="/mes-commandes" className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${isScrolled ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Suivre mes commandes">
+          <Link href="/mes-commandes" className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-emerald-600" title="Suivre mes commandes">
             <PackageIcon size={14} /> Mes Commandes
           </Link>
 
           <Link
             href="/profile"
-            className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`}
+            className="p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600"
           >
             <UserIcon size={22} />
           </Link>
 
           {session ? (
             <div className="flex items-center gap-1 pl-2 border-l border-white/20 ml-1">
-              <Link href="/dashboard" className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-slate-100 text-slate-700 hover:text-emerald-600' : 'text-white hover:bg-white/20'}`} title="Tableau de bord vendeur">
+              <Link href="/dashboard" className="p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600" title="Tableau de bord vendeur">
                 <StoreIcon size={20} />
               </Link>
-              <button onClick={() => signOut()} className={`p-2.5 rounded-full transition-colors ${isScrolled ? 'hover:bg-rose-50 text-rose-500' : 'text-white hover:bg-white/20 hover:text-rose-200'}`} title="Déconnexion">
+              <button onClick={() => signOut()} className="p-2.5 rounded-full transition-colors hover:bg-rose-50 text-rose-500 hover:text-rose-600" title="Déconnexion">
                 <LogOutIcon size={20} />
               </button>
             </div>
           ) : (
             <div className="flex items-center pl-2 ml-1">
-              <Link href="/login" className={`text-xs font-bold px-4 py-2 rounded-full transition-all ${isScrolled ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md' : 'bg-white text-emerald-900 hover:bg-emerald-50 shadow-md'}`}>
+              <Link href="/login" className="text-xs font-bold px-4 py-2 rounded-full transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">
                 Vendre
               </Link>
             </div>
@@ -189,8 +148,8 @@ export default function Navbar() {
         </nav>
 
         {/* Right: MOBILE TOGGLE */}
-        <div className={`flex md:hidden items-center gap-2 z-50 ${isScrolled ? 'text-slate-700' : 'text-white'}`}>
-          <Link href="/cart" className={`relative p-2 rounded-full ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}>
+        <div className="flex md:hidden items-center gap-2 z-50 text-slate-700">
+          <Link href="/cart" className="relative p-2 rounded-full hover:bg-slate-100">
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
               <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
@@ -198,11 +157,11 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          <button onClick={() => router.push('/profile')} className={`p-2 rounded-full ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}>
+          <button onClick={() => router.push('/profile')} className="p-2 rounded-full hover:bg-slate-100">
             <UserIcon size={22} />
           </button>
           <button
-            className={`p-2 rounded-full focus:outline-none ${isScrolled ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}
+            className="p-2 rounded-full focus:outline-none hover:bg-slate-100"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
@@ -213,30 +172,6 @@ export default function Navbar() {
 
       {/* MOBILE MENU */}
       <div className={`md:hidden fixed inset-0 bg-white z-40 flex flex-col transition-transform duration-200 pt-20 px-4 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-
-        <form onSubmit={handleSearch} className="relative mb-6">
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-neutral-100 text-neutral-900 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-wa-teal"
-          />
-          <div className="absolute right-2 top-2 bottom-2 flex items-center gap-1">
-            <VoiceSearchButton
-              onInterimResult={(text) => setSearchQuery(text)}
-              onResult={(text) => {
-                setSearchQuery(text);
-                router.push(`/search?q=${encodeURIComponent(text.trim())}`);
-                setIsMobileMenuOpen(false);
-              }}
-              className="p-1.5 text-neutral-500 hover:text-wa-teal transition-colors"
-            />
-            <button type="submit" className="p-1.5 text-neutral-500">
-              <SearchIcon size={20} />
-            </button>
-          </div>
-        </form>
 
         <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRightIcon size={16} className="text-neutral-400" /></Link>

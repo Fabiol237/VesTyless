@@ -4,6 +4,9 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 const AuthContext = createContext();
 
+// Global lock to prevent race conditions when multiple auth state events fire concurrently
+let isCreatingStoreForUser = null;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -115,50 +118,60 @@ export function AuthProvider({ children }) {
         
       if (!storeError && storeData) {
         setStore(storeData);
-      } else if (!storeData) {
-        // No store found for this user
-        // ⚠️ IMPORTANT: Seulement créer UNE FOIS (check if recent creation exists)
-        const { data: { user } } = await supabase.auth.getUser();
-        const storeNameFromMeta = user?.user_metadata?.store_name;
+      } else if (storeError) {
+        console.error("❌ Erreur réseau ou Supabase lors de la vérification de la boutique:", storeError.message);
+        setStore(null);
+      } else if (!storeError && !storeData) {
+        // No store found for this user AND no network error occurred
         
-        // Check if user already tried to create a store recently (avoid duplicates on reconnect)
-        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-        const { data: recentDelete } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('owner_id', userId)
-          .gt('created_at', oneHourAgo)
-          .limit(1);
-
-        if (recentDelete && recentDelete.length > 0) {
-          console.log('Store creation déjà tentée récemment, skip');
+        // 1. Prevent concurrent creations using memory lock
+        if (isCreatingStoreForUser === userId) {
+          console.log('Store creation already in progress, skipping.');
           return;
         }
+        isCreatingStoreForUser = userId;
 
-        const randomString = Math.random().toString(36).substring(2, 8);
-        const defaultName = storeNameFromMeta || `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
-        const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const storeNameFromMeta = user?.user_metadata?.store_name;
+          
+          // 2. Double check the DB just in case another tab created it
+          const { data: existingCheck } = await supabase
+            .from('stores')
+            .select('id')
+            .eq('owner_id', userId)
+            .limit(1);
 
-        const { data: newStore, error: insertError } = await supabase
-          .from('stores')
-          .insert([
-            {
-              owner_id: userId,
-              name: defaultName,
-              slug: defaultSlug,
-              is_active: true,
-            }
-          ])
-          .select()
-          .single();
+          if (existingCheck && existingCheck.length > 0) {
+            console.log('Store was just created by another process, fetching instead.');
+            return fetchUserData(userId);
+          }
 
-        if (!insertError && newStore) {
-          setStore(newStore);
-          console.log('✅ Boutique créée (nouvelle)', newStore.id);
-        } else {
-          console.error("❌ Erreur store creation:", insertError?.message);
-          // Ne pas bloquer l'app si la création échoue
-          setStore(null);
+          const randomString = Math.random().toString(36).substring(2, 8);
+          const defaultName = storeNameFromMeta || `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
+          const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
+
+          const { data: newStore, error: insertError } = await supabase
+            .from('stores')
+            .insert([{
+                owner_id: userId,
+                name: defaultName,
+                slug: defaultSlug,
+                is_active: true,
+            }])
+            .select()
+            .single();
+
+          if (!insertError && newStore) {
+            setStore(newStore);
+            console.log('✅ Boutique créée (nouvelle)', newStore.id);
+          } else {
+            console.error("❌ Erreur store creation:", insertError?.message);
+            setStore(null);
+          }
+        } finally {
+          // Release lock
+          isCreatingStoreForUser = null;
         }
       }
     } catch (err) {

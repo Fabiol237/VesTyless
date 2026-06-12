@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
 import dynamic from 'next/dynamic';
+import ThemePicker from '@/components/ThemePicker';
 
 const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
   ssr: false,
@@ -51,7 +52,9 @@ export default function StoreSettingsPage() {
     ai_prompt: 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.',
     supplier_level: 'Fournisseur Or',
     positive_rating: 100,
-    response_time: '< 1h'
+    response_time: '< 1h',
+    shop_theme: 'theme_01',
+    shop_tabs: { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
   });
 
   const { requestLocation, userLocation, isLocating, error: gpsError } = useDistance();
@@ -145,7 +148,9 @@ export default function StoreSettingsPage() {
           ai_prompt: data.ai_prompt || 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche en vous basant sur la description de la boutique.',
           supplier_level: data.supplier_level || 'Nouveau Vendeur',
           positive_rating: data.positive_rating !== undefined ? data.positive_rating : 100,
-          response_time: data.response_time || '< 2h'
+          response_time: data.response_time || '< 2h',
+          shop_theme: data.shop_theme || 'theme_00',
+          shop_tabs: data.shop_tabs || { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
         });
       }
     }
@@ -156,8 +161,17 @@ export default function StoreSettingsPage() {
     const { name, value, type, checked } = e.target;
     const finalValue = type === 'checkbox' ? checked : value;
 
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
-    pendingChangesRef.current[name] = finalValue;
+    if (name.startsWith('tab_')) {
+      const tabKey = name.split('_')[1];
+      setFormData(prev => ({
+        ...prev,
+        shop_tabs: { ...prev.shop_tabs, [tabKey]: finalValue }
+      }));
+      pendingChangesRef.current['shop_tabs'] = { ...formData.shop_tabs, [tabKey]: finalValue };
+    } else {
+      setFormData(prev => ({ ...prev, [name]: finalValue }));
+      pendingChangesRef.current[name] = finalValue;
+    }
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
@@ -473,7 +487,7 @@ export default function StoreSettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Thème Visuel</label>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Couleur d'accent</label>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-3xl border border-gray-100">
                   <div className="relative group">
                     <input type="color" name="theme_color" value={formData.theme_color} onChange={handleChange} className="w-16 h-16 rounded-2xl cursor-pointer border-4 border-white shadow-lg overflow-hidden" />
@@ -498,6 +512,42 @@ export default function StoreSettingsPage() {
                     <option value="'Playfair Display', serif">Playfair (Luxe)</option>
                     <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
                   </select>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ═══════════ THEME PICKER SECTION ═══════════ */}
+          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
+            <ThemePicker
+              value={formData.shop_theme}
+              onChange={(themeId) => {
+                setFormData(prev => ({ ...prev, shop_theme: themeId }));
+                updateStore({ shop_theme: themeId });
+              }}
+            />
+            
+            {/* Configuration des sous-pages (onglets) */}
+            <div className="mt-8 pt-8 border-t border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 mb-2">Configuration des Sous-Pages</h3>
+              <p className="text-sm text-gray-500 font-medium mb-6">Personnalisez le nom des onglets qui s'affichent sur votre thème.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Accueil</label>
+                  <input type="text" name="tab_accueil" value={formData.shop_tabs?.accueil || ''} onChange={handleChange} placeholder="Ex: Accueil" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Produits</label>
+                  <input type="text" name="tab_produits" value={formData.shop_tabs?.produits || ''} onChange={handleChange} placeholder="Ex: Catalogue" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Promotions</label>
+                  <input type="text" name="tab_promotions" value={formData.shop_tabs?.promotions || ''} onChange={handleChange} placeholder="Ex: Offres" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Profil</label>
+                  <input type="text" name="tab_profil" value={formData.shop_tabs?.profil || ''} onChange={handleChange} placeholder="Ex: Contact" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
                 </div>
               </div>
             </div>

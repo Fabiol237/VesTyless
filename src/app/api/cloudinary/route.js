@@ -32,17 +32,20 @@ async function handleUpload(formData) {
 
   const timestamp = Math.floor(Date.now() / 1000);
   const paramsToSign = {
+    background_removal: 'cloudinary_ai',
     folder,
     timestamp,
+    transformation: 'e_improve,e_sharpen,q_auto',
   };
   const signature = signParams(paramsToSign, apiSecret);
 
   const uploadForm = new FormData();
-  // Ensure we pass a filename to Cloudinary (some environments need this for Blobs)
   uploadForm.append('file', file, file.name || `upload_${Date.now()}.jpg`);
   uploadForm.append('api_key', apiKey);
-  uploadForm.append('timestamp', String(timestamp));
+  uploadForm.append('background_removal', 'cloudinary_ai');
   uploadForm.append('folder', folder);
+  uploadForm.append('timestamp', String(timestamp));
+  uploadForm.append('transformation', 'e_improve,e_sharpen,q_auto');
   uploadForm.append('signature', signature);
 
   console.log(`[Cloudinary API] Début de l'upload vers ${cloudName}...`);
