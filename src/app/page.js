@@ -134,10 +134,13 @@ export default function Home() {
   const [codeError, setCodeError] = useState('');
   const [showCodeModal, setShowCodeModal] = useState(false);
   const router = useRouter();
-  const { requestLocation, userLocation, isLocating: isGpsLocating } = useDistance();
-  const [suggestions, setSuggestions] = useState([]);
-  const [visualSearchOpen, setVisualSearchOpen] = useState(false);
-  const [visualResults, setVisualResults] = useState(null);
+  const [stats, setStats] = useState([
+    { value: '10K+', label: 'Produits' },
+    { value: '500+', label: 'Boutiques' },
+    { value: '24/7', label: 'Disponible' },
+  ]);
+  const [flashSales, setFlashSales] = useState([]);
+  const [timeLeft, setTimeLeft] = useState('');
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
 
@@ -168,7 +171,55 @@ export default function Home() {
   });
 
   useEffect(() => { if (offlineSuggestions) setSuggestions(offlineSuggestions); }, [offlineSuggestions]);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    async function fetchData() {
+      // 1. Fetch Stats
+      const [{ count: productsCount }, { count: storesCount }] = await Promise.all([
+        supabase.from('products').select('*', { count: 'exact', head: true }),
+        supabase.from('stores').select('*', { count: 'exact', head: true })
+      ]);
+      if (productsCount !== null && storesCount !== null) {
+        setStats([
+          { value: productsCount > 1000 ? (productsCount/1000).toFixed(1) + 'K+' : productsCount.toString(), label: 'Produits' },
+          { value: storesCount.toString(), label: 'Boutiques' },
+          { value: '24/7', label: 'Disponible' },
+        ]);
+      }
+      
+      // 2. Fetch Flash Sales
+      const { data: sales } = await supabase
+        .from('products')
+        .select('*, store:store_id(name, city)')
+        .not('flash_sale_end', 'is', null)
+        .limit(3);
+      
+      if (sales && sales.length > 0) {
+        setFlashSales(sales);
+      }
+    }
+    fetchData();
+    setMounted(true);
+  }, []);
+
+  // Update Countdown Timer
+  useEffect(() => {
+    if (flashSales.length === 0) return;
+    const interval = setInterval(() => {
+      const end = new Date(flashSales[0].flash_sale_end).getTime();
+      const now = new Date().getTime();
+      const distance = end - now;
+      if (distance < 0) {
+        setTimeLeft('Terminé');
+        clearInterval(interval);
+        return;
+      }
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [flashSales]);
 
   const handleCodeSearch = async (e) => {
     e.preventDefault();
@@ -321,7 +372,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.55 }}
             className="flex items-center gap-8 sm:gap-12"
           >
-            {STATS.map((s, i) => (
+            {stats.map((s, i) => (
               <div key={s.label} className="flex flex-col items-center gap-0.5">
                 <span className="text-2xl sm:text-3xl font-black text-white">{s.value}</span>
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
@@ -406,6 +457,53 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* ── SECTION PROMO ÉCLAIR (FOMO) ─────────────────────────────────────────────────────────── */}
+      {flashSales.length > 0 && (
+        <section className="w-full bg-gradient-to-r from-red-600 to-orange-500 py-12 px-4 relative overflow-hidden">
+          <div className="max-w-6xl mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-black text-white flex items-center gap-2">
+                  <span className="text-4xl">⚡</span> VENTES FLASH
+                </h2>
+                <p className="text-red-100 mt-1 font-medium">Les prix remontent bientôt, dépêchez-vous !</p>
+              </div>
+              <div className="mt-4 md:mt-0 bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30">
+                <span className="text-sm text-red-100 uppercase tracking-widest font-bold mr-3">Fin dans</span>
+                <span className="text-2xl font-mono font-black text-white">{timeLeft || 'Calcul...'}</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {flashSales.map(product => (
+                <div key={product.id} className="bg-white rounded-3xl p-4 shadow-xl flex gap-4 items-center transform transition-transform hover:-translate-y-1">
+                  <div className="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden relative flex-shrink-0">
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">📷</div>
+                    )}
+                    <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-xl">
+                      -15%
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 line-clamp-1">{product.name}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-1">{product.store?.name} • {product.store?.city}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-lg font-black text-red-600">{product.price} FCFA</span>
+                      {product.original_price && (
+                        <span className="text-xs text-gray-400 line-through">{product.original_price} FCFA</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
       <footer style={{ background: '#070f1c', color: 'rgba(255,255,255,0.5)' }} className="py-16 px-6">

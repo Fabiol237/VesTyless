@@ -1,5 +1,6 @@
 import './globals.css';
 import ClientProviders from '@/components/ClientProviders';
+import LiveSalesPopup from '@/components/LiveSalesPopup';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyless.vercel.app'),
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
       <body className="antialiased system-fonts">
         <ClientProviders>
           {children}
+          <LiveSalesPopup />
         </ClientProviders>
       </body>
     </html>
