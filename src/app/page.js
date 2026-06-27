@@ -134,6 +134,10 @@ export default function Home() {
   const [codeError, setCodeError] = useState('');
   const [showCodeModal, setShowCodeModal] = useState(false);
   const router = useRouter();
+  const { requestLocation, userLocation, isLocating: isGpsLocating } = useDistance();
+  const [suggestions, setSuggestions] = useState([]);
+  const [visualSearchOpen, setVisualSearchOpen] = useState(false);
+  const [visualResults, setVisualResults] = useState(null);
   const [stats, setStats] = useState([
     { value: '10K+', label: 'Produits' },
     { value: '500+', label: 'Boutiques' },
