@@ -1,23 +1,72 @@
 /**
- * API: Recherche Visuelle Optimisée
- * 
- * Pipeline:
- * 1. Reçoit une image de recherche
- * 2. Analyse avec Pixtral Vision
- * 3. Génère embedding 1024D avec Cohere
- * 4. Cherche dans Supabase avec IVFFlat index
- * 5. Filtre par catégorie et pertinence
- * 
- * Objectif: < 5 secondes, résultats précis
+ * API: Recherche Visuelle — VESTYLE AI Engine
+ *
+ * Pipeline PRINCIPAL (Hugging Face Space) :
+ *   Image → HF Space (Florence-2 + DINOv2 + SigLIP) → Supabase pgvector
+ *
+ * Pipeline FALLBACK (si HF Space indisponible) :
+ *   Image → Pixtral Vision → Voyage AI → Supabase pgvector
  */
 
-// Removed CohereClient
 import { Mistral } from "@mistralai/mistralai";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { Client } from "@gradio/client";
 
-export const maxDuration = 45;
+export const maxDuration = 60;
 
+// ── URL du Hugging Face Space ──────────────────────────────────────
+const HF_SPACE_URL = "https://fabiol237-vestyle-ai-engine.hf.space";
+
+// ── Supabase client (service_role pour RPC) ─────────────────────────
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MOTEUR PRINCIPAL : Hugging Face Space
+// Gradio v4 API : POST /call/search → SSE /call/search/{event_id}
+// ════════════════════════════════════════════════════════════════════
+async function searchViaHuggingFace(base64Image, mimeType, matchThreshold = 0.28, matchCount = 40) {
+  const dataUrl = `data:${mimeType};base64,${base64Image}`;
+  
+  try {
+    // 1. Connexion au Space Hugging Face
+    const hfClient = await Client.connect("Fabiol237/vestyle-ai-engine");
+    
+    // 2. Appel de l'API (api_name="search")
+    const result = await hfClient.predict("search", [
+      dataUrl,
+      matchThreshold,
+      matchCount
+    ]);
+    
+    const output = result.data[0];
+    if (output.error) {
+      throw new Error(`HF Space API Error: ${output.error}`);
+    }
+    
+    return {
+      success:     true,
+      engine:      "huggingface",
+      description: output.step?.florence?.caption || "",
+      ocr:         output.step?.florence?.ocr || "",
+      tags:        output.step?.florence?.tags || [],
+      products:    output.products || [],
+      count:       (output.products || []).length,
+      vector_dims: output.metadata?.vector_dims || 1024,
+    };
+  } catch (err) {
+    throw new Error(`HF Space failed: ${err.message}`);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MOTEUR FALLBACK : Pixtral + Voyage AI (ancien pipeline)
+// ════════════════════════════════════════════════════════════════════
 const VISION_PROMPT = `You are a professional fashion product cataloger for a visual search engine. Analyze this image with extreme precision.
 
 Output format: [ITEM_TYPE] [EXACT_COLOR] [SECONDARY_COLORS_IF_ANY] [MATERIAL/FABRIC_IF_VISIBLE] [FIT_OR_CUT] [KEY_FEATURES]
@@ -30,176 +79,137 @@ Rules:
 - Language: English only
 - Length: max 70 words, 1-2 sentences
 
-Examples:
-- "Oversized burgundy velvet blazer with peak lapels, gold buttons, single-breasted, padded shoulders, below-hip length"
-- "High-waist sky-blue denim wide-leg jeans with distressed knees, frayed hem, five-pocket design"
-- "Fitted forest-green ribbed turtleneck sweater, long sleeves, cropped length above waist, stretch fabric"
-- "Black leather ankle boots with chunky block heel 5cm, almond toe, side zip closure, matte finish"
-
 Now analyze:`;
 
-export async function POST(req) {
+async function searchViaFallback(base64Image, mimeType, supabase) {
+  console.log("[Visual Search] 🔄 Fallback : Pixtral + Voyage AI");
+
+  // Étape 1 : Description Pixtral
+  let imageDescription = "clothing fashion item";
   try {
-    const formData = await req.formData();
-    const imageFile = formData.get("image");
-    const categoryFilter = formData.get("category_id"); // Optional category filter
+    const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY });
+    const visionResponse = await mistral.chat.complete({
+      model: "pixtral-12b-2409",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image_url", imageUrl: { url: `data:${mimeType};base64,${base64Image}` } },
+          { type: "text", text: VISION_PROMPT },
+        ],
+      }],
+      maxTokens: 130,
+      temperature: 0,
+    });
+    imageDescription = visionResponse.choices[0]?.message?.content?.trim() || imageDescription;
+    console.log("[Fallback] Vision:", imageDescription.slice(0, 60));
+  } catch (e) {
+    console.warn("[Fallback] Pixtral error:", e.message);
+  }
+
+  // Étape 2 : Embedding Voyage AI
+  const voyageRes = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.VOYAGE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "voyage-multimodal-3",
+      inputs: [{ content: [
+        { type: "text", text: imageDescription },
+        { type: "image_base64", image_base64: `data:${mimeType};base64,${base64Image}` },
+      ]}],
+      input_type: "query",
+    }),
+  });
+
+  if (!voyageRes.ok) {
+    const err = await voyageRes.text();
+    throw new Error(`Voyage API ${voyageRes.status}: ${err.slice(0, 150)}`);
+  }
+
+  const voyageData = await voyageRes.json();
+  const embedding = voyageData.data[0].embedding;
+
+  // Étape 3 : Recherche Supabase
+  const { data: products, error } = await supabase.rpc("match_products_v2", {
+    query_embedding: embedding,
+    match_threshold: 0.28,
+    match_count: 40,
+  });
+
+  if (error) throw new Error(`Supabase RPC: ${error.message}`);
+
+  return {
+    success: true,
+    engine: "fallback_voyage",
+    description: imageDescription,
+    products: (products || []).slice(0, 20),
+    count: (products || []).length,
+    vector_dims: embedding.length,
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════
+// HANDLER PRINCIPAL
+// ════════════════════════════════════════════════════════════════════
+export async function POST(req) {
+  const startTime = Date.now();
+  const supabase  = getSupabase();
+
+  try {
+    const formData     = await req.formData();
+    const imageFile    = formData.get("image");
+    const categoryFilter = formData.get("category_id");
 
     if (!imageFile) {
-      return NextResponse.json(
-        { error: "Une image est requise." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Une image est requise." }, { status: 400 });
     }
-
-    console.log('[Visual Search] Starting analysis...');
-    const startTime = Date.now();
 
     const imageBytes = await imageFile.arrayBuffer();
     const base64Image = Buffer.from(imageBytes).toString("base64");
-    let mimeType = imageFile.type || "image/jpeg";
-    if (!mimeType.startsWith("image/")) {
-      mimeType = "image/jpeg";
-    }
+    const mimeType    = imageFile.type?.startsWith("image/") ? imageFile.type : "image/jpeg";
 
-    // ============ ÉTAPE 1: Vision Analysis ============
-    let imageDescription = "";
+    console.log(`[Visual Search] 🚀 Démarrage — ${Math.round(imageBytes.byteLength / 1024)}KB`);
 
+    // ── Tenter le moteur HF Space en premier ──
+    let searchResult;
     try {
-      const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY });
-
-      const visionResponse = await mistral.chat.complete({
-        model: "pixtral-12b-2409",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                imageUrl: {
-                  url: `data:${mimeType};base64,${base64Image}`,
-                },
-              },
-              {
-                type: "text",
-                text: VISION_PROMPT,
-              },
-            ],
-          },
-        ],
-        maxTokens: 130,
-        temperature: 0,
-      });
-
-      imageDescription = visionResponse.choices[0]?.message?.content?.trim() || "";
-      console.log('[Visual Search] Vision:', imageDescription);
-    } catch (visionErr) {
-      console.warn("[Visual Search] Pixtral error:", visionErr.message);
-      // Fallback
-      if (imageFile.name) {
-        imageDescription = imageFile.name
-          .toLowerCase()
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[_\-]/g, " ");
-      }
-      if (!imageDescription) imageDescription = "clothing fashion item";
+      console.log("[Visual Search] 🤗 Tentative HF Space (Florence-2 + DINOv2 + SigLIP)...");
+      searchResult = await searchViaHuggingFace(base64Image, mimeType);
+      console.log(`[Visual Search] ✅ HF Space OK — ${searchResult.count} produit(s) bruts`);
+    } catch (hfErr) {
+      console.warn(`[Visual Search] ⚠️ HF Space indisponible: ${hfErr.message}`);
+      console.log("[Visual Search] 🔄 Bascule sur fallback Voyage AI...");
+      searchResult = await searchViaFallback(base64Image, mimeType, supabase);
     }
 
-    // ============ ÉTAPE 2: Generate Embedding ============
-    let queryEmbedding = null;
-
-    try {
-      const content = [];
-      if (imageDescription) {
-        content.push({ type: "text", text: imageDescription });
-      }
-      content.push({ type: "image_base64", image_base64: `data:${mimeType};base64,${base64Image}` });
-
-      const res = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "voyage-multimodal-3",
-          inputs: [{ content }],
-          input_type: "query"
-        })
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Voyage API ${res.status}: ${errText}`);
-      }
-
-      const data = await res.json();
-      queryEmbedding = data.data[0].embedding;
-      
-      if (!Array.isArray(queryEmbedding) || queryEmbedding.length !== 1024) {
-        throw new Error(`Invalid embedding: ${queryEmbedding?.length}D`);
-      }
-
-      console.log('[Visual Search] Embedding OK:', queryEmbedding.length, 'D');
-    } catch (embedErr) {
-      console.error("[Visual Search] Embedding error:", embedErr.message);
-      return NextResponse.json(
-        { error: `Embedding failed: ${embedErr.message}` },
-        { status: 500 }
-      );
+    // ── Post-processing : filtre catégorie + top 12 ──
+    let products = searchResult.products || [];
+    if (categoryFilter) {
+      products = products.filter(p => p.global_category_id === parseInt(categoryFilter));
     }
+    products = products.slice(0, 12);
 
-    // ============ ÉTAPE 3: Vector Search ============
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    const elapsedMs = Date.now() - startTime;
+    console.log(`[Visual Search] 🏁 Terminé en ${elapsedMs}ms — moteur: ${searchResult.engine} — ${products.length} résultat(s)`);
 
-    try {
-      // Appel RPC avec threshold optimisé
-      const { data: products, error } = await supabase.rpc("match_products_v2", {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.28, // Seuil abaissé pour meilleur rappel
-        match_count: 40, // Récupérer plus pour filtrer ensuite
-      });
+    return NextResponse.json({
+      success: true,
+      engine:        searchResult.engine,
+      description:   searchResult.description || "",
+      ocr:           searchResult.ocr || "",
+      tags:          searchResult.tags || [],
+      products,
+      count:         products.length,
+      elapsed_ms:    elapsedMs,
+      vector_dims:   searchResult.vector_dims || 1024,
+    });
 
-      if (error) {
-        console.error("[Visual Search] RPC error:", error);
-        throw error;
-      }
-
-      // ============ ÉTAPE 4: Post-processing & Filtering ============
-      let results = (products || []).slice(0, 20); // Top 20 results
-      
-      // Filtrer par catégorie si spécifiée
-      if (categoryFilter) {
-        results = results.filter(p => p.global_category_id === parseInt(categoryFilter));
-      }
-
-      // Limiter à 12 résultats finaux
-      results = results.slice(0, 12);
-
-      const elapsedMs = Date.now() - startTime;
-      console.log(`[Visual Search] ✅ ${results.length} result(s) in ${elapsedMs}ms`);
-
-      return NextResponse.json({
-        success: true,
-        description: imageDescription,
-        products: results,
-        count: results.length,
-        elapsed_ms: elapsedMs,
-        embedding_size: queryEmbedding.length,
-      });
-    } catch (searchErr) {
-      console.error("[Visual Search] Search error:", searchErr.message);
-      return NextResponse.json(
-        { error: `Search failed: ${searchErr.message}` },
-        { status: 500 }
-      );
-    }
   } catch (err) {
-    console.error('[Visual Search API]', err);
+    console.error("[Visual Search] ❌ Erreur fatale:", err.message);
     return NextResponse.json(
-      { error: err.message || 'Visual search failed' },
+      { error: err.message || "Visual search failed" },
       { status: 500 }
     );
   }

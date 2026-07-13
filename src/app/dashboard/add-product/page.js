@@ -1,13 +1,14 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { deleteCloudinaryByUrl, uploadImage } from '@/lib/cloudinary';
 import { useRouter } from 'next/navigation';
 import CategorySearch from '@/components/CategorySearch';
 import BackNavigation from '@/components/BackNavigation';
-import { ImagePlus, Package, ArrowLeft, Loader2, Save, X } from 'lucide-react';
+import { ImagePlus, Package, ArrowLeft, Loader2, Save, X, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import ProductDescriptionAI from '@/components/ProductDescriptionAI';
 
 export default function AddProductPage() {
   const { session } = useAuth();
@@ -318,6 +319,15 @@ export default function AddProductPage() {
               className="w-full bg-neutral-50 border-none rounded-xl px-4 py-3 font-bold text-neutral-900 placeholder-neutral-300 focus:ring-2 focus:ring-wa-teal transition-all resize-none"
             />
           </div>
+
+          {/* GÉNÉRATION IA DESCRIPTION */}
+          {formData.name && (
+            <ProductDescriptionAI
+              productName={formData.name}
+              category={formData.global_category_id ? 'produit' : ''}
+              onDescriptionGenerated={(desc) => setFormData(prev => ({ ...prev, description: desc }))}
+            />
+          )}
 
           {/* CATÉGORIE & PRIX */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

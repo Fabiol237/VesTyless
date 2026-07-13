@@ -8,10 +8,11 @@ import { supabase } from '@/lib/supabase';
 import {
   TrendingUp, ShoppingCart, AlertTriangle, CheckCircle,
   Bell, Package, Plus, Clock, Zap, Truck, XCircle,
-  Calendar, ChevronDown
+  Calendar, ChevronDown, Sparkles, BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumChart from '@/components/PremiumChart';
+import SellerAssistantPanel from '@/components/SellerAssistantPanel';
 
 const currencyFormatter = new Intl.NumberFormat('fr-FR', {
   style: 'currency', currency: 'XOF', maximumFractionDigits: 0,
@@ -247,16 +248,23 @@ export default function SellerDashboard() {
     );
   }
 
-  return (
+return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="max-w-7xl mx-auto pt-6 px-6">
         <BackNavigation title="Tableau de Bord" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              Bonjour, {store?.name || store?.store_name} 👋
-            </h1>
-            <p className="text-slate-500 font-medium mt-1">Vue d'ensemble de votre activité.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              {store?.business_type && (
+                <span style={{ fontSize: '20px' }}>
+                  {{ ecommerce: '🛍️', hotel: '🏨', restaurant: '🍽️', services: '💼', creative: '🎨', event: '🎟️' }[store.business_type] || '🏡'}
+                </span>
+              )}
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                Bonjour, {store?.name || store?.store_name} 👋
+              </h1>
+            </div>
+            <p className="text-slate-500 font-medium mt-1">Vue d’ensemble de votre activité.</p>
             {/* ─── CODE BOUTIQUE ─────────────────────────────────── */}
             {store?.store_code && (
               <div className="flex items-center gap-2 mt-3">
@@ -311,6 +319,12 @@ export default function SellerDashboard() {
               </AnimatePresence>
             </div>
             <Link
+              href={`/builder/${store?.id}`}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/20 transition-all active:scale-95 text-sm"
+            >
+              <Zap size={20} /> Éditeur de Boutique
+            </Link>
+            <Link
               href="/dashboard/add-product"
               className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
             >
@@ -322,72 +336,61 @@ export default function SellerDashboard() {
 
       <div className="max-w-7xl mx-auto px-6">
         {/* ── QUICK STATS ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-          {/* Revenue */}
-          <div className="bg-wa-teal text-white p-6 rounded-[32px] shadow-xl shadow-wa-teal/10 relative overflow-hidden group">
-            <div className="relative z-10">
-              <p className="text-xs font-black uppercase tracking-widest opacity-70">
-                Revenus · {selectedPeriod.label}
-              </p>
-              <h3 className="text-3xl font-black mt-2">{formatAmount(stats.revenue)}</h3>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                {stats.growth !== null ? (
-                  <>
-                    <TrendingUp size={12} className={stats.growth < 0 ? 'rotate-180' : ''} />
-                    {stats.growth > 0 ? '+' : ''}{stats.growth}% vs période précédente
-                  </>
-                ) : 'Premières données !'}
+          {/* Stat cards — adapt labels per business type */}
+          {(() => {
+            const bt = store?.business_type || 'ecommerce';
+            const labels = {
+              ecommerce:  { rev: 'Revenus',    orders: 'Commandes', pending: 'À préparer',   extra: 'Stock faible',   extraVal: stats.lowStock,   extraColor: stats.lowStock > 0 ? 'text-rose-500' : 'text-slate-900', extraNote: 'Articles à réapprovisionner' },
+              hotel:      { rev: 'Revenus',    orders: 'Réservations', pending: 'En attente', extra: 'Chambres libres', extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'Disponibilité ce soir' },
+              restaurant: { rev: 'Revenus',    orders: 'Commandes menu', pending: 'En cuisine', extra: 'Stock faible',   extraVal: stats.lowStock,   extraColor: stats.lowStock > 0 ? 'text-rose-500' : 'text-slate-900', extraNote: 'Ingrédients à commander' },
+              services:   { rev: 'Revenus',    orders: 'RDV pris',   pending: 'Aujourd’hui',  extra: 'Devis reçus',    extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'En attente de réponse' },
+              creative:   { rev: 'Revenus',    orders: 'Projets',    pending: 'En cours',      extra: 'Contacts reçus', extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'Ce mois' },
+              event:      { rev: 'Revenus',    orders: 'Billets vendus', pending: 'À valider', extra: 'Places restantes', extraVal: '--',             extraColor: 'text-slate-900', extraNote: 'Pour prochain évènement' },
+            };
+            const l = labels[bt] || labels.ecommerce;
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+                <div className="bg-wa-teal text-white p-6 rounded-[32px] shadow-xl shadow-wa-teal/10 relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70">{l.rev} · {selectedPeriod.label}</p>
+                    <h3 className="text-3xl font-black mt-2">{formatAmount(stats.revenue)}</h3>
+                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
+                      {stats.growth !== null ? (<><TrendingUp size={12} className={stats.growth < 0 ? 'rotate-180' : ''} />{stats.growth > 0 ? '+' : ''}{stats.growth}% vs période précédente</>) : 'Premières données !'}
+                    </div>
+                  </div>
+                  <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
+                </div>
+
+                <div className="bg-indigo-600 text-white p-6 rounded-[32px] shadow-xl shadow-indigo-600/10 relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70">Vues · 7 derniers jours</p>
+                    <h3 className="text-3xl font-black mt-2">{stats.weeklyViews}</h3>
+                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
+                      {stats.weeklyViews > 0 ? 'Excellente visibilité' : 'Générez du trafic !'}
+                    </div>
+                  </div>
+                  <TrendingUp className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
+                </div>
+
+                <div className="bg-emerald-500 text-white p-6 rounded-[32px] shadow-xl shadow-emerald-500/10 relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70">{l.orders} · {selectedPeriod.label}</p>
+                    <h3 className="text-3xl font-black mt-2">{stats.ordersCount}</h3>
+                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
+                      {stats.ordersCount > 0 ? 'Bonne activité !' : 'En attente...'}
+                    </div>
+                  </div>
+                  <ShoppingCart className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:scale-110 transition-transform" />
+                </div>
+
+                <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{l.pending}</p>
+                  <h3 className="text-3xl font-black text-slate-900 mt-2">{stats.pendingOrders}</h3>
+                  <p className="text-xs text-orange-500 font-bold mt-4 flex items-center gap-1"><Clock size={12} /> Action requise</p>
+                </div>
               </div>
-            </div>
-            <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
-          </div>
-
-          {/* Views (Analytics) */}
-          <div className="bg-indigo-600 text-white p-6 rounded-[32px] shadow-xl shadow-indigo-600/10 relative overflow-hidden group">
-            <div className="relative z-10">
-              <p className="text-xs font-black uppercase tracking-widest opacity-70">
-                Vues · 7 derniers jours
-              </p>
-              <h3 className="text-3xl font-black mt-2">{stats.weeklyViews}</h3>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                {stats.weeklyViews > 0 ? 'Excellente visibilité' : 'Générez du trafic !'}
-              </div>
-            </div>
-            <TrendingUp className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
-          </div>
-
-          {/* Orders */}
-          <div className="bg-emerald-500 text-white p-6 rounded-[32px] shadow-xl shadow-emerald-500/10 relative overflow-hidden group">
-            <div className="relative z-10">
-              <p className="text-xs font-black uppercase tracking-widest opacity-70">
-                Commandes · {selectedPeriod.label}
-              </p>
-              <h3 className="text-3xl font-black mt-2">{stats.ordersCount}</h3>
-              <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                {stats.ordersCount > 0 ? 'Bonne activité !' : 'En attente...'}
-              </div>
-            </div>
-            <ShoppingCart className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:scale-110 transition-transform" />
-          </div>
-
-          {/* Pending */}
-          <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">À préparer</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-2">{stats.pendingOrders}</h3>
-            <p className="text-xs text-orange-500 font-bold mt-4 flex items-center gap-1">
-              <Clock size={12} /> Action requise
-            </p>
-          </div>
-
-          {/* Low stock */}
-          <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Stock faible</p>
-            <h3 className={`text-3xl font-black mt-2 ${stats.lowStock > 0 ? 'text-rose-500' : 'text-slate-900'}`}>
-              {stats.lowStock}
-            </h3>
-            <p className="text-xs text-slate-400 font-bold mt-4">Articles à réapprovisionner</p>
-          </div>
-        </div>
+            );
+          })()}
 
         {/* ── LIVREUR QUICK VIEW (DUAL ROLE) ─────────────────────────────── */}
         {livreur && (
@@ -443,6 +446,66 @@ export default function SellerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── MISTRAL ASSISTANT ────────────────────────────────────────── */}
+      {storeId && (
+        <div className="max-w-7xl mx-auto px-6 mt-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2">
+              <SellerAssistantPanel storeId={storeId} />
+            </div>
+            <div className="space-y-6">
+              {/* Weekly Report Button */}
+              <button
+                onClick={async () => {
+                  const btn = document.getElementById('weekly-report-btn');
+                  if (btn) {
+                    btn.innerHTML = '<span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Génération...';
+                    btn.disabled = true;
+                  }
+                  try {
+                    const res = await fetch('/api/ai/weekly-report', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ storeId }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert(`📊 ${data.report.headline}\n\n${data.report.summary}\n\n💰 ${data.report.metrics.revenue.toLocaleString()} FCFA\n📈 ${data.report.metrics.growth >= 0 ? '+' : ''}${data.report.metrics.growth}%\n\nRecommandations:\n${(data.report.recommendations || []).map(r => `• ${r.action} (${r.priority})`).join('\n')}`);
+                    }
+                  } catch {}
+                  if (btn) { btn.innerHTML = '<BarChart3 size={16}/> Rapport Hebdo'; btn.disabled = false; }
+                }}
+                id="weekly-report-btn"
+                className="w-full p-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:from-purple-600 hover:to-indigo-700 transition-all shadow-xl flex items-center justify-center gap-3 h-24"
+              >
+                <BarChart3 size={20} /> Rapport Hebdomadaire IA
+              </button>
+
+              {/* Classification rapide */}
+              <button
+                onClick={async () => {
+                  const name = prompt('Nom du produit à classifier:');
+                  if (!name) return;
+                  try {
+                    const res = await fetch('/api/ai/classify-product', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ name, existingCategories: ['Mode', 'Alimentation', 'High-Tech', 'Maison', 'Santé', 'Beauté', 'Sport'] }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert(`🏷️ Catégorie: ${data.classification.category}\n🎯 Confiance: ${data.classification.confidence}%\n🏷️ Tags: ${data.classification.tags.join(', ')}`);
+                    }
+                  } catch {}
+                }}
+                className="w-full p-6 bg-white border border-slate-100 rounded-3xl font-bold text-sm text-slate-700 hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-3"
+              >
+                <Sparkles size={18} className="text-purple-500" /> Classifier un produit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 lg:grid-cols-3 gap-10">

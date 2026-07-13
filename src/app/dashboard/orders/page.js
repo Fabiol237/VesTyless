@@ -28,7 +28,7 @@ function shortId(id) { return (id||'').slice(0,8).toUpperCase(); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'; }
 function fmtAmt(a) { return Number(a||0).toLocaleString('fr-FR')+' F'; }
 
-function OrderTicket({ order, onStatusChange, isUpdating, livreurs, onAssignLivreur, onToggleInvoice, currentUserId }) {
+function OrderTicket({ order, onStatusChange, isUpdating, livreurs, onAssignLivreur, onToggleInvoice, currentUserId, storeLogo, storeName }) {
   const st = norm(order.status);
   const s = ST[st]||ST.pending;
   const items = order.items||order.order_items||[];
@@ -74,9 +74,15 @@ function OrderTicket({ order, onStatusChange, isUpdating, livreurs, onAssignLivr
           <div className="relative z-10 flex items-start justify-between">
             <div className="flex gap-4">
               {/* QR Code on Ticket - Authenticity Mark */}
-              <div className="w-16 h-16 bg-white p-1 rounded-xl shadow-inner hidden sm:flex items-center justify-center">
+              <div className="w-16 h-16 bg-white p-1 rounded-xl shadow-inner hidden sm:flex items-center justify-center shrink-0">
                 <img src={qrUrl} alt="QR Code Authentification" className="w-full h-full" />
               </div>
+              {/* Store Logo */}
+              {storeLogo && (
+                <div className="w-16 h-16 bg-white p-0.5 rounded-xl shadow-inner hidden sm:flex items-center justify-center shrink-0 overflow-hidden">
+                  <img src={storeLogo} alt={storeName || "Logo Boutique"} className="w-full h-full object-cover rounded-lg" />
+                </div>
+              )}
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/80 mb-0.5">CERTIFICAT D&apos;AUTHENTICITÉ VESTYLE</p>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tighter text-white drop-shadow-sm flex items-center gap-2">
@@ -490,6 +496,8 @@ export default function OrdersPage() {
               onAssignLivreur={handleAssignLivreur}
               onToggleInvoice={handleToggleInvoice}
               currentUserId={session?.id}
+              storeLogo={store?.logo_url}
+              storeName={store?.name}
             />
           ))
         )}

@@ -1,38 +1,126 @@
 {
-  "name": "VesTyle Marketplace",
+  "name": "VesTyle Pro – Marketplace Cameroun",
   "short_name": "VesTyle",
-  "description": "Le marketplace de proximité premium au Cameroun. Découvrez et commandez dans les meilleures boutiques locales.",
-  "start_url": "/",
+  "description": "Le marketplace de proximité premium au Cameroun. Gérez votre boutique, passez et suivez vos commandes en temps réel, même hors-ligne.",
+  "start_url": "/?utm_source=pwa&utm_medium=homescreen",
+  "id": "vestyle-pro-v1",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F8F9FA",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "background_color": "#0D1B2A",
   "theme_color": "#128C7E",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
+
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VesTyle – Tableau de bord vendeur"
+    },
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "VesTyle – Boutiques à proximité"
+    }
+  ],
+
   "shortcuts": [
     {
+      "name": "Mon Dashboard",
+      "short_name": "Dashboard",
+      "description": "Accéder à mon tableau de bord vendeur",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Mes Commandes",
+      "short_name": "Commandes",
+      "description": "Voir et gérer mes commandes en cours",
+      "url": "/dashboard/orders",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
       "name": "Explorer les Boutiques",
+      "short_name": "Boutiques",
+      "description": "Découvrir les boutiques près de moi",
       "url": "/boutiques",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Mon Panier",
+      "short_name": "Panier",
+      "description": "Voir les articles dans mon panier",
       "url": "/cart",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
-  "categories": ["shopping", "business"],
-  "lang": "fr"
+
+  "categories": ["shopping", "business", "finance", "productivity"],
+
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+
+  "handle_links": "preferred",
+
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+
+  "protocol_handlers": [
+    {
+      "protocol": "web+vestyle",
+      "url": "/boutique/%s"
+    }
+  ],
+
+  "file_handlers": [],
+
+  "share_target": {
+    "action": "/search",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "q",
+      "url": "url"
+    }
+  },
+
+  "iarc_rating_id": "",
+
+  "related_applications": []
 }

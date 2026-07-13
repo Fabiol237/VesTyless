@@ -57,9 +57,31 @@ export async function uploadImage(file, options = {}) {
     body: formData,
   });
 
-  const data = await response.json();
+  // Vérifier le content-type avant de parser JSON
+  const contentType = response.headers.get('content-type');
+  let data;
+
+  try {
+    if (contentType?.includes('application/json')) {
+      const text = await response.text();
+      if (!text) {
+        throw new Error('Réponse API vide');
+      }
+      data = JSON.parse(text);
+    } else {
+      const text = await response.text();
+      throw new Error(`Réponse invalide - Content-Type: ${contentType}, Texte: ${text?.slice(0, 200) || 'vide'}`);
+    }
+  } catch (parseError) {
+    if (parseError.message.includes('JSON')) {
+      console.error('[Cloudinary] JSON Parse Error:', parseError.message);
+      throw new Error(`Erreur parsing réponse Cloudinary: ${parseError.message}`);
+    }
+    throw parseError;
+  }
+
   if (!response.ok) {
-    throw new Error(data?.error || 'Upload Cloudinary impossible');
+    throw new Error(data?.error || data?.details?.error?.message || 'Upload Cloudinary impossible');
   }
 
   return {

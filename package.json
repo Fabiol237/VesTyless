@@ -20,8 +20,9 @@
     "insert-test-product": "scripts/insert-test-product.js"
   },
   "dependencies": {
+    "@gradio/client": "^2.3.0",
     "@huggingface/inference": "^4.13.15",
-    "@mistralai/mistralai": "^2.2.5",
+    "@mistralai/mistralai": "^2.4.0",
     "@mlc-ai/web-llm": "^0.2.83",
     "@react-leaflet/core": "^3.0.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",

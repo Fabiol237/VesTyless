@@ -280,176 +280,196 @@ export default function StoreSettingsPage() {
     }
   };
 
-  if (session === undefined) return <div className="min-h-screen bg-wa-bg flex justify-center items-center"><Loader2 className="animate-spin text-wa-teal" size={48} /></div>;
+  if (session === undefined) return <div className="min-h-screen bg-[#FAF9F6] flex justify-center items-center"><Loader2 className="animate-spin text-[#059669]" size={48} /></div>;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-20">
-      {/* Header Premium */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-            <Settings className="text-wa-teal" size={32} />
-            Configuration Boutique
-          </h1>
-          <p className="text-gray-500 font-medium">Sublimez l&apos;apparence et les réglages de votre espace client.</p>
+    <div className="max-w-6xl mx-auto space-y-10 pb-24 px-4 sm:px-6">
+      
+      {/* Header Premium avec dégradé et verre */}
+      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-gray-900 to-slate-800 p-8 md:p-10 shadow-2xl text-left border border-white/5">
+        <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="absolute -left-16 -bottom-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-wider text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              Panneau de Contrôle
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
+              <Settings className="text-emerald-400 animate-spin-slow" size={32} />
+              Configuration de votre Boutique
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base font-medium max-w-xl">
+              Personnalisez l&apos;identité, le design visuel, la localisation GPS et l&apos;équipe de votre espace de vente.
+            </p>
+          </div>
+          
+          <Link href="/dashboard" className="self-start md:self-auto flex items-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-2xl transition-all text-xs uppercase tracking-widest border border-white/10 backdrop-blur-md shadow-lg active:scale-95">
+            <ArrowLeft size={16} /> Retour Dashboard
+          </Link>
         </div>
-        <Link href="/dashboard" className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all text-xs uppercase tracking-widest">
-          <ArrowLeft size={16} /> Retour
-        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-        {/* Colonne de Gauche : Infos de Base & Branding */}
+        {/* Colonne Principale (Gauche) */}
         <div className="lg:col-span-2 space-y-8">
 
-          {/* Identité Section */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-wa-chat rounded-xl text-wa-teal"><Globe size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Identité & Accès</h2>
+          {/* SECTION 1: Identité & Accès */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-emerald-50 rounded-2xl text-[#059669]"><Globe size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Identité & Accès</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Configurez le nom et l&apos;adresse web unique de votre marque.</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Nom de la boutique</label>
-                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Nom de la boutique</label>
+                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all duration-200" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Lien (Slug)</label>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Lien Web (Slug)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">/boutique/</span>
-                  <input type="text" name="slug" value={formData.slug} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-24 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-sm select-none">/boutique/</span>
+                  <input type="text" name="slug" value={formData.slug} onChange={handleChange} className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl pl-24 pr-5 py-4 text-sm font-bold outline-none transition-all duration-200" />
                 </div>
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Description Boutique</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all resize-none"></textarea>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Description de la boutique</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" placeholder="Présentez brièvement vos articles et services..." className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl px-5 py-4 text-sm font-semibold outline-none transition-all duration-200 resize-none min-h-[100px]"></textarea>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Numéro WhatsApp Client</label>
-                <div className="flex gap-2 items-center">
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Numéro WhatsApp Client</label>
+                <div className="flex gap-3">
                   <div className="relative flex-1">
-                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
-                    <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="237655..." className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#059669]" size={20} />
+                    <input type="text" name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="Ex: 237655123456" className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl pl-12 pr-5 py-4 text-sm font-bold outline-none transition-all duration-200" />
                   </div>
-                  {/* API #6 : CONTACT PICKER */}
                   <button
                     type="button"
                     onClick={pickContact}
-                    title="Importer depuis mes contacts"
-                    className="flex-shrink-0 p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition-all font-bold text-xs flex items-center gap-2"
+                    className="flex-shrink-0 px-5 py-4 bg-emerald-50 text-[#059669] hover:bg-emerald-100/80 rounded-2xl transition-all font-extrabold text-xs flex items-center gap-2 border border-emerald-100 shadow-sm active:scale-95"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span className="hidden sm:inline">Contacts</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span className="hidden sm:inline">Importer</span>
                   </button>
                 </div>
-                <p className="text-[10px] text-gray-400 ml-1">Sur Android Chrome : importez directement depuis votre répertoire téléphonique.</p>
+                <p className="text-[10px] text-gray-400 font-semibold ml-1">Android & Chrome uniquement : chargez instantanément le contact depuis votre répertoire.</p>
               </div>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-gray-50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-50 rounded-xl text-blue-500"><MapPin size={20} /></div>
-                <h3 className="text-lg font-black text-gray-900">Localisation GPS</h3>
-              </div>
-              <p className="text-sm text-gray-500 font-medium mb-4">Permet à vos clients de voir à quelle distance ils se trouvent de votre boutique.</p>
-
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    type="button"
-                    onClick={requestLocation}
-                    disabled={isLocating}
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50"
-                  >
-                    {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
-                    Capturer ma position GPS
-                  </button>
-                  <div className="flex-1 grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">LAT</span>
-                      <input type="text" readOnly placeholder="0.000" value={formData.latitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-gray-700 outline-none" />
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-300">LON</span>
-                      <input type="text" readOnly placeholder="0.000" value={formData.longitude} className="w-full bg-gray-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold text-gray-700 outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-[500px] w-full rounded-[40px] overflow-hidden border-8 border-white shadow-2xl relative group bg-gray-50">
-                  <InteractiveMap 
-                    mode="select"
-                    initialPos={formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude) 
-                      ? [Number(formData.latitude), Number(formData.longitude)] 
-                      : null
-                    }
-                    userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
-                    userAccuracy={userLocation?.accuracy}
-                    onPositionChange={(pos) => {
-                      setFormData(prev => ({ ...prev, latitude: pos[0], longitude: pos[1] }));
-                      updateStore({ latitude: pos[0], longitude: pos[1] });
-                    }}
-                  />
-                  <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-600 shadow-sm border border-blue-100">
-                    Ajustez votre position réelle
-                  </div>
-                </div>
-              </div>
-
-              {gpsError && <p className="mt-3 text-xs font-bold text-red-500">{gpsError}</p>}
-              {formData.latitude && !gpsError && <p className="mt-3 text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 size={14} /> Position synchronisée avec succès</p>}
             </div>
           </section>
 
-          {/* AI Secretary Section */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5 text-indigo-500 pointer-events-none">
-              <Bot size={120} />
+          {/* SECTION 2: Localisation GPS */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-blue-50 rounded-2xl text-blue-600"><MapPin size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Position Géographique</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Permettez aux acheteurs locaux de mesurer leur distance physique.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 mb-2 relative z-10">
-              <div className="p-2 bg-indigo-50 rounded-xl text-indigo-500"><Bot size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Secrétaire IA (WebLLM)</h2>
-            </div>
-            <p className="text-sm text-gray-500 font-medium mb-6 relative z-10">Configurez votre assistant virtuel autonome. Il répondra à vos clients directement depuis leur navigateur via Llama 3.2.</p>
 
-            <div className="space-y-6 relative z-10">
-              <label className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <button
+                  type="button"
+                  onClick={requestLocation}
+                  disabled={isLocating}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-blue-50 hover:bg-blue-100/80 text-blue-600 font-black rounded-2xl transition-all disabled:opacity-50 border border-blue-100 shadow-sm text-sm active:scale-95"
+                >
+                  {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+                  Capturer mes coordonnées GPS
+                </button>
+                
+                <div className="w-full sm:flex-1 grid grid-cols-2 gap-3">
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-300">LAT</span>
+                    <input type="text" readOnly placeholder="0.00000" value={formData.latitude} className="w-full bg-gray-50/70 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-gray-600 outline-none" />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-300">LON</span>
+                    <input type="text" readOnly placeholder="0.00000" value={formData.longitude} className="w-full bg-gray-50/70 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-gray-600 outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Carte Interactive */}
+              <div className="h-[320px] w-full rounded-2xl overflow-hidden border border-gray-100 shadow-inner relative group bg-gray-50">
+                <InteractiveMap 
+                  mode="select"
+                  initialPos={formData.latitude && formData.longitude && !isNaN(formData.latitude) && !isNaN(formData.longitude) 
+                    ? [Number(formData.latitude), Number(formData.longitude)] 
+                    : null
+                  }
+                  userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+                  userAccuracy={userLocation?.accuracy}
+                  onPositionChange={(pos) => {
+                    setFormData(prev => ({ ...prev, latitude: pos[0], longitude: pos[1] }));
+                    updateStore({ latitude: pos[0], longitude: pos[1] });
+                  }}
+                />
+                <div className="absolute top-4 left-4 z-[999] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider text-blue-600 shadow-md border border-blue-50 pointer-events-none">
+                  Faites glisser le marqueur pour affiner
+                </div>
+              </div>
+
+              {gpsError && <p className="text-xs font-bold text-rose-500 bg-rose-50/50 p-3 rounded-xl border border-rose-100">{gpsError}</p>}
+              {formData.latitude && !gpsError && <p className="text-xs font-black text-[#059669] flex items-center gap-1.5"><CheckCircle2 size={16} /> Coordonnées synchronisées en direct</p>}
+            </div>
+          </section>
+
+          {/* SECTION 3: Secrétaire IA */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50 relative overflow-hidden">
+            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-[0.03] text-indigo-900 pointer-events-none">
+              <Bot size={180} />
+            </div>
+            
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-indigo-50 rounded-2xl text-indigo-600"><Bot size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Secrétaire Virtuelle IA</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Installez un agent conversationnel entraîné localement.</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <label className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
                 <div className="relative">
                   <input type="checkbox" name="ai_enabled" checked={formData.ai_enabled} onChange={handleChange} className="sr-only" />
-                  <div className={`block w-14 h-8 rounded-full transition-colors ${formData.ai_enabled ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${formData.ai_enabled ? 'translate-x-6' : ''}`}></div>
+                  <div className={`block w-12 h-7 rounded-full transition-colors ${formData.ai_enabled ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${formData.ai_enabled ? 'translate-x-5' : ''}`}></div>
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-sm">Activer la Secrétaire IA</p>
-                  <p className="text-xs text-gray-500">Un widget de discussion apparaîtra sur votre boutique.</p>
+                  <p className="font-extrabold text-gray-900 text-sm">Activer l&apos;agent conversationnel</p>
+                  <p className="text-[11px] text-gray-400 font-medium">Un chatbot d&apos;accueil répondra à vos clients 24h/24.</p>
                 </div>
               </label>
 
               {formData.ai_enabled && (
-                <div className="grid grid-cols-1 gap-6 animate-fade-in mt-6">
+                <div className="space-y-4 animate-fade-in">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Nom de l'Assistant</label>
-                    <input type="text" name="ai_name" value={formData.ai_name} onChange={handleChange} placeholder="Ex: Sophie (Assistant VesTyle)" className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Nom de l&apos;assistant</label>
+                    <input type="text" name="ai_name" value={formData.ai_name} onChange={handleChange} placeholder="Sophie" className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all duration-200" />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Prompt Système (Comportement)</label>
-                    <textarea name="ai_prompt" value={formData.ai_prompt} onChange={handleChange} rows="4" placeholder="Instructions pour l'IA..." className="w-full bg-gray-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-medium outline-none transition-all resize-none"></textarea>
-                    <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-1"><Info size={12} /> Décrivez comment l'IA doit s'adresser à vos clients et quelles règles elle doit respecter.</p>
+                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Instructions de comportement</label>
+                    <textarea name="ai_prompt" value={formData.ai_prompt} onChange={handleChange} rows="3" placeholder="Vous êtes l'assistant..." className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-indigo-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-semibold outline-none transition-all duration-200 resize-none min-h-[90px]"></textarea>
                   </div>
                 </div>
               )}
 
-              {/* AI DIAGNOSTIC TOOL */}
-              <div className="pt-4 mt-4 border-t border-gray-50 flex items-center justify-between">
+              <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Diagnostic IA</p>
-                  <p className="text-xs text-gray-500">Vérifiez si l'intelligence artificielle est prête.</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Test & Diagnostics</p>
+                  <p className="text-xs text-gray-500 font-medium">Vérifiez si l&apos;API de l&apos;assistant répond.</p>
                 </div>
                 <button
                   type="button"
@@ -458,67 +478,67 @@ export default function StoreSettingsPage() {
                       const res = await fetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ messages: [{ role: 'user', content: 'Vérification de connexion' }] })
+                        body: JSON.stringify({ messages: [{ role: 'user', content: 'Ping' }] })
                       });
                       const data = await res.json();
-                      if (res.ok && data.content) {
-                        alert("✅ IA Opérationnelle : " + data.content.slice(0, 50) + "...");
+                      if (res.ok) {
+                        alert("✅ IA active et répond en arrière-plan !");
                       } else {
-                        alert("❌ Erreur IA : " + (data.error || "Configuration incomplète"));
+                        alert("❌ Dysfonctionnement temporaire de l'API.");
                       }
                     } catch (err) {
-                      alert("❌ Erreur Réseau : " + err.message);
+                      alert("❌ Impossible d'accéder à l'API IA.");
                     }
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-100 transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold text-xs transition-all active:scale-95"
                 >
-                  <TestTube size={14} /> Tester l'IA
+                  <TestTube size={14} /> Tester l&apos;agent
                 </button>
               </div>
             </div>
           </section>
 
-          {/* Design & Style Section */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-amber-50 rounded-xl text-amber-500"><Palette size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Style & Branding</h2>
+          {/* SECTION 4: Style & Typographie */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-amber-50 rounded-2xl text-amber-500"><Palette size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Couleurs & Typographie</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Déterminez l&apos;ambiance stylistique globale.</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Couleur d'accent</label>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-3xl border border-gray-100">
-                  <div className="relative group">
-                    <input type="color" name="theme_color" value={formData.theme_color} onChange={handleChange} className="w-16 h-16 rounded-2xl cursor-pointer border-4 border-white shadow-lg overflow-hidden" />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                      <CheckCircle2 className="text-white drop-shadow-md" size={24} />
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Teinte de marque principale</label>
+                <div className="flex items-center gap-4 p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <div className="relative group flex-shrink-0">
+                    <input type="color" name="theme_color" value={formData.theme_color} onChange={handleChange} className="w-14 h-14 rounded-xl cursor-pointer border-2 border-white shadow-md overflow-hidden" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-gray-900 uppercase tracking-tighter">{formData.theme_color}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">Couleur Principale</p>
+                  <div>
+                    <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{formData.theme_color}</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase">Couleur Primaire</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Typographie</label>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-3xl border border-gray-100">
-                  <div className="p-3 bg-white rounded-2xl text-gray-400 shadow-sm"><Type size={24} /></div>
-                  <select name="font_family" value={formData.font_family} onChange={handleChange} className="flex-1 bg-transparent border-none outline-none font-black text-sm">
-                    <option value="Inter">Inter (Moderne)</option>
-                    <option value="'Outfit', sans-serif">Outfit (Élégant)</option>
-                    <option value="'Playfair Display', serif">Playfair (Luxe)</option>
-                    <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Police d&apos;écriture</label>
+                <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <div className="p-2 bg-white rounded-lg text-gray-400 shadow-sm"><Type size={18} /></div>
+                  <select name="font_family" value={formData.font_family} onChange={handleChange} className="flex-1 bg-transparent border-none outline-none font-bold text-sm text-gray-800">
+                    <option value="Inter">Inter (Sleek & Clean)</option>
+                    <option value="'Outfit', sans-serif">Outfit (Premium & Luxe)</option>
+                    <option value="'Playfair Display', serif">Playfair Display (Classique)</option>
+                    <option value="'Montserrat', sans-serif">Montserrat (Moderne)</option>
                   </select>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* ═══════════ THEME PICKER SECTION ═══════════ */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
+          {/* SECTION 5: Choix du Thème de Boutique */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
             <ThemePicker
               value={formData.shop_theme}
               onChange={(themeId) => {
@@ -527,44 +547,43 @@ export default function StoreSettingsPage() {
               }}
             />
             
-            {/* Configuration des sous-pages (onglets) */}
-            <div className="mt-8 pt-8 border-t border-gray-100">
-              <h3 className="text-lg font-black text-gray-900 mb-2">Configuration des Sous-Pages</h3>
-              <p className="text-sm text-gray-500 font-medium mb-6">Personnalisez le nom des onglets qui s'affichent sur votre thème.</p>
+            {/* Configuration des Titres d'Onglets */}
+            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4">
+              <div>
+                <h3 className="text-lg font-black text-gray-900 tracking-tight">Libellé des Pages (Navigation)</h3>
+                <p className="text-xs text-gray-500 font-medium">Attribuez des noms sur-mesure aux onglets du menu principal.</p>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Accueil</label>
-                  <input type="text" name="tab_accueil" value={formData.shop_tabs?.accueil || ''} onChange={handleChange} placeholder="Ex: Accueil" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Produits</label>
-                  <input type="text" name="tab_produits" value={formData.shop_tabs?.produits || ''} onChange={handleChange} placeholder="Ex: Catalogue" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Promotions</label>
-                  <input type="text" name="tab_promotions" value={formData.shop_tabs?.promotions || ''} onChange={handleChange} placeholder="Ex: Offres" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Onglet Profil</label>
-                  <input type="text" name="tab_profil" value={formData.shop_tabs?.profil || ''} onChange={handleChange} placeholder="Ex: Contact" className="w-full bg-gray-50 border-2 border-transparent focus:border-wa-teal focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all" />
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { key: 'accueil', label: 'Onglet Accueil' },
+                  { key: 'produits', label: 'Onglet Produits' },
+                  { key: 'promotions', label: 'Onglet Offres' },
+                  { key: 'profil', label: 'Onglet Profil' }
+                ].map((item) => (
+                  <div key={item.key} className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{item.label}</label>
+                    <input type="text" name={`tab_${item.key}`} value={formData.shop_tabs?.[item.key] || ''} onChange={handleChange} className="w-full bg-gray-50/70 border border-gray-100 focus:border-[#059669] focus:bg-white rounded-xl px-4 py-3 text-xs font-bold outline-none transition-all" />
+                  </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* Performance & Trust (Alibaba Style) Section */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-amber-50 rounded-xl text-amber-500"><Star size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Performance & Confiance</h2>
+          {/* SECTION 6: Confiance & Performance */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-amber-50 rounded-2xl text-amber-500"><Star size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Signaux de Confiance</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Présentez des indicateurs rassurants en en-tête.</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-6">Paramétrez les indicateurs de confiance (façon fournisseur vérifié) qui s'affichent sur l'en-tête de votre boutique.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Niveau Fournisseur</label>
-                <select name="supplier_level" value={formData.supplier_level} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all">
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Statut Vendeur</label>
+                <select name="supplier_level" value={formData.supplier_level} onChange={handleChange} className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all">
                   <option value="Nouveau Vendeur">Nouveau Vendeur</option>
                   <option value="Fournisseur Or">Fournisseur Or</option>
                   <option value="Vendeur Premium">Vendeur Premium</option>
@@ -573,56 +592,58 @@ export default function StoreSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Avis Positifs (%)</label>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Évaluation positive</label>
                 <div className="relative">
-                  <input type="number" step="0.1" max="100" min="0" name="positive_rating" value={formData.positive_rating} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl pl-5 pr-10 py-3.5 text-sm font-bold outline-none transition-all" />
+                  <input type="number" step="1" max="100" min="0" name="positive_rating" value={formData.positive_rating} onChange={handleChange} className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl pl-5 pr-10 py-4 text-sm font-bold outline-none transition-all" />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">%</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Temps de Réponse</label>
-                <select name="response_time" value={formData.response_time} onChange={handleChange} className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-5 py-3.5 text-sm font-bold outline-none transition-all">
-                  <option value="< 1h">&lt; 1h (Très rapide)</option>
+                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Réponse moyenne</label>
+                <select name="response_time" value={formData.response_time} onChange={handleChange} className="w-full bg-gray-50/70 border-2 border-gray-100 focus:border-[#059669] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold outline-none transition-all">
+                  <option value="< 1h">&lt; 1h (Ultra Rapide)</option>
                   <option value="< 2h">&lt; 2h (Rapide)</option>
-                  <option value="< 12h">&lt; 12h (Moyen)</option>
-                  <option value="< 24h">&lt; 24h (Lent)</option>
+                  <option value="< 12h">&lt; 12h (Correct)</option>
+                  <option value="< 24h">&lt; 24h (Standard)</option>
                 </select>
               </div>
             </div>
           </section>
 
-          {/* Section PROMOTION (EMBELLIE) */}
-          <section className="bg-gradient-to-br from-wa-teal to-wa-teal-dark p-8 rounded-[40px] text-white shadow-xl shadow-wa-teal/20 space-y-6 text-left relative overflow-hidden group">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white"><Megaphone size={20} /></div>
-                <h2 className="text-xl font-black">Section Promotionnelle</h2>
+          {/* SECTION 7: Message Promotionnel */}
+          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-tr from-[#059669] to-emerald-500 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20 text-left">
+            <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-[0.08] pointer-events-none">
+              <Megaphone size={160} />
+            </div>
+            
+            <div className="relative z-10 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/10 rounded-2xl text-white backdrop-blur-md border border-white/10"><Megaphone size={20} /></div>
+                <h2 className="text-xl font-black tracking-tight">Bannière Promotionnelle Défilante</h2>
               </div>
-              <p className="text-white/80 text-sm font-medium mb-6">Ce message s&apos;affichera en haut de votre boutique pour attirer l&apos;œil de vos clients.</p>
+              <p className="text-emerald-100/90 text-sm font-medium">Ce bandeau sera animé en première page de votre boutique pour accrocher le visiteur.</p>
 
               <div className="space-y-4">
-                <div className="relative">
-                  <textarea
-                    name="custom_message"
-                    value={formData.custom_message}
-                    onChange={handleChange}
-                    rows="2"
-                    placeholder="Ex: 🎉 PROMO : -20% sur toute la collection avec le code VESTYLE !"
-                    className="w-full bg-white/10 backdrop-blur-md border-2 border-white/20 focus:border-white focus:bg-white/20 rounded-2xl px-5 py-4 text-sm font-black placeholder:text-white/40 outline-none transition-all resize-none"
-                  ></textarea>
-                </div>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
+                <textarea
+                  name="custom_message"
+                  value={formData.custom_message}
+                  onChange={handleChange}
+                  rows="2"
+                  placeholder="Ex: ⚡ Livraison gratuite à partir de 20.000 FCFA cette semaine !"
+                  className="w-full bg-white/10 placeholder:text-white/40 focus:bg-white/15 border-2 border-white/10 focus:border-white rounded-2xl px-5 py-4 text-sm font-semibold outline-none transition-all resize-none"
+                ></textarea>
+                
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-emerald-200">
                   <Info size={12} />
-                  <span>Apparaît comme une bannière animée sur la boutique</span>
+                  <span>Saisie enregistrée instantanément</span>
                 </div>
               </div>
 
-              {/* NOTIFICATION DIAGNOSTIC */}
-              <div className="pt-6 mt-6 border-t border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="pt-6 border-t border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-black text-white/60 uppercase tracking-widest">Diagnostic Notifications</p>
-                  <p className="text-xs text-white/80">Vérifiez la configuration des emails (Resend).</p>
+                  <p className="text-[9px] font-black text-emerald-200 uppercase tracking-widest">Envoi e-mail</p>
+                  <p className="text-xs text-emerald-100 font-medium">Vérifiez les notifications mail.</p>
                 </div>
                 <button
                   type="button"
@@ -634,208 +655,202 @@ export default function StoreSettingsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                           to: session.email, 
-                          subject: 'Test de Notification VesTyle', 
+                          subject: 'Validation email VesTyle', 
                           type: 'MESSAGE', 
-                          data: { message: 'Si vous recevez ceci, votre configuration email fonctionne.' } 
+                          data: { message: 'Votre système d\'envoi est configuré.' } 
                         })
                       });
                       const data = await res.json();
-                      if (res.ok && data.success) {
-                        if (data.email?.error) {
-                          alert("⚠️ Email en mode TEST : " + data.email.error.message + "\n\nNote: Vous devez valider votre domaine sur Resend.com pour envoyer à d'autres adresses.");
-                        } else {
-                          alert("✅ Email envoyé avec succès à " + session.email);
-                        }
+                      if (res.ok) {
+                        alert("✅ E-mail envoyé avec succès !");
                       } else {
-                        alert("❌ Erreur Notification : " + (data.error || "Problème serveur"));
+                        alert("❌ Dysfonctionnement sur l'envoi.");
                       }
                     } catch (err) {
-                      alert("❌ Erreur Réseau : " + err.message);
+                      alert("❌ Réseau inaccessible.");
                     }
                   }}
-                  className="flex items-center gap-2 px-6 py-3 bg-white text-emerald-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-lg"
+                  className="flex items-center gap-2 px-5 py-3 bg-white hover:bg-emerald-50 text-[#059669] rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-md"
                 >
-                  <Send size={14} /> Tester l'Email
+                  <Send size={13} /> Tester la notification
                 </button>
               </div>
             </div>
-            <Megaphone className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700" size={160} />
           </section>
 
-          {/* GESTION DES LIVREURS */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-6 text-left relative overflow-hidden">
-             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600"><Truck size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Équipe de Livraison</h2>
+          {/* SECTION 8: Équipe de Livraison */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-6 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-emerald-50 rounded-2xl text-[#059669]"><Truck size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Logistique & Livreurs</h2>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">Associez vos livreurs officiels pour assigner les commandes.</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-6">Ajoutez les livreurs officiels de votre boutique pour automatiser les livraisons.</p>
 
             <div className="space-y-4">
-               {livreurs.map((l) => (
-                 <div key={l.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="grid grid-cols-1 gap-3">
+                {livreurs.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between p-4 bg-gray-50/50 border border-gray-100 rounded-2xl transition-all hover:bg-gray-50">
                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-wa-teal shadow-sm"><User size={18} /></div>
-                       <div>
-                          <p className="font-bold text-gray-900 text-sm">{l.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{l.phone}</p>
-                       </div>
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#059669] border border-gray-100 shadow-sm"><User size={18} /></div>
+                      <div>
+                        <p className="font-extrabold text-gray-800 text-sm">{l.name}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{l.phone}</p>
+                      </div>
                     </div>
-                    <button onClick={() => handleRemoveLivreur(l.id)} className="p-2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={16} /></button>
-                 </div>
-               ))}
+                    <button onClick={() => handleRemoveLivreur(l.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                  </div>
+                ))}
+              </div>
 
-               <form onSubmit={handleAddLivreur} className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-gray-50">
-                  <input 
-                    type="text" 
-                    placeholder="Nom complet" 
-                    value={newLivreur.name}
-                    onChange={e => setNewLivreur({...newLivreur, name: e.target.value})}
-                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="WhatsApp" 
-                    value={newLivreur.phone}
-                    onChange={e => setNewLivreur({...newLivreur, phone: e.target.value})}
-                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Email (pour connexion)" 
-                    value={newLivreur.email}
-                    onChange={e => setNewLivreur({...newLivreur, email: e.target.value})}
-                    className="bg-white border-2 border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-wa-teal transition-all" 
-                  />
-                  <button 
-                    disabled={addingLivreur}
-                    className="bg-wa-teal text-white rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-wa-teal/10 flex items-center justify-center gap-2 hover:bg-wa-teal-dark disabled:opacity-50"
-                  >
-                    {addingLivreur ? <Loader2 className="animate-spin" size={14} /> : <><Plus size={14} /> Ajouter</>}
-                  </button>
-               </form>
-               
-               <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                  <button 
-                    type="button"
-                    onClick={async () => {
-                      if (!session?.id || !storeId) return;
-                      if (livreurs.some(l => l.user_id === session.id)) {
-                        alert("Vous êtes déjà enregistré comme livreur.");
-                        return;
+              {/* Formulaire d'ajout livreur */}
+              <form onSubmit={handleAddLivreur} className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-4 border-t border-gray-50">
+                <input required type="text" placeholder="Nom complet" value={newLivreur.name} onChange={e => setNewLivreur({...newLivreur, name: e.target.value})} className="sm:col-span-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-[#059669] transition-all" />
+                <input required type="text" placeholder="Numéro WhatsApp" value={newLivreur.phone} onChange={e => setNewLivreur({...newLivreur, phone: e.target.value})} className="sm:col-span-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-[#059669] transition-all" />
+                <input type="email" placeholder="Email de connexion" value={newLivreur.email} onChange={e => setNewLivreur({...newLivreur, email: e.target.value})} className="sm:col-span-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-[#059669] transition-all" />
+                <button disabled={addingLivreur} className="sm:col-span-1 bg-[#059669] hover:bg-[#047857] text-white rounded-xl px-4 py-3 text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1">
+                  {addingLivreur ? <Loader2 className="animate-spin" size={14} /> : <><Plus size={14} /> Ajouter</>}
+                </button>
+              </form>
+              
+              <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    if (!session?.id || !storeId) return;
+                    if (livreurs.some(l => l.user_id === session.id)) {
+                      alert("Vous y figurez déjà.");
+                      return;
+                    }
+                    setAddingLivreur(true);
+                    try {
+                      const { data, error } = await supabase.from('livreurs').insert([{
+                        store_id: storeId,
+                        user_id: session.id,
+                        name: formData.name + " (Gérant)",
+                        phone: formData.whatsapp_number || formData.phone || ""
+                      }]).select().single();
+                      
+                      if (!error && data) {
+                        setLivreurs([...livreurs, data]);
+                        alert("Ajouté avec succès comme livreur !");
                       }
-                      setAddingLivreur(true);
-                      try {
-                        const { data, error } = await supabase.from('livreurs').insert([{
-                          store_id: storeId,
-                          user_id: session.id,
-                          name: formData.name + " (Propriétaire)",
-                          phone: formData.whatsapp_number || formData.phone || ""
-                        }]).select().single();
-                        
-                        if (!error && data) {
-                          setLivreurs([...livreurs, data]);
-                          alert("Vous avez été ajouté comme livreur avec succès !");
-                        } else {
-                          throw error;
-                        }
-                      } catch (err) {
-                        console.error(err);
-                        alert("Erreur lors de votre ajout comme livreur.");
-                      } finally {
-                        setAddingLivreur(false);
-                      }
-                    }}
-                    disabled={addingLivreur || livreurs.some(l => l.user_id === session?.id)}
-                    className="flex-1 py-3 px-4 bg-emerald-50 text-emerald-700 rounded-2xl border-2 border-dashed border-emerald-200 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-100 transition-all disabled:opacity-50"
-                  >
-                    <User size={16} /> Me rajouter comme livreur
-                  </button>
-                  <Link 
-                    href="/delivery"
-                    className="flex-1 py-3 px-4 bg-gray-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all"
-                  >
-                    <Truck size={16} /> Voir mon Hub Livreur
-                  </Link>
-               </div>
+                    } catch (err) {
+                      alert("Erreur de liaison.");
+                    } finally {
+                      setAddingLivreur(false);
+                    }
+                  }}
+                  disabled={addingLivreur || livreurs.some(l => l.user_id === session?.id)}
+                  className="flex-1 py-3.5 px-4 bg-emerald-50/50 hover:bg-emerald-50 text-[#059669] rounded-2xl border-2 border-dashed border-emerald-100 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <User size={15} /> M&apos;ajouter comme coursier
+                </button>
+                <Link 
+                  href="/delivery"
+                  className="flex-1 py-3.5 px-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95"
+                >
+                  <Truck size={15} /> Ouvrir le Portail Livraison
+                </Link>
+              </div>
             </div>
           </section>
         </div>
 
-        {/* Colonne de Droite : Médias & Sauvegarde */}
-        <div className="space-y-8">
+        {/* Colonne Latérale Droite (Uploads & Direct status) */}
+        <div className="space-y-8 lg:sticky lg:top-4">
 
-          {/* Logo & Banner Section */}
-          <section className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm space-y-8 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-rose-50 rounded-xl text-rose-500"><ImageIcon size={20} /></div>
-              <h2 className="text-xl font-black text-gray-900">Visuels</h2>
+          {/* SECTION: Visuels de Marque */}
+          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 space-y-8 text-left transition-all hover:shadow-2xl">
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+              <div className="p-2.5 bg-rose-50 rounded-2xl text-rose-500"><ImageIcon size={22} /></div>
+              <div>
+                <h2 className="text-lg font-black text-gray-900 tracking-tight">Identité Visuelle</h2>
+                <p className="text-[10px] text-gray-400 font-medium">Logo et couverture d&apos;accueil.</p>
+              </div>
             </div>
 
-            {/* Logo Upload */}
-            <div className="space-y-4">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Logo Boutique</p>
-              <div className="relative group aspect-square max-w-[120px] mx-auto">
-                <div className="w-full h-full rounded-[32px] bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+            {/* Logo */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Logo officiel (carré)</p>
+              <div className="relative group aspect-square max-w-[140px] mx-auto">
+                <div className="w-full h-full rounded-[24px] bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden shadow-inner">
                   {formData.logo_url ? (
                     <img src={formData.logo_url} className="w-full h-full object-cover" alt="Logo" />
                   ) : (
-                    <Camera className="text-gray-300" size={32} />
+                    <Camera className="text-gray-300 animate-pulse" size={28} />
                   )}
                   {uploadingField === 'logo_url' && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
-                      <Loader2 className="animate-spin text-wa-teal" size={24} />
+                    <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                      <Loader2 className="animate-spin text-[#059669]" size={24} />
                     </div>
                   )}
                 </div>
-                <label className="absolute -bottom-2 -right-2 p-2.5 bg-wa-teal text-white rounded-xl shadow-lg cursor-pointer hover:bg-wa-teal-dark transition-all active:scale-95">
-                  <Camera size={18} />
+                <label className="absolute -bottom-2 -right-2 p-2.5 bg-[#059669] text-white rounded-xl shadow-lg cursor-pointer hover:bg-emerald-700 transition-all active:scale-90">
+                  <Camera size={16} />
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('logo_url', e.target.files?.[0])} />
                 </label>
                 {formData.logo_url && (
-                  <button type="button" onClick={() => handleRemoveImage('logo_url')} className="absolute -top-2 -right-2 p-2.5 bg-rose-500 text-white rounded-xl shadow-lg hover:bg-rose-600 transition-all">
-                    <Trash2 size={18} />
+                  <button type="button" onClick={() => handleRemoveImage('logo_url')} className="absolute -top-2 -right-2 p-2.5 bg-rose-500 text-white rounded-xl shadow-lg hover:bg-rose-600 transition-all active:scale-90">
+                    <Trash2 size={16} />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Banner Upload */}
-            <div className="space-y-4">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Bannière de Fond</p>
-              <div className="relative group w-full aspect-[2/1] rounded-3xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+            {/* Couverture */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Bannière principale (2:1)</p>
+              <div className="relative group w-full aspect-[2/1] rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden shadow-inner">
                 {formData.banner_url ? (
                   <img src={formData.banner_url} className="w-full h-full object-cover" alt="Bannière" />
                 ) : (
-                  <ImageIcon className="text-gray-300" size={32} />
+                  <ImageIcon className="text-gray-300" size={28} />
                 )}
-                <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-sm cursor-pointer">
-                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl text-xs font-black text-gray-900 uppercase tracking-widest shadow-xl">
-                    <Camera size={16} /> Changer
+                {uploadingField === 'banner_url' && (
+                  <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                    <Loader2 className="animate-spin text-[#059669]" size={24} />
+                  </div>
+                )}
+                <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-xs cursor-pointer">
+                  <div className="flex items-center gap-1.5 bg-white px-4 py-2.5 rounded-xl text-xs font-black text-gray-900 uppercase tracking-widest shadow-lg">
+                    <Camera size={14} /> Mettre à jour
                   </div>
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload('banner_url', e.target.files?.[0])} />
                 </label>
+                {formData.banner_url && (
+                  <button type="button" onClick={() => handleRemoveImage('banner_url')} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg shadow hover:bg-rose-600 transition-all">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </div>
           </section>
 
-          {/* Action Card (Auto-Save Indicator) */}
-          <div className="bg-gray-900 p-8 rounded-[40px] shadow-2xl space-y-6">
+          {/* Sauvegarde automatique en temps réel */}
+          <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6 text-left border border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-wa-teal">
-                <CheckCircle2 size={24} />
+              <div className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                <CheckCircle2 size={18} />
               </div>
-              <p className="text-white font-black tracking-tight text-lg">Mode Direct (En ligne)</p>
+              <p className="text-white font-extrabold tracking-tight text-base">Sauvegarde instantanée</p>
             </div>
-            <p className="text-gray-400 text-sm font-medium leading-relaxed">Vos modifications sont automatiquement enregistrées et publiées en temps réel.</p>
+            
+            <p className="text-slate-400 text-xs font-medium leading-relaxed">
+              Toutes les données modifiées dans ce formulaire sont automatiquement sauvegardées en base et synchronisées en ligne.
+            </p>
 
-            <div className="w-full py-4 bg-gray-800 text-gray-400 font-black rounded-2xl shadow-inner flex items-center justify-center gap-3 transition-all h-14">
-              {autoSaveStatus === 'saving' && <><Loader2 className="animate-spin text-wa-teal" size={20} /> <span className="text-wa-teal">Enregistrement...</span></>}
-              {autoSaveStatus === 'saved' && <><CheckCircle2 className="text-emerald-500" size={20} /> <span className="text-emerald-500">Sauvegardé</span></>}
-              {autoSaveStatus === 'error' && <span className="text-rose-500">Erreur de sauvegarde</span>}
-              {autoSaveStatus === 'idle' && <><Settings size={20} /> <span className="opacity-70">Prêt</span></>}
+            <div className="w-full py-4 bg-slate-950/60 border border-slate-850 text-slate-400 font-extrabold rounded-2xl shadow-inner flex items-center justify-center gap-2.5 h-12 text-xs uppercase tracking-wider">
+              {autoSaveStatus === 'saving' && <><Loader2 className="animate-spin text-emerald-400" size={16} /> <span className="text-emerald-400 font-bold">Synchronisation...</span></>}
+              {autoSaveStatus === 'saved' && <><CheckCircle2 className="text-emerald-400" size={16} /> <span className="text-emerald-400 font-bold">Modifications sauvées</span></>}
+              {autoSaveStatus === 'error' && <span className="text-rose-400 font-bold">Échec réseau</span>}
+              {autoSaveStatus === 'idle' && <><Settings size={15} /> <span className="opacity-60">Prêt</span></>}
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
   );

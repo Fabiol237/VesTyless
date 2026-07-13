@@ -1,565 +1,127 @@
 'use client';
-import { useState, useRef } from 'react';
-import Link from 'next/link';
-import ProductCard from '@/components/ProductCard';
-import {
-  MapPin, MessageCircle, Share2, CheckCircle2, Shield, Star, Clock,
-  Package, Search, ChevronRight, Navigation, Zap, ShoppingCart,
-  Home, Tag, Info, Leaf, TrendingUp, Phone, Award
-} from 'lucide-react';
+import { MessageCircle, Share2, CheckCircle2, ShoppingCart, MapPin, Star, Clock, Leaf, Package, Zap, Truck } from 'lucide-react';
 
-/* ─────────────────────────────────────────────
-   THEME 03 — Marché Frais & Épicerie
-   Fresh market vibes, dense product grid,
-   vibrant greens + orange accent
-───────────────────────────────────────────── */
 export default function Theme03_Market({
-  store, products, categories, stats, storeInfo,
-  filteredProducts, groupedProducts,
-  activeTab, setActiveTab,
-  activeFilter, setActiveFilter,
-  search, setSearch,
-  handleShare, handleDirections,
-  shared, trackProductView, formatDistance,
-  totalProducts, shop_tabs,
+  store, modules = [], pages = [], activePage, setActivePage,
+  handleShare, handleDirections, shared,
+  cartCount, cartTotal, onOpenCart, currency, children, isPreview
 }) {
-  const [hovered, setHovered] = useState(null);
-  const filterRef = useRef(null);
+  const green = '#1B7A3A';
+  const lightGreen = '#2ECC71';
+  const orange = '#FF8C00';
 
-  const G = '#1B7A3A';   // forest green
-  const O = '#FF8C00';   // orange
-  const Y = '#FFF9C4';   // light yellow
-  const BG = '#F0FFF4';  // mint-white
-
-  const waLink = store?.whatsapp_number
-    ? `https://wa.me/${store.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(store?.custom_message || `Bonjour, je visite votre boutique ${store?.name} sur VesTyless!`)}`
-    : '#';
-
-  const tabs = [
-    { id: 'accueil',  label: shop_tabs?.accueil || 'Accueil',       Icon: Home },
-    { id: 'rayons',   label: shop_tabs?.produits || 'Rayons',         Icon: Package },
-    { id: 'offres',   label: shop_tabs?.promotions || 'Offres du Jour', Icon: Zap },
-    { id: 'info',     label: shop_tabs?.profil || 'Info Boutique',  Icon: Info },
-  ];
-
-  const categoryEmojis = {
-    default: ['🥦','🍅','🥕','🧅','🍋','🥝','🫐','🍇','🌽','🧄','🫒','🥑','🍓','🍊','🥩','🐟','🧀','🥚','🍞','🧴'],
-  };
-  const getEmoji = (cat, i) => {
-    const emojiMap = {
-      'legume': '🥦', 'fruit': '🍊', 'viande': '🥩', 'poisson': '🐟',
-      'fromage': '🧀', 'lait': '🥛', 'boulanger': '🍞', 'boisson': '🧃',
-      'épice': '🌶️', 'huile': '🫒', 'sucre': '🍬', 'café': '☕',
-      'cosmet': '💄', 'hygien': '🧴', 'nettoy': '🧹',
-    };
-    const lower = cat?.toLowerCase() || '';
-    for (const [key, emoji] of Object.entries(emojiMap)) {
-      if (lower.includes(key)) return emoji;
-    }
-    return categoryEmojis.default[i % categoryEmojis.default.length];
-  };
-
-  const boosted = products?.filter(p => p.is_boosted || p.is_promo) || [];
-  const featuredOffers = boosted.length > 0 ? boosted : (products || []).slice(0, 6);
-
-  const scrollFilters = (dir) => {
-    if (filterRef.current) filterRef.current.scrollLeft += dir * 160;
-  };
-
-  /* ── PRODUCT CARD (MARKET STYLE) ─────────────── */
-  const MarketProductCard = ({ item, idx }) => {
-    const [added, setAdded] = useState(false);
-    const price = Number(item?.price);
-    if (!item) return null;
-    return (
-      <div
-        className="group relative flex flex-col bg-white rounded-2xl overflow-hidden border-2 transition-all duration-300"
-        style={{ borderColor: hovered === item.id ? O : '#E8F5E9' }}
-        onMouseEnter={() => setHovered(item.id)}
-        onMouseLeave={() => setHovered(null)}
-      >
-        <Link
-          href={`/produit/${item.id}`}
-          onClick={() => trackProductView && trackProductView(item.id, item.category_id)}
-          className="relative block w-full"
-        >
-          <div className="w-full aspect-[1/1] bg-green-50 overflow-hidden flex items-center justify-center">
-            <img
-              src={item.image_url || '/placeholder-product.png'}
-              alt={item.name}
-              loading={idx < 8 ? 'eager' : 'lazy'}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          </div>
-          {/* Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            {item.is_promo && (
-              <span className="text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide shadow-lg" style={{ background: '#E53935' }}>
-                PROMO
-              </span>
-            )}
-            {item.is_boosted && (
-              <span className="text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 uppercase shadow-lg" style={{ background: O }}>
-                <Zap size={8} /> Top
-              </span>
-            )}
-          </div>
-        </Link>
-
-        <div className="p-2.5 flex flex-col flex-1">
-          <Link href={`/produit/${item.id}`}>
-            <p className="text-[11px] sm:text-xs font-bold line-clamp-2 leading-tight mb-1.5" style={{ color: G }}>
-              {item.name}
-            </p>
-          </Link>
-          <div className="mt-auto flex items-center justify-between">
-            <div>
-              <span className="text-sm sm:text-base font-black" style={{ color: O }}>
-                {price.toLocaleString()}
-              </span>
-              <span className="text-[9px] font-bold ml-0.5" style={{ color: O }}>F</span>
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setAdded(true);
-                setTimeout(() => setAdded(false), 2000);
-              }}
-              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-all active:scale-90 hover:scale-110"
-              style={{ background: added ? '#43A047' : G, color: '#fff' }}
-            >
-              {added ? <CheckCircle2 size={14} /> : <ShoppingCart size={14} />}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  /* ── TABS CONTENT ────────────────────────────── */
-
-  const AccueilTab = () => (
-    <div className="space-y-6 pb-10">
-      {/* Search bar */}
-      <div className="relative">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: G }} />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher des produits frais..."
-          className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 bg-white text-sm font-semibold focus:outline-none transition-all"
-          style={{ borderColor: search ? G : '#C8E6C9', color: '#333' }}
-        />
-      </div>
-
-      {/* Category filter pills */}
-      <div className="relative">
-        <div ref={filterRef} className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className="flex-shrink-0 snap-start px-4 py-2 rounded-full text-xs font-black transition-all"
-            style={{
-              background: activeFilter === 'all' ? G : '#E8F5E9',
-              color: activeFilter === 'all' ? '#fff' : G,
-            }}
-          >
-            Tout voir
-          </button>
-          {categories?.map((cat, i) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className="flex-shrink-0 snap-start px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap"
-              style={{
-                background: activeFilter === cat ? G : '#E8F5E9',
-                color: activeFilter === cat ? '#fff' : G,
-              }}
-            >
-              {getEmoji(cat, i)} {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Products */}
-      {filteredProducts?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <div className="text-5xl">🥬</div>
-          <p className="font-bold text-lg" style={{ color: G }}>Aucun produit trouvé</p>
-          <p className="text-sm text-gray-500">Essayez une autre recherche</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {filteredProducts?.map((item, idx) => (
-            <MarketProductCard key={item.id} item={item} idx={idx} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const RayonsTab = () => (
-    <div className="space-y-8 pb-10">
-      {/* Category tiles */}
-      <div>
-        <h2 className="text-lg font-black mb-4" style={{ color: G }}>Tous nos Rayons</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {categories?.map((cat, i) => (
-            <button
-              key={cat}
-              onClick={() => { setActiveFilter(cat); setActiveTab('accueil'); }}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 bg-white transition-all hover:scale-105 active:scale-95"
-              style={{ borderColor: '#C8E6C9' }}
-            >
-              <span className="text-3xl">{getEmoji(cat, i)}</span>
-              <span className="text-xs font-black text-center" style={{ color: G }}>{cat}</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: O }}>
-                {groupedProducts?.[cat]?.length || 0} produits
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Products per category */}
-      {categories?.map((cat, ci) => {
-        const catProducts = groupedProducts?.[cat] || [];
-        if (catProducts.length === 0) return null;
-        return (
-          <div key={cat}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">{getEmoji(cat, ci)}</span>
-              <h3 className="text-base font-black" style={{ color: G }}>{cat}</h3>
-              <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: '#C8E6C9' }} />
-              <span className="text-xs font-bold" style={{ color: O }}>{catProducts.length} articles</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {catProducts.slice(0, 10).map((item, idx) => (
-                <MarketProductCard key={item.id} item={item} idx={idx} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      {categories?.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <div className="text-5xl">📦</div>
-          <p className="font-bold text-lg" style={{ color: G }}>Aucun rayon disponible</p>
-        </div>
-      )}
-    </div>
-  );
-
-  const OffresTab = () => (
-    <div className="space-y-6 pb-10">
-      {/* Hero promo banner */}
-      <div className="rounded-3xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${G} 0%, #145C2C 100%)` }}>
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Zap size={18} className="text-yellow-300" />
-              <span className="text-yellow-300 font-black text-sm uppercase tracking-wider">Offres Spéciales</span>
-            </div>
-            <h2 className="text-white font-black text-2xl leading-tight">Profitez de nos<br/>meilleures offres !</h2>
-            <p className="text-green-200 text-sm mt-1">Valables aujourd'hui seulement</p>
-          </div>
-          <div className="text-right">
-            <div className="text-5xl">🏷️</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Offers grid */}
-      {featuredOffers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <div className="text-5xl">🎉</div>
-          <p className="font-bold text-lg" style={{ color: G }}>Pas d'offres pour le moment</p>
-          <p className="text-sm text-gray-500">Revenez bientôt pour découvrir nos promotions</p>
-        </div>
-      ) : (
-        <>
-          <p className="text-sm font-bold" style={{ color: G }}>{featuredOffers.length} offre(s) disponible(s)</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {featuredOffers.map((item, idx) => (
-              <div key={item.id} className="relative">
-                <div className="absolute -top-2 -right-2 z-20 text-white text-[9px] font-black px-2 py-1 rounded-full uppercase shadow-lg" style={{ background: '#E53935' }}>
-                  {item.is_promo ? 'PROMO' : 'OFFRE'}
-                </div>
-                <MarketProductCard item={item} idx={idx} />
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* WhatsApp CTA */}
-      <div className="rounded-2xl p-5 flex items-center gap-4" style={{ background: Y }}>
-        <span className="text-3xl">📱</span>
-        <div className="flex-1">
-          <p className="font-black text-sm" style={{ color: G }}>Offre exclusive WhatsApp</p>
-          <p className="text-xs text-gray-600">Contactez-nous pour des prix spéciaux</p>
-        </div>
-        <a href={waLink} target="_blank" rel="noopener noreferrer"
-          className="text-white text-xs font-black px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
-          style={{ background: G }}>
-          Contacter
-        </a>
-      </div>
-    </div>
-  );
-
-  const InfoTab = () => (
-    <div className="space-y-5 pb-10">
-      {/* Store card */}
-      <div className="rounded-3xl overflow-hidden border-2" style={{ borderColor: '#C8E6C9' }}>
-        <div className="p-5" style={{ background: `linear-gradient(135deg, ${G}, #145C2C)` }}>
-          <div className="flex items-center gap-4">
-            {store?.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="w-16 h-16 rounded-full border-4 border-white object-cover shadow-xl" />
-            ) : (
-              <div className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white text-2xl" style={{ background: O }}>
-                🛒
-              </div>
-            )}
-            <div>
-              <h2 className="text-white font-black text-xl">{store?.name}</h2>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Shield size={12} className="text-yellow-300" />
-                <span className="text-yellow-300 text-xs font-bold">Boutique Vérifiée</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-5 bg-white space-y-4">
-          {store?.description && (
-            <p className="text-sm text-gray-600 leading-relaxed">{store.description}</p>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl p-3 text-center" style={{ background: '#E8F5E9' }}>
-              <Package size={20} className="mx-auto mb-1" style={{ color: G }} />
-              <p className="text-lg font-black" style={{ color: G }}>{totalProducts}</p>
-              <p className="text-xs font-bold text-gray-500">Produits</p>
-            </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: Y }}>
-              <Star size={20} className="mx-auto mb-1" style={{ color: O }} />
-              <p className="text-lg font-black" style={{ color: O }}>{store?.positive_rating || '—'}%</p>
-              <p className="text-xs font-bold text-gray-500">Satisfaction</p>
-            </div>
-            {store?.response_time && (
-              <div className="rounded-xl p-3 text-center" style={{ background: '#E8F5E9' }}>
-                <Clock size={20} className="mx-auto mb-1" style={{ color: G }} />
-                <p className="text-sm font-black" style={{ color: G }}>{store.response_time}</p>
-                <p className="text-xs font-bold text-gray-500">Réponse</p>
-              </div>
-            )}
-            {stats?.totalSold > 0 && (
-              <div className="rounded-xl p-3 text-center" style={{ background: Y }}>
-                <TrendingUp size={20} className="mx-auto mb-1" style={{ color: O }} />
-                <p className="text-lg font-black" style={{ color: O }}>{stats.totalSold}</p>
-                <p className="text-xs font-bold text-gray-500">Vendus</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Contact */}
-      <div className="rounded-2xl p-5 bg-white border-2" style={{ borderColor: '#C8E6C9' }}>
-        <h3 className="font-black text-base mb-4" style={{ color: G }}>📞 Contact & Localisation</h3>
-        <div className="space-y-3">
-          <a href={waLink} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-xl text-white font-bold transition-all hover:scale-[1.02] active:scale-95"
-            style={{ background: '#25D366' }}>
-            <MessageCircle size={20} />
-            <span>Contacter sur WhatsApp</span>
-          </a>
-          {store?.city && (
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#E8F5E9' }}>
-              <MapPin size={20} style={{ color: G }} />
-              <span className="text-sm font-bold" style={{ color: G }}>{store.city}</span>
-            </div>
-          )}
-          <button onClick={handleDirections}
-            className="w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all hover:scale-[1.02] active:scale-95"
-            style={{ background: O, color: '#fff' }}>
-            <Navigation size={20} />
-            <span>Voir l'itinéraire</span>
-          </button>
-          <button onClick={handleShare}
-            className="w-full flex items-center gap-3 p-3 rounded-xl font-bold border-2 transition-all hover:scale-[1.02] active:scale-95"
-            style={{ borderColor: G, color: G, background: shared ? '#E8F5E9' : '#fff' }}>
-            {shared ? <CheckCircle2 size={20} /> : <Share2 size={20} />}
-            <span>{shared ? 'Lien copié !' : 'Partager la boutique'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Store code */}
-      {store?.store_code && (
-        <div className="rounded-2xl p-4 text-center" style={{ background: Y }}>
-          <p className="text-xs font-bold text-gray-500 mb-1">Code boutique</p>
-          <p className="text-2xl font-black tracking-widest" style={{ color: G }}>{store.store_code}</p>
-        </div>
-      )}
-    </div>
-  );
-
-  /* ── MAIN RENDER ──────────────────────────────── */
   return (
-    <div style={{ background: BG, minHeight: '100vh', fontFamily: "'Nunito', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+    <main style={{ minHeight: '100vh', background: '#F0FFF4', fontFamily: 'Nunito, Inter, sans-serif', overflowX: 'hidden' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900;1000&display=swap');`}</style>
 
-      {/* ── TOP HEADER BAR ── */}
-      <header style={{ background: G }} className="sticky top-0 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          {/* Logo */}
-          <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden border-2 border-white shadow-lg"
-            style={{ background: '#fff' }}>
-            {store?.logo_url ? (
-              <img src={store.logo_url} alt={store?.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xl">🛒</div>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-white font-black text-lg leading-none truncate">{store?.name}</h1>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider" style={{ background: O, color: '#fff' }}>
-                OUVERT
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mt-0.5">
-              <span className="text-green-200 text-xs font-bold">{totalProducts} produits</span>
-              {store?.positive_rating && (
-                <span className="text-green-200 text-xs font-bold flex items-center gap-1">
-                  <Star size={10} className="fill-yellow-300 text-yellow-300" />
-                  {store.positive_rating}%
-                </span>
-              )}
-              {store?.city && (
-                <span className="text-green-200 text-xs font-bold flex items-center gap-1">
-                  <MapPin size={10} />
-                  {store.city}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* WhatsApp button */}
-          <a href={waLink} target="_blank" rel="noopener noreferrer"
-            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 active:scale-90"
-            style={{ background: '#25D366' }}>
-            <MessageCircle size={20} className="text-white" />
-          </a>
-        </div>
-      </header>
-
-      {/* ── BANNER ── */}
-      <div className="relative overflow-hidden" style={{
-        background: `repeating-linear-gradient(45deg, ${G} 0px, ${G} 10px, #145C2C 10px, #145C2C 20px)`,
-        minHeight: store?.banner_url ? 180 : 120,
-      }}>
+      {/* ── HERO BANNER MARCHÉ ────────────────────────────────────── */}
+      <div style={{ position: 'relative', background: green, overflow: 'hidden', minHeight: '190px' }}>
+        {/* Pattern de diagonal stripes */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(255,255,255,0.04) 20px, rgba(255,255,255,0.04) 40px)` }} />
         {store?.banner_url && (
-          <img src={store.banner_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+          <img src={store.banner_url} alt="bannière" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} />
         )}
-        <div className="relative z-10 flex flex-col items-center justify-center py-8 px-4 text-center">
-          <div className="flex items-center gap-2 mb-2">
-            <Leaf size={20} className="text-yellow-300" />
-            <span className="text-yellow-300 font-black text-sm uppercase tracking-widest">Marché Frais</span>
-            <Leaf size={20} className="text-yellow-300" />
+
+        {/* Header row avec logo + badge ouvert + panier */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.15)', overflow: 'hidden', flexShrink: 0 }}>
+              {store?.logo_url ? (
+                <img src={store.logo_url} alt={store.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px', fontWeight: '900' }}>{store?.name?.charAt(0)}</div>
+              )}
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: '900', fontSize: '15px', letterSpacing: '-0.01em' }}>{store?.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <span style={{ background: orange, color: '#fff', fontSize: '9px', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>OUVERT</span>
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px', fontWeight: '600' }}>{store?.product_count || 0} produits</span>
+                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>·</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'rgba(255,255,255,0.8)', fontSize: '11px', fontWeight: '600' }}><Star size={10} fill={orange} color={orange} /> {store?.positive_rating ?? 100}%</span>
+              </div>
+            </div>
           </div>
-          <h2 className="text-white font-black text-2xl sm:text-3xl mb-2">{store?.name}</h2>
-          {store?.description && (
-            <p className="text-green-100 text-sm max-w-md">{store.description}</p>
-          )}
-          <div className="flex gap-3 mt-3">
-            <span className="px-3 py-1 rounded-full text-xs font-black" style={{ background: O, color: '#fff' }}>
-              🏷️ {totalProducts} produits frais
-            </span>
-            {store?.positive_rating && (
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-white" style={{ color: G }}>
-                ⭐ {store.positive_rating}% satisfaits
-              </span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {store?.whatsapp_number && (
+              <a href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, '')}`} target="_blank"
+                style={{ width: '38px', height: '38px', background: '#25D366', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                <MessageCircle size={18} color="#fff" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Nom principal centré */}
+        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '6px 20px 14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: lightGreen, fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            <Leaf size={13} /> MARCHÉ FRAIS <Leaf size={13} />
+          </div>
+          <div style={{ color: '#fff', fontSize: '22px', fontWeight: '900', letterSpacing: '-0.01em' }}>{store?.name}</div>
+          {store?.category && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{store.category}</div>}
+          {/* Badges produits */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: orange, color: '#fff', borderRadius: '999px', padding: '5px 12px', fontSize: '11px', fontWeight: '800', boxShadow: '0 3px 10px rgba(0,0,0,0.25)' }}>
+              <Package size={12} /> {store?.product_count || 0} produits frais
+            </div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: '999px', padding: '5px 12px', fontSize: '11px', fontWeight: '800', border: '1px solid rgba(255,255,255,0.3)' }}>
+              <Star size={12} fill={orange} color={orange} /> {store?.positive_rating ?? 100}% satisfaits
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── BARRE STATS ───────────────────────────────────────────── */}
+      <div style={{ background: '#fff', borderBottom: `1px solid #e8f5e9` }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', maxWidth: '800px', margin: '0 auto' }}>
+          {[
+            { value: store?.product_count || 0, label: 'Produits' },
+            { value: `${store?.positive_rating ?? 100}%`, label: 'Satisfaits', color: orange },
+            { value: store?.total_sold || 0, label: 'Vendus', color: green },
+            { value: store?.response_time || '< 1h', label: 'Réponse' },
+          ].map((s, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '10px 6px', borderRight: i < 3 ? '1px solid #e8f5e9' : 'none' }}>
+              <div style={{ fontSize: '16px', fontWeight: '900', color: s.color || green, lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── NAVIGATION ────────────────────────────────────────────── */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8f5e9', position: isPreview ? 'static' : 'sticky', top: 0, zIndex: 30 }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', padding: '0 8px' }}>
+          {pages.map(m => (
+            <button key={m.key} onClick={() => setActivePage(m.key)}
+              style={{ padding: '11px 14px', background: 'none', border: 'none', borderBottom: `3px solid ${activePage === m.key ? green : 'transparent'}`, color: activePage === m.key ? green : '#64748b', fontWeight: '800', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {m.label}
+            </button>
+          ))}
+          {/* Actions inline */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '4px' }}>
+            <button onClick={handleShare} style={{ width: '32px', height: '32px', background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {shared ? <CheckCircle2 size={15} color="#22c55e" /> : <Share2 size={15} color="#64748b" />}
+            </button>
+            {!isPreview && (
+              <button onClick={onOpenCart} style={{ width: '32px', height: '32px', background: green, border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <ShoppingCart size={15} color="#fff" />
+                {cartCount > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: orange, color: '#fff', fontSize: '8px', fontWeight: '900', width: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cartCount}</span>}
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── STATS BAR ── */}
-      <div className="flex divide-x divide-green-200" style={{ background: '#E8F5E9' }}>
-        <div className="flex-1 flex flex-col items-center py-2.5 px-2">
-          <span className="text-xs font-black" style={{ color: G }}>{totalProducts}</span>
-          <span className="text-[9px] font-bold text-gray-500">Produits</span>
-        </div>
-        {store?.positive_rating && (
-          <div className="flex-1 flex flex-col items-center py-2.5 px-2">
-            <span className="text-xs font-black" style={{ color: G }}>{store.positive_rating}%</span>
-            <span className="text-[9px] font-bold text-gray-500">Satisfaits</span>
-          </div>
-        )}
-        {stats?.totalSold > 0 && (
-          <div className="flex-1 flex flex-col items-center py-2.5 px-2">
-            <span className="text-xs font-black" style={{ color: O }}>{stats.totalSold}</span>
-            <span className="text-[9px] font-bold text-gray-500">Vendus</span>
-          </div>
-        )}
-        {store?.response_time && (
-          <div className="flex-1 flex flex-col items-center py-2.5 px-2">
-            <span className="text-xs font-black" style={{ color: G }}>{store.response_time}</span>
-            <span className="text-[9px] font-bold text-gray-500">Réponse</span>
-          </div>
-        )}
+      {/* ── CONTENU ───────────────────────────────────────────────── */}
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 12px 80px' }}>
+        {children}
       </div>
 
-      {/* ── NAV TABS ── */}
-      <nav className="sticky top-[72px] z-40 shadow-sm" style={{ background: '#fff', borderBottom: `3px solid #E8F5E9` }}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex overflow-x-auto scrollbar-hide">
-            {tabs.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className="flex items-center gap-1.5 px-4 py-3.5 text-xs font-black whitespace-nowrap transition-all relative flex-shrink-0"
-                style={{
-                  color: activeTab === id ? G : '#9E9E9E',
-                  borderBottom: activeTab === id ? `3px solid ${G}` : '3px solid transparent',
-                  marginBottom: '-3px',
-                }}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* ── MAIN CONTENT ── */}
-      <main className="max-w-7xl mx-auto px-4 pt-6">
-        {activeTab === 'accueil' && <AccueilTab />}
-        {activeTab === 'rayons' && <RayonsTab />}
-        {activeTab === 'offres' && <OffresTab />}
-        {activeTab === 'info' && <InfoTab />}
-      </main>
-
-      {/* ── FLOATING WHATSAPP ── */}
-      <a
-        href={waLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-90"
-        style={{ background: '#25D366' }}
-      >
-        <MessageCircle size={26} className="text-white" />
-      </a>
-    </div>
+      {/* ── FOOTER ────────────────────────────────────────────────── */}
+      <footer style={{ background: green, padding: '20px 16px', textAlign: 'center' }}>
+        <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>{store?.name}</div>
+        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>© {new Date().getFullYear()} · Produits frais par VesTyle</div>
+      </footer>
+    </main>
   );
 }

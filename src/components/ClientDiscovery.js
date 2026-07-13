@@ -149,8 +149,8 @@ export default function ClientDiscovery({
   const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed_v4', async () => {
     // On regroupe les appels pour un cache cohérent
     const [prodRes, storeIdsRes, catRes] = await Promise.all([
-      supabase.from('products').select('id, name, price, image_url, created_at, global_category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), global_categories(name, icon)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('products').select('store_id').eq('is_active', true),
+      supabase.from('products').select('id, name, price, image_url, created_at, global_category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), global_categories(name, icon)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }).limit(100),
+      supabase.from('products').select('store_id').eq('is_active', true).limit(100),
       supabase.from('global_categories').select('*').is('parent_id', null).order('name')
     ]);
 

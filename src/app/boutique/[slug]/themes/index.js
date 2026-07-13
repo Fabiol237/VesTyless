@@ -1,7 +1,56 @@
 /**
- * Registre des thèmes de boutique VesTyless
- * Chaque thème a un identifiant unique, des métadonnées, et un composant associé.
+ * Registre des thèmes de boutique VesTyle
+ * 20 thèmes couvrant tous les secteurs d'activité de manière 100% unique.
  */
+
+import Theme00_Classic    from './Theme00_Classic';
+import Theme01_Luxury     from './Theme01_Luxury';
+import Theme02_Beauty     from './Theme02_Beauty';
+import Theme03_Market     from './Theme03_Market';
+import Theme04_Restaurant from './Theme04_Restaurant';
+import Theme05_Pro        from './Theme05_Pro';
+import Theme06_Street     from './Theme06_Street';
+import Theme07_Tech       from './Theme07_Tech';
+import Theme08_Editorial  from './Theme08_Editorial';
+import Theme09_Artisan    from './Theme09_Artisan';
+import Theme10_Sport      from './Theme10_Sport';
+import Theme11_Health     from './Theme11_Health';
+import Theme12_Event      from './Theme12_Event';
+import Theme13_Kids       from './Theme13_Kids';
+import Theme14_Cyber      from './Theme14_Cyber';
+import Theme15_Retro      from './Theme15_Retro';
+import Theme16_Deco       from './Theme16_Deco';
+import Theme17_Garage     from './Theme17_Garage';
+import Theme18_Book       from './Theme18_Book';
+import Theme19_Jewel      from './Theme19_Jewel';
+import Theme20_Afro      from './Theme20_Afro';
+import Theme21_Paper     from './Theme21_Paper';
+
+export const THEME_COMPONENTS = {
+  theme_00: Theme00_Classic,
+
+  theme_01: Theme01_Luxury,
+  theme_02: Theme02_Beauty,
+  theme_03: Theme03_Market,
+  theme_04: Theme04_Restaurant,
+  theme_05: Theme05_Pro,
+  theme_06: Theme06_Street,
+  theme_07: Theme07_Tech,
+  theme_08: Theme08_Editorial,
+  theme_09: Theme09_Artisan,
+  theme_10: Theme10_Sport,
+  theme_11: Theme11_Health,
+  theme_12: Theme12_Event,
+  theme_13: Theme13_Kids,
+  theme_14: Theme14_Cyber,
+  theme_15: Theme15_Retro,
+  theme_16: Theme16_Deco,
+  theme_17: Theme17_Garage,
+  theme_18: Theme18_Book,
+  theme_19: Theme19_Jewel,
+  theme_20: Theme20_Afro,
+  theme_21: Theme21_Paper,
+};
 
 export const THEMES = [
   {
@@ -16,7 +65,7 @@ export const THEMES = [
     font: 'Inter',
     previewGradient: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #ff5000 100%)',
     tags: ['Classique', 'Universel', 'Marketplace', 'Original'],
-    idealFor: 'Toutes les boutiques — le thème original VesTyle universel et polyvalent',
+    idealFor: 'Toutes les boutiques — thème original universel et polyvalent',
   },
   {
     id: 'theme_01',
@@ -43,7 +92,7 @@ export const THEMES = [
     bgColor: '#FFF5F7',
     font: 'Cormorant Garamond',
     previewGradient: 'linear-gradient(135deg, #FFE4E1 0%, #FFB6C1 50%, #B5325A 100%)',
-    tags: ['Beauté', 'Salon', 'Cosmétiques', 'Feminin'],
+    tags: ['Beauté', 'Salon', 'Cosmétiques', 'Féminin'],
     idealFor: 'Salons de beauté, cosmétiques, parfums, soins',
   },
   {
@@ -86,7 +135,203 @@ export const THEMES = [
     font: 'Roboto Condensed',
     previewGradient: 'linear-gradient(135deg, #003087 0%, #0052CC 50%, #FF6B00 100%)',
     tags: ['Pro', 'B2B', 'Quincaillerie', 'Commerce'],
-    idealFor: 'Quincailleries, supermarchés pro, commerce en gros, matériaux',
+    idealFor: 'Quincailleries, supermarchés pro, commerce en gros',
+  },
+  {
+    id: 'theme_06',
+    name: 'Street & Urban',
+    description: 'Brutalisme streetwear, marquee défilant et angles durs.',
+    category: 'Street',
+    emoji: '👟',
+    primaryColor: '#00FF87',
+    accentColor: '#000000',
+    bgColor: '#000000',
+    font: 'Space Grotesk',
+    previewGradient: 'linear-gradient(135deg, #000000 0%, #111 60%, #00FF87 100%)',
+    tags: ['Street', 'Urban', 'Sneaker', 'Brutalism', 'Hype'],
+    idealFor: 'Streetwear, sneakers, mode urbaine, vêtements tendance',
+  },
+  {
+    id: 'theme_07',
+    name: 'Tech & Gadgets',
+    description: 'Navigation App-like en bas et grille cybernétique.',
+    category: 'Tech',
+    emoji: '📱',
+    primaryColor: '#2563EB',
+    accentColor: '#60A5FA',
+    bgColor: '#050B1A',
+    font: 'Inter',
+    previewGradient: 'linear-gradient(135deg, #050B1A 0%, #0a1628 60%, #2563EB 100%)',
+    tags: ['Tech', 'App-like', 'Futuriste', 'Dashboard', 'Gaming'],
+    idealFor: 'Boutiques tech, gadgets, électronique, gaming, téléphones',
+  },
+  {
+    id: 'theme_08',
+    name: 'Magazine Éditorial',
+    description: 'Bannière cinéma de 80vh, typographie italique fine et aérée.',
+    category: 'Editorial',
+    emoji: '📰',
+    primaryColor: '#111111',
+    accentColor: '#D4B26F',
+    bgColor: '#FAFAFA',
+    font: 'Cormorant Garamond',
+    previewGradient: 'linear-gradient(135deg, #111 0%, #222 50%, #D4B26F 100%)',
+    tags: ['Magazine', 'Minimaliste', 'Plein Écran', 'Haute Couture'],
+    idealFor: 'Lifestyle, art, collections de créateurs, haute joaillerie',
+  },
+  {
+    id: 'theme_09',
+    name: 'Artisan & Craft',
+    description: 'Conteneur cocon suspendu aux bords ultra-arrondis.',
+    category: 'Artisan',
+    emoji: '🪵',
+    primaryColor: '#6B4226',
+    accentColor: '#D4832A',
+    bgColor: '#F6EFEB',
+    font: 'Lora',
+    previewGradient: 'linear-gradient(135deg, #6B4226 0%, #8B5E3C 60%, #D4832A 100%)',
+    tags: ['Artisan', 'Cocon', 'Fait main', 'Organique', 'Vintage'],
+    idealFor: 'Artisans, créateurs, meubles, poterie, fait main',
+  },
+  {
+    id: 'theme_10',
+    name: 'Sport & Fitness',
+    description: 'Architecture oblique inclinée à -3° et -10° pour l\'énergie.',
+    category: 'Sport',
+    emoji: '💪',
+    primaryColor: '#E11D48',
+    accentColor: '#FFF',
+    bgColor: '#09090b',
+    font: 'Montserrat',
+    previewGradient: 'linear-gradient(135deg, #09090b 0%, #1a0010 60%, #E11D48 100%)',
+    tags: ['Sport', 'Incliné', 'Dynamique', 'Vitesse', 'Fitness'],
+    idealFor: 'Sport, fitness, gym, suppléments, équipements',
+  },
+  {
+    id: 'theme_11',
+    name: 'Santé & Clinique',
+    description: 'Structure modulaire séparée façon tableau médical blanc.',
+    category: 'Health',
+    emoji: '💊',
+    primaryColor: '#0284C7',
+    accentColor: '#059669',
+    bgColor: '#FAFAFA',
+    font: 'Inter',
+    previewGradient: 'linear-gradient(135deg, #0284C7 0%, #38bdf8 50%, #059669 100%)',
+    tags: ['Santé', 'Médical', 'Certifié', 'Propre', 'Modulaire'],
+    idealFor: 'Pharmacies, bien-être, parapharmacie, matériel médical',
+  },
+  {
+    id: 'theme_12',
+    name: 'Événements & Night',
+    description: 'Navigation DJ-Turntable flottante et blobs de lumière flous.',
+    category: 'Event',
+    emoji: '🎵',
+    primaryColor: '#8B5CF6',
+    accentColor: '#EC4899',
+    bgColor: '#0A0516',
+    font: 'Space Grotesk',
+    previewGradient: 'linear-gradient(135deg, #0A0516 0%, #1c0836 50%, #8B5CF6 100%)',
+    tags: ['Événement', 'DJ', 'Neon', 'Platine', 'Glow'],
+    idealFor: 'Événements, DJs, soirées, concerts, clubs, billetteries',
+  },
+  {
+    id: 'theme_13',
+    name: 'Monde Enfantin',
+    description: 'Style BD cartoon, bordures épaisses et nuages de pastel.',
+    category: 'Kids',
+    emoji: '🧸',
+    primaryColor: '#FF6B6B',
+    accentColor: '#FFD166',
+    bgColor: '#FFF9E6',
+    font: 'Inter',
+    previewGradient: 'linear-gradient(135deg, #FFF9E6 0%, #FFD166 50%, #FF6B6B 100%)',
+    tags: ['Enfants', 'Cartoon', 'Jouets', 'Pastel', 'Ludique'],
+    idealFor: 'Vêtements enfants, jouets, puériculture, jeux éducatifs',
+  },
+  {
+    id: 'theme_14',
+    name: 'Hacker Cyberpunk',
+    description: 'Console hacker brute, terminal monospace et lasers roses.',
+    category: 'Cyber',
+    emoji: '👾',
+    primaryColor: '#FF007F',
+    accentColor: '#00F0FF',
+    bgColor: '#080018',
+    font: 'Courier New',
+    previewGradient: 'linear-gradient(135deg, #080018 0%, #020005 60%, #FF007F 100%)',
+    tags: ['Hacker', 'Terminal', 'Monospace', 'Lasers', 'Cyberpunk'],
+    idealFor: 'Informatique, goodies geek, vêtements cyberpunk, tech-wear',
+  },
+  {
+    id: 'theme_15',
+    name: 'Années 70 Groove',
+    description: 'Rayures d\'époque, tons terracotta et dossiers intercalaires.',
+    category: 'Retro',
+    emoji: '🕺',
+    primaryColor: '#C85A32',
+    accentColor: '#ECA72C',
+    bgColor: '#F8F1E5',
+    font: 'Georgia',
+    previewGradient: 'linear-gradient(135deg, #F8F1E5 0%, #ECA72C 50%, #C85A32 100%)',
+    tags: ['Vintage', '70s', 'Groovy', 'Terracotta', 'Brocante'],
+    idealFor: 'Brocantes, vêtements vintage, disques vinyles, déco rétro',
+  },
+  {
+    id: 'theme_16',
+    name: 'Minimalisme Sable',
+    description: 'Style épuré d\'architecte, quadrillages fins et ton sauge.',
+    category: 'Deco',
+    emoji: '🪴',
+    primaryColor: '#4A554A',
+    accentColor: '#2C302E',
+    bgColor: '#F4EFEA',
+    font: 'Inter',
+    previewGradient: 'linear-gradient(135deg, #F4EFEA 0%, #e8e0d5 60%, #4A554A 100%)',
+    tags: ['Sable', 'Minimal', 'Déco', 'Lignes', 'Naturel'],
+    idealFor: 'Boutiques de décoration, plantes, vaisselle, slow design',
+  },
+  {
+    id: 'theme_17',
+    name: 'L\'Atelier Garage',
+    description: 'Bandes de danger striées et fond sombre style plaque de métal.',
+    category: 'Garage',
+    emoji: '🚗',
+    primaryColor: '#FBBF24',
+    accentColor: '#1F2937',
+    bgColor: '#0B0F19',
+    font: 'Inter',
+    previewGradient: 'linear-gradient(135deg, #0B0F19 0%, #1f2937 60%, #FBBF24 100%)',
+    tags: ['Garage', 'Sécurité', 'Industriel', 'Stries', 'Pièces Auto'],
+    idealFor: 'Pièces détachées, garage moto, outils de bricolage, quincaillerie',
+  },
+  {
+    id: 'theme_18',
+    name: 'Papier & Écriture',
+    description: 'Signet de cuir, feuilles de papier et écriture d\'écrivain.',
+    category: 'Book',
+    emoji: '📖',
+    primaryColor: '#1F2937',
+    accentColor: '#8B5A2B',
+    bgColor: '#FAF7F0',
+    font: 'Cormorant Garamond',
+    previewGradient: 'linear-gradient(135deg, #FAF7F0 0%, #eedfcb 60%, #8B5A2B 100%)',
+    tags: ['Papier', 'Livre', 'Signet', 'Écrivain', 'Sélection'],
+    idealFor: 'Librairies, papeteries créatives, stylos plumes, carnets',
+  },
+  {
+    id: 'theme_19',
+    name: 'Maison du Diamant',
+    description: 'Glassmorphism platine et reflets diamants violets.',
+    category: 'Jewel',
+    emoji: '💎',
+    primaryColor: '#111111',
+    accentColor: '#6366F1',
+    bgColor: '#F8FAFC',
+    font: 'Cormorant Garamond',
+    previewGradient: 'linear-gradient(135deg, #F8FAFC 0%, #e2e8f0 60%, #6366F1 100%)',
+    tags: ['Diamant', 'Joaillerie', 'Platine', 'Luxe', 'Glassmorphism'],
+    idealFor: 'Bijouteries, haute joaillerie, montres de collection, luxe',
   },
 ];
 

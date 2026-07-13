@@ -53,6 +53,24 @@ const ChevronDownIcon = () => (
   </svg>
 );
 
+// ── Icons for How it works ────────────────────────────────────────────────────
+const DiscoverIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+  </svg>
+);
+const OrderIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+);
+const RelaxIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <path d="m9 12 2 2 4-4"/>
+  </svg>
+);
+
 // ── Animated Particle Background ─────────────────────────────────────────────
 function ParticleBackground() {
   const canvasRef = useRef(null);
@@ -126,6 +144,48 @@ const STATS = [
 
 // ── Badges animés ─────────────────────────────────────────────────────────────
 const BADGES = ['Mode', 'High-Tech', 'Alimentaire', 'Beauté', 'Maison', 'Loisirs'];
+
+// ── Animated Product Showcase ────────────────────────────────────────────────
+const ANIMATED_PRODUCTS = [
+  { img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80', name: 'Sneakers Pro X', price: '45,000 FCFA' },
+  { img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80', name: 'Casque Audio BT', price: '25,000 FCFA' },
+  { img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80', name: 'Montre Connectée', price: '30,000 FCFA' },
+  { img: 'https://images.unsplash.com/photo-1528701800487-ba01fea498c0?auto=format&fit=crop&w=600&q=80', name: 'Parfum Élégance', price: '15,000 FCFA' },
+];
+
+const AnimatedProductShowcase = () => {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setIndex((prev) => (prev + 1) % ANIMATED_PRODUCTS.length), 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full min-h-[400px] flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#25D366]/20 to-transparent rounded-[3rem] blur-3xl opacity-40" />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -50, scale: 1.05 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="relative z-10 bg-white border border-[#25D366]/20 rounded-[2rem] p-4 shadow-2xl w-64 sm:w-80"
+        >
+          <img 
+            src={ANIMATED_PRODUCTS[index].img} 
+            alt={ANIMATED_PRODUCTS[index].name}
+            className="w-full h-64 sm:h-80 object-cover rounded-xl shadow-inner"
+          />
+          <div className="mt-4 flex flex-col items-center text-center">
+            <span className="text-gray-900 font-black text-xl">{ANIMATED_PRODUCTS[index].name}</span>
+            <span className="text-[#25D366] font-mono font-bold mt-1 bg-[#25D366]/10 px-3 py-1 rounded-full text-sm">{ANIMATED_PRODUCTS[index].price}</span>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,7 +300,7 @@ export default function Home() {
     document.getElementById('discovery-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (!mounted) return <div className="min-h-screen" style={{ background: '#0a1628' }} />;
+  // Avoid rendering dynamic animations or components that require client-side APIs before mount if needed, but render the shell immediately.
 
   return (
     <div className="relative min-h-screen w-full font-sans" style={{ background: '#0a1628' }}>
@@ -252,12 +312,17 @@ export default function Home() {
       <section
         onMouseMove={handleMouseMove}
         onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
-        className="relative min-h-[100svh] flex flex-col justify-center items-center overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, #0a1628 0%, #0d2137 40%, #0a2e20 100%)',
-          perspective: 1200
-        }}
+        className="relative min-h-[100svh] flex flex-col justify-center items-center overflow-hidden bg-[#0a1628]"
+        style={{ perspective: 1200 }}
       >
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-center bg-cover bg-no-repeat opacity-100" 
+          style={{ backgroundImage: 'url("/hero_image.png")' }} 
+        />
+        {/* Lighter overlay to let the impressive image shine */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/40 via-[#0a1628]/10 to-[#0a1628]" />
+
         {/* Particle canvas */}
         <div className="absolute inset-0">
           <ParticleBackground />
@@ -290,146 +355,130 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-            className="will-change-transform flex flex-col items-center"
+            className="will-change-transform flex flex-col items-center mt-[-40px]"
           >
             <motion.h1 
               style={reduceMotion ? {} : { transform: 'translateZ(60px)' }} 
-              className={`text-6xl sm:text-[100px] tracking-tight leading-none text-white ${artFont.className}`}
+              className={`text-[80px] sm:text-[130px] tracking-tighter leading-none font-black ${artFont.className}`}
             >
-              Ves<span style={{ color: '#25D366' }}>Tyle</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-[#e6fff0] to-[#25D366] drop-shadow-[0_0_30px_rgba(37,211,102,0.6)]">
+                Ves
+              </span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-bl from-white via-[#e0f7f4] to-[#128C7E] drop-shadow-[0_0_30px_rgba(18,140,126,0.6)]">
+                Tyle
+              </span>
             </motion.h1>
-            <p className="mt-4 text-lg sm:text-xl font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              Découvrez, achetez et vendez en proximité.
+            <p className="mt-6 text-[10px] sm:text-xs font-mono uppercase tracking-[0.4em] text-[#25D366] flex items-center gap-4">
+              <span className="w-8 sm:w-16 h-[2px] bg-gradient-to-r from-transparent to-[#25D366]/50"></span>
+              Plateforme E-Commerce Algorithmique
+              <span className="w-8 sm:w-16 h-[2px] bg-gradient-to-l from-transparent to-[#25D366]/50"></span>
             </p>
           </motion.div>
 
 
 
-          {/* ── SEARCH BAR ──────────────────────────────────────────────────── */}
+          {/* ── HIGH-TECH INTERFACE (LAB STYLE) ─────────────────────────────── */}
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
-            className="w-full max-w-2xl"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="w-full max-w-4xl mt-6 flex flex-col gap-4 relative z-20"
           >
-            <div
-              className="flex flex-col sm:flex-row items-center gap-2 p-2 rounded-2xl shadow-2xl"
-              style={{
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(20px)',
-              }}
-            >
-              <div className="flex-1 w-full relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#25D366' }}>
-                  <SearchIcon />
-                </span>
-                <SearchAutocomplete
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  suggestions={suggestions}
-                  placeholder={userLocation ? 'Prêt à explorer...' : 'Que cherchez-vous ?'}
-                  className="w-full"
-                  inputClassName="w-full outline-none bg-transparent font-semibold py-4 pl-12 pr-4 text-sm sm:text-base text-white placeholder:text-white/40"
-                >
-                  {/* children slot vide */}
-                </SearchAutocomplete>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto px-1 pb-1 sm:pb-0 sm:pr-1">
-                <button
-                  type="button"
-                  onClick={() => setVisualSearchOpen(true)}
-                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  title="Recherche par photo"
-                >
-                  <CameraIcon /> <span className="sm:hidden">Photo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={requestLocation}
-                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: isGpsLocating ? '#25D366' : 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  title="Activer ma position"
-                >
-                  {isGpsLocating ? <LoaderIcon /> : <MapPinIcon />} <span className="sm:hidden">GPS</span>
-                </button>
+            {/* Module 1: The AI Search Bar */}
+            <div className="relative group w-full max-w-3xl mx-auto">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#25D366] via-transparent to-[#128C7E] rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200" />
+              <div className="relative flex flex-col sm:flex-row items-center bg-black/60 backdrop-blur-xl border border-white/20 rounded-[2rem] sm:rounded-full shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="flex-1 w-full flex items-center relative">
+                  <span className="absolute left-6 pointer-events-none" style={{ color: '#25D366' }}>
+                    <SearchIcon />
+                  </span>
+                  <SearchAutocomplete
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    suggestions={suggestions}
+                    placeholder="Rechercher par mot-clé, produit, ou catégorie..."
+                    className="w-full"
+                    inputClassName="w-full outline-none bg-transparent font-mono py-5 pl-14 pr-6 text-sm sm:text-base text-white placeholder:text-white/50"
+                  >
+                  </SearchAutocomplete>
+                </div>
                 <button
                   type="button"
                   onClick={scrollToFeed}
-                  className="flex items-center gap-2 px-5 py-3.5 rounded-xl text-sm font-black transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none justify-center shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: '#fff' }}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-[#0a1628] bg-[#25D366] transition-all hover:bg-[#1ebd5a]"
                 >
-                  <span className="hidden sm:inline">Explorer</span>
-                  <span className="sm:hidden">Go</span>
-                  <ArrowRightIcon />
+                  Analyser <ArrowRightIcon />
                 </button>
               </div>
             </div>
-          </motion.div>
 
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.55 }}
-            className="flex items-center gap-8 sm:gap-12"
-          >
-            {stats.map((s, i) => (
-              <div key={s.label} className="flex flex-col items-center gap-0.5">
-                <span className="text-2xl sm:text-3xl font-black text-white">{s.value}</span>
-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* ── CODE BOUTIQUE DIRECT INPUT ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
-            className="w-full max-w-lg mt-2"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Accès direct par code vendeur (5 chiffres)
-            </p>
-            <form onSubmit={handleCodeSearch} className="relative flex items-center gap-2 p-2 rounded-2xl overflow-hidden shadow-2xl transition-all"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(37,211,102,0.4)',
-                backdropFilter: 'blur(16px)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 30px rgba(37,211,102,0.15)',
-              }}
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0 ml-1 text-white"
-                style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 0 20px rgba(37,211,102,0.5)' }}>
-                <HashIcon />
-              </div>
-              <input
-                type="text"
-                maxLength={5}
-                value={codeQuery}
-                onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
-                placeholder="Ex: 12345"
-                className="flex-1 bg-transparent border-none outline-none text-3xl font-black text-white placeholder:text-white/20 text-center tracking-[0.2em] w-full"
-              />
+            {/* Unique Action Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-2">
+              
+              {/* Unique Button: Visual Search (Round, Glowing) */}
               <button
-                type="submit"
-                disabled={codeQuery.length !== 5 || codeLoading}
-                className="flex items-center justify-center w-12 h-12 rounded-xl text-white transition-all disabled:opacity-30 disabled:scale-95 hover:scale-105 active:scale-95 mr-1"
-                style={{ background: 'rgba(37,211,102,0.2)', border: '1px solid rgba(37,211,102,0.5)' }}
+                type="button"
+                onClick={() => setVisualSearchOpen(true)}
+                className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-gradient-to-r from-[#128C7E] to-[#25D366] text-white font-black transition-all shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:scale-105 hover:shadow-[0_0_30px_rgba(37,211,102,0.6)]"
               >
-                {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
+                <CameraIcon />
+                <span className="uppercase tracking-widest text-xs font-mono">Scan Photo</span>
               </button>
-            </form>
+
+              {/* Unique Button: GPS Radar (Pill, High-Tech Outline) */}
+              <button
+                type="button"
+                onClick={requestLocation}
+                className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-white/10 border-2 border-white/30 text-white font-bold transition-all hover:bg-white/20 hover:border-white hover:scale-105 backdrop-blur-md"
+              >
+                {isGpsLocating ? <LoaderIcon /> : <MapPinIcon />}
+                <span className="uppercase tracking-widest text-xs font-mono">{isGpsLocating ? "Recherche..." : "Autour de moi"}</span>
+              </button>
+
+              {/* Unique Input: Code Vendeur (Glassmorphism minimalist) */}
+              <form onSubmit={handleCodeSearch} className="flex items-center rounded-full bg-black/50 border border-[#25D366]/40 focus-within:border-[#25D366] transition-all backdrop-blur-xl p-1 pr-2 shadow-inner">
+                <div className="pl-4 pr-2 text-[#25D366]/80">
+                  <HashIcon />
+                </div>
+                <input
+                  type="text"
+                  maxLength={5}
+                  value={codeQuery}
+                  onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
+                  placeholder="CODE BOUTIQUE"
+                  className="w-32 sm:w-40 bg-transparent border-none outline-none text-xs sm:text-sm font-mono font-bold text-white placeholder:text-white/40 tracking-[0.1em] py-2.5"
+                />
+                <button
+                  type="submit"
+                  disabled={codeQuery.length !== 5 || codeLoading}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#25D366]/20 flex items-center justify-center text-[#25D366] disabled:opacity-30 disabled:scale-95 hover:bg-[#25D366] hover:text-[#0a1628] transition-all"
+                >
+                  {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
+                </button>
+              </form>
+            </div>
+            
             <AnimatePresence>
               {codeError && (
-                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-3 text-[#ff6b6b] text-xs font-bold text-center">
-                  {codeError}
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-[#ff6b6b] text-xs font-mono text-center">
+                  [ERREUR] : {codeError}
                 </motion.p>
               )}
             </AnimatePresence>
+
+            {/* Lab Telemetry Stats */}
+            <div className="flex items-center justify-center gap-8 sm:gap-16 mt-2">
+              {stats.map((s, i) => (
+                <div key={s.label} className="flex flex-col items-center gap-1">
+                  <span className="text-xl sm:text-3xl font-mono font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    {s.value}
+                  </span>
+                  <span className="text-[9px] sm:text-[11px] font-mono uppercase tracking-[0.25em]" style={{ color: '#25D366' }}>
+                    {s.label}
+                  </span>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
 
@@ -444,6 +493,64 @@ export default function Home() {
           <span className="text-[10px] font-bold uppercase tracking-widest">Découvrir</span>
           <ChevronDownIcon />
         </motion.button>
+      </section>
+
+      {/* ── COMMENT ÇA MARCHE ─────────────────────────────────────────────── */}
+      <section className="py-24 sm:py-32 px-4 relative bg-[#0a1628] overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 sm:mb-24">
+            <h2 className={`text-4xl sm:text-6xl font-black text-white mb-6 tracking-tight ${artFont.className}`}>
+              Comment ça <span style={{ color: '#25D366' }}>marche ?</span>
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Une expérience fluide, pensée pour vous simplifier la vie.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 items-center relative">
+            
+            {/* Ligne connectrice verticale animée */}
+            <div className="hidden lg:block absolute left-[45px] top-10 bottom-10 w-[2px] bg-gradient-to-b from-[#25D366] to-transparent opacity-30 z-0" />
+
+            <div className="flex flex-col gap-10 sm:gap-12 relative z-10">
+              {[
+                {
+                  step: "01",
+                  title: "Explorez",
+                  desc: "Recherche intelligente par photo, texte ou géolocalisation pour trouver la perle rare autour de vous."
+                },
+                {
+                  step: "02",
+                  title: "Commandez",
+                  desc: "Paiement sécurisé et échange direct avec nos marchands locaux certifiés."
+                },
+                {
+                  step: "03",
+                  title: "Recevez",
+                  desc: "Livraison ultra-rapide par nos coursiers tout-terrain ou retrait express en boutique."
+                }
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-6 sm:gap-8 group">
+                  <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#0d2137] rounded-[2rem] border border-white/5 flex items-center justify-center shadow-[0_0_30px_rgba(37,211,102,0.1)] group-hover:scale-105 group-hover:border-[#25D366]/50 transition-all duration-300 relative z-10">
+                    <span className="text-4xl font-black" style={{ color: '#25D366' }}>
+                      {item.step}
+                    </span>
+                  </div>
+                  <div className="pt-2 sm:pt-4">
+                    <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 group-hover:text-[#25D366] transition-colors">{item.title}</h3>
+                    <p className="text-base sm:text-lg leading-relaxed max-w-md" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="relative w-full h-[400px] sm:h-[500px] flex items-center justify-center lg:justify-end mt-12 lg:mt-0">
+              <AnimatedProductShowcase />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── FEED SECTION ──────────────────────────────────────────────────── */}

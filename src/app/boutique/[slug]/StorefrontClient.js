@@ -1,232 +1,369 @@
 'use client';
-import { useState, useEffect, use, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, use, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useCart } from '@/context/CartContext';
-import { useDistance } from '@/hooks/useDistance';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import StoreAIChat from '@/components/StoreAIChat';
-import { Store, Loader2 } from 'lucide-react';
+import { Store } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import StoreChatWidget from '@/components/StoreChatWidget';
 
-import dynamic from 'next/dynamic';
+// ─── Import de tous les modules (Anciens & Nouveaux Blocs) ──────────────────
+import ModuleVitrine from '@/components/modules/ModuleVitrine';
+import ModuleCatalogue from '@/components/modules/ModuleCatalogue';
+import ModuleReservation from '@/components/modules/ModuleReservation';
+import ModulePortfolio from '@/components/modules/ModulePortfolio';
+import ModuleBilletterie from '@/components/modules/ModuleBilletterie';
+import ModuleRestaurant from '@/components/modules/ModuleRestaurant';
+import ModuleServices from '@/components/modules/ModuleServices';
+import ModuleLinks from '@/components/modules/ModuleLinks';
+import ModuleTestimonials from '@/components/modules/ModuleTestimonials';
+import ModuleContact from '@/components/modules/ModuleContact';
+import ModuleNewsletter from '@/components/modules/ModuleNewsletter';
+import ModuleDevis from '@/components/modules/ModuleDevis';
+import ModuleAbonnement from '@/components/modules/ModuleAbonnement';
 
-// ── Lazy-load all themes ─────────────────────────────────────────────────────
-const Theme00_Classic   = dynamic(() => import('./themes/Theme00_Classic'), { ssr: false });
-const Theme01_Luxury    = dynamic(() => import('./themes/Theme01_Luxury'), { ssr: false });
-const Theme02_Beauty    = dynamic(() => import('./themes/Theme02_Beauty'), { ssr: false });
-const Theme03_Market    = dynamic(() => import('./themes/Theme03_Market'), { ssr: false });
-const Theme04_Restaurant = dynamic(() => import('./themes/Theme04_Restaurant'), { ssr: false });
-const Theme05_Pro       = dynamic(() => import('./themes/Theme05_Pro'), { ssr: false });
+// Nouveaux blocs premium
+import HeroBlock from '@/components/blocks/HeroBlock';
+import CarouselBlock from '@/components/blocks/CarouselBlock';
+import OfferingGridBlock from '@/components/blocks/OfferingGridBlock';
+import RichTextBlock from '@/components/blocks/RichTextBlock';
+import TestimonialSliderBlock from '@/components/blocks/TestimonialSliderBlock';
+import StatsBarBlock from '@/components/blocks/StatsBarBlock';
+import FaqAccordionBlock from '@/components/blocks/FaqAccordionBlock';
+import CountdownBlock from '@/components/blocks/CountdownBlock';
+import VideoEmbedBlock from '@/components/blocks/VideoEmbedBlock';
+import ImageGalleryBlock from '@/components/blocks/ImageGalleryBlock';
+import DividerBlock from '@/components/blocks/DividerBlock';
+import SpacerBlock from '@/components/blocks/SpacerBlock';
+import ContactFormBlock from '@/components/blocks/ContactFormBlock';
+import NewsletterSignupBlock from '@/components/blocks/NewsletterSignupBlock';
+import SocialLinksBlock from '@/components/blocks/SocialLinksBlock';
 
-const THEME_MAP = {
-  theme_00: Theme00_Classic,
-  theme_01: Theme01_Luxury,
-  theme_02: Theme02_Beauty,
-  theme_03: Theme03_Market,
-  theme_04: Theme04_Restaurant,
-  theme_05: Theme05_Pro,
+const MODULE_RENDERERS = {
+  // Anciens
+  vitrine: ModuleVitrine, catalogue: ModuleCatalogue, lookbook: ModuleCatalogue,
+  reservation: ModuleReservation, portfolio: ModulePortfolio, billetterie: ModuleBilletterie,
+  restaurant: ModuleRestaurant, services: ModuleServices, properties: ModuleServices,
+  links: ModuleLinks, testimonials: ModuleTestimonials, contact: ModuleContact,
+  newsletter: ModuleNewsletter, devis: ModuleDevis, abonnement: ModuleAbonnement,
+  // Nouveaux Blocs
+  hero: HeroBlock,
+  carousel: CarouselBlock,
+  offeringGrid: OfferingGridBlock,
+  richText: RichTextBlock,
+  testimonialSlider: TestimonialSliderBlock,
+  statsBar: StatsBarBlock,
+  faqAccordion: FaqAccordionBlock,
+  countdown: CountdownBlock,
+  videoEmbed: VideoEmbedBlock,
+  imageGallery: ImageGalleryBlock,
+  divider: DividerBlock,
+  spacer: SpacerBlock,
+  contactForm: ContactFormBlock,
+  newsletterSignup: NewsletterSignupBlock,
+  socialLinks: SocialLinksBlock,
 };
 
-// Fallback loader while theme component loads
-function ThemeLoader() {
+// ─── Import des Thèmes ──────────────────────────────────────────────────────
+import { getThemeById } from './themes';
+import StoreAIChat from '@/components/StoreAIChat';
+
+// ─── Correspondance Type de module → Groupe de page ─────────────────────────
+// Chaque onglet (accueil, produits, promotions, profil) regroupe plusieurs types de modules.
+// Cela permet de ne jamais avoir d'onglets en double et de s'adapter à chaque boutique.
+const TAB_TYPE_MAP = {
+  accueil:    ['vitrine', 'hero', 'carousel', 'imageGallery', 'richText', 'statsBar', 'videoEmbed', 'divider', 'spacer'],
+  produits:   ['catalogue', 'lookbook', 'offeringGrid'],
+  promotions: ['billetterie', 'countdown', 'newsletterSignup', 'newsletter', 'faqAccordion'],
+  profil:     ['portfolio', 'contact', 'contactForm', 'services', 'properties', 'links',
+               'testimonials', 'testimonialSlider', 'devis', 'abonnement', 'reservation',
+               'restaurant', 'socialLinks'],
+};
+const DEFAULT_TAB_LABELS = {
+  accueil: 'Accueil', produits: 'Boutique', promotions: 'Offres', profil: 'Profil',
+};
+
+// ─── Écran de chargement ────────────────────────────────────────────────────
+function LoadingScreen() {
   return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={32} className="animate-spin text-emerald-500" />
+    <div style={{ minHeight:'100vh', background:'#f0f2f5', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', fontFamily:'Inter, sans-serif' }}>
+      <div style={{ width:'64px', height:'64px', borderRadius:'20px', background:'linear-gradient(135deg,#25D366,#128C7E)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px', animation:'pulse 1.5s ease-in-out infinite', boxShadow:'0 8px 32px rgba(37,211,102,0.4)' }}>🛍️</div>
+      <div style={{ width:'40px', height:'40px', border:'3px solid rgba(37,211,102,0.3)', borderTop:'3px solid #25D366', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+      <p style={{ color:'#54656f', fontSize:'13px', fontWeight:'600', letterSpacing:'0.05em' }}>Chargement de la boutique...</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}`}</style>
     </div>
   );
 }
 
+function ThemeLoader() {
+  return <div style={{ minHeight:'100vh', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>Changement de thème...</div>;
+}
+
+// ─── Composant principal ─────────────────────────────────────────────────────
 export default function StorefrontClient({ params }) {
   const { slug } = use(params);
-  const { addToCart } = useCart();
-  const { formatDistance, requestLocation, userLocation } = useDistance();
-  
-  // Pour le test rapide via l'URL (ex: ?theme=theme_05)
-  const [urlTheme, setUrlTheme] = useState(null);
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      setUrlTheme(params.get('theme'));
-    }
-  }, []);
-
-  const [store, setStore] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [store, setStore]     = useState(null);
+  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('accueil');
-  const [stats, setStats] = useState({ totalSold: 0, totalViews: 0 });
-  const [shared, setShared] = useState(false);
+  // activePage stocke la CLÉ de page ('accueil', 'produits', 'promotions', 'profil')
+  // ou bien un UUID de module si le thème classique (theme_00 à 05) passe directement l'UUID.
+  const [activePage, setActivePageRaw] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [shared, setShared]     = useState(false);
+  const router = useRouter();
+  const { cart, getCartTotal } = useCart();
 
-  const trackProductView = useCallback((productId) => {
-    try { supabase.rpc('increment_product_view', { prod_id: productId }); } catch (_) {}
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const shopTabs = store?.shop_tabs || {};
+  const computedPages = useMemo(() => {
+    return Object.entries(TAB_TYPE_MAP).reduce((acc, [key, types]) => {
+      const matching = modules.filter(m => types.includes(m.type));
+      if (matching.length > 0) {
+        acc.push({
+          key,
+          label: shopTabs[key] || DEFAULT_TAB_LABELS[key],
+          modules: matching,
+        });
+      }
+      return acc;
+    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modules, shopTabs]);
+
+  const setActivePage = useCallback((keyOrId) => {
+    if (TAB_TYPE_MAP[keyOrId]) {
+      setActivePageRaw(keyOrId);
+      return;
+    }
+    const mod = modules.find(m => m.id === keyOrId);
+    if (mod) {
+      const key = Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(mod.type))?.[0];
+      if (key) { setActivePageRaw(key); return; }
+    }
+    setActivePageRaw(keyOrId);
+  }, [modules]);
 
   useEffect(() => {
     const load = async () => {
-      const { data: storeData } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('slug', slug)
-        .single();
+      try {
+        const { data: storeData } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('slug', slug)
+          .single();
 
-      if (!storeData) { setLoading(false); return; }
-      setStore(storeData);
+        if (!storeData) return;
+        setStore(storeData);
 
-      // Paralléliser les requêtes pour gagner du temps
-      const [prodsRes, ordersRes] = await Promise.all([
-        supabase
-          .from('products')
-          .select('*, global_categories(name)')
+        try { supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {}
+
+        const { data: modulesData } = await supabase
+          .from('store_modules')
+          .select('*')
           .eq('store_id', storeData.id)
           .eq('is_active', true)
-          .order('is_boosted', { ascending: false })
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('orders')
-          .select('*', { count: 'exact', head: true })
-          .eq('store_id', storeData.id)
-          .eq('status', 'delivered')
-      ]);
+          .order('position', { ascending: true });
 
-      const prods = prodsRes.data;
-      setProducts(prods || []);
+        const active = modulesData || [];
+        setModules(active);
 
-      if (prods) {
-        const cats = [...new Set(prods.map(p => p.global_categories?.name || 'Autres'))];
-        setCategories(cats);
+        // Initialise sur la première clé de page disponible (pas un UUID)
+        if (active.length > 0) {
+          const firstType = active[0].type;
+          const firstKey = Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
+          setActivePageRaw(firstKey);
+        }
+      } catch (err) {
+        console.error('[StorefrontClient] Erreur lors du chargement de la boutique:', err);
+      } finally {
+        setLoading(false);
       }
-
-      setStats({ totalSold: ordersRes.count || 0, totalViews: storeData.daily_views || 0 });
-
-      try { supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {}
-      setLoading(false);
     };
     load();
   }, [slug]);
 
-  const handleShare = () => {
+  if (loading) return <LoadingScreen />;
+
+  if (!store) {
+    return (
+      <main style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f8fafc' }}>
+        <Store size={48} style={{ color:'#cbd5e1', marginBottom:'16px' }} />
+        <h1 style={{ fontWeight:'900', fontSize:'22px', color:'#0f172a', margin:'0 0 8px' }}>Boutique introuvable</h1>
+        <p style={{ color:'#94a3b8', fontSize:'14px', marginBottom:'24px' }}>Cette boutique n'existe pas ou a été désactivée.</p>
+        <Link href="/" style={{ background:'#6366f1', color:'#fff', padding:'12px 28px', borderRadius:'16px', fontWeight:'700', textDecoration:'none', fontSize:'14px' }}>
+          Retour à l'accueil
+        </Link>
+      </main>
+    );
+  }
+
+  // ─── Actions globales ───
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({ title: store.name, text: `Découvrez ${store.name} sur VesTyle !`, url: window.location.href }).catch(() => {});
+      try {
+        await navigator.share({ title: store.name, url: window.location.href });
+        setShared(true); setTimeout(() => setShared(false), 2000);
+      } catch (err) {}
     } else {
       navigator.clipboard.writeText(window.location.href);
+      setShared(true); setTimeout(() => setShared(false), 2000);
     }
-    setShared(true);
-    setTimeout(() => setShared(false), 2000);
   };
 
   const handleDirections = () => {
     if (store.latitude && store.longitude) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`);
     }
   };
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(q));
-    }
-    if (activeFilter !== 'all') {
-      result = result.filter(p => (p.global_categories?.name || 'Autres') === activeFilter);
-    }
-    return result;
-  }, [products, search, activeFilter]);
+  // ─── Modules à afficher pour la page active ──────────────────────────────
+  const activePageGroup = computedPages.find(p => p.key === activePage);
+  // Pour compatibilité theme_00-05 : si activePage est un UUID, trouver ce module
+  const currentModuleById = !activePageGroup ? modules.find(m => m.id === activePage) : null;
+  const modulesToRender = activePageGroup?.modules || (currentModuleById ? [currentModuleById] : []);
 
-  const groupedProducts = useMemo(() => {
-    const groups = {};
-    filteredProducts.forEach(p => {
-      const catName = p.global_categories?.name || 'Autres';
-      if (!groups[catName]) groups[catName] = [];
-      groups[catName].push(p);
-    });
-    return groups;
-  }, [filteredProducts]);
-
-  // ── Loading ──────────────────────────────────────────────────────────────
-  if (loading) return (
-    <main className="bg-slate-50 min-h-screen flex flex-col font-sans">
-      <Navbar />
-      <div className="flex-1 flex flex-col items-center justify-center pt-24 gap-4">
-        <div className="w-16 h-16 rounded-[2rem] bg-emerald-100 flex items-center justify-center animate-pulse">
-          <Store size={32} className="text-emerald-600" />
-        </div>
-        <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Chargement de la boutique...</p>
-      </div>
-    </main>
-  );
-
-  // ── Not Found ────────────────────────────────────────────────────────────
-  if (!store) return (
-    <main className="bg-slate-50 min-h-screen flex flex-col font-sans">
-      <Navbar />
-      <div className="flex-1 flex flex-col items-center justify-center pt-24 px-6 text-center">
-        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-          <Store size={48} className="text-slate-300" />
-        </div>
-        <h1 className="text-2xl font-black text-slate-900 mb-2">Boutique introuvable</h1>
-        <p className="text-slate-400 text-sm mb-8 max-w-sm">Cette boutique n'existe pas ou a été désactivée.</p>
-        <Link href="/" className="inline-flex items-center gap-2 bg-emerald-600 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
-          Retour à l&apos;accueil
-        </Link>
-      </div>
-    </main>
-  );
-
-  // ── Resolve Theme Component ───────────────────────────────────────────────
-  const themeId = urlTheme || store.shop_theme || 'theme_00';
-  const ThemeComponent = THEME_MAP[themeId] || THEME_MAP['theme_00'];
-
-  const storeInfo = {
-    name: store.name,
-    slug: store.slug,
-    logo_url: store.logo_url,
-    latitude: store.latitude,
-    longitude: store.longitude,
+  // ─── Résolution du Thème Visuel ───
+  const themeId = store.shop_theme || store.theme || 'theme_00';
+  const themeConfig = getThemeById(themeId);
+  const THEME_COMPONENTS = {
+    theme_00: require('./themes/Theme00_Classic').default,
+    theme_01: require('./themes/Theme01_Luxury').default,
+    theme_02: require('./themes/Theme02_Beauty').default,
+    theme_03: require('./themes/Theme03_Market').default,
+    theme_04: require('./themes/Theme04_Restaurant').default,
+    theme_05: require('./themes/Theme05_Pro').default,
+    theme_06: require('./themes/Theme06_Street').default,
+    theme_07: require('./themes/Theme07_Tech').default,
+    theme_08: require('./themes/Theme08_Editorial').default,
+    theme_09: require('./themes/Theme09_Artisan').default,
+    theme_10: require('./themes/Theme10_Sport').default,
+    theme_11: require('./themes/Theme11_Health').default,
+    theme_12: require('./themes/Theme12_Event').default,
+    theme_13: require('./themes/Theme13_Kids').default,
+    theme_14: require('./themes/Theme14_Cyber').default,
+    theme_15: require('./themes/Theme15_Retro').default,
+    theme_16: require('./themes/Theme16_Deco').default,
+    theme_17: require('./themes/Theme17_Garage').default,
+    theme_18: require('./themes/Theme18_Book').default,
+    theme_19: require('./themes/Theme19_Jewel').default,
+    theme_20: require('./themes/Theme20_Afro').default,
+    theme_21: require('./themes/Theme21_Paper').default,
   };
+  const ThemeComponent = THEME_COMPONENTS[themeId] || THEME_COMPONENTS['theme_00'];
 
-  const totalProducts = products.length;
-
-  // Standard props passed to every theme
-  const themeProps = {
-    store: store,
-    products,
-    categories,
-    stats,
-    storeInfo,
-    filteredProducts,
-    groupedProducts,
-    activeTab,
-    setActiveTab,
-    activeFilter,
-    setActiveFilter,
-    search,
-    setSearch,
-    handleShare,
-    handleDirections,
-    shared,
-    trackProductView,
-    formatDistance,
-    totalProducts,
-    addToCart,
-    shop_tabs: store.shop_tabs || { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
+  const isDark = themeConfig.bgColor === '#0A0A0A' || themeConfig.bgColor === '#120A00' || themeConfig.bgColor === '#18181b';
+  const themeVars = {
+    primaryColor:   themeConfig.primaryColor   || '#6366f1',
+    secondaryColor: themeConfig.bgColor        || '#ffffff',
+    accentColor:    themeConfig.accentColor    || '#a855f7',
+    fontFamily:     themeConfig.font           || 'Inter',
+    '--prim':    themeConfig.primaryColor   || '#6366f1',
+    '--sec':     themeConfig.bgColor        || '#f0f0ff',
+    '--acc':     themeConfig.accentColor    || '#a855f7',
+    '--font':    themeConfig.font           || 'Inter',
+    '--bg':      themeConfig.bgColor,
+    '--fg':      isDark ? '#ffffff' : '#111827',
+    '--fg2':     isDark ? 'rgba(255,255,255,0.55)' : '#6b7280',
+    '--border':  isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
   };
 
   return (
     <>
-      <Navbar />
-      <div className="mt-16 sm:mt-[72px]">
-        {/* key={themeId} force le remontage du thème quand il change */}
-        <Suspense key={themeId} fallback={<ThemeLoader />}>
-          <ThemeComponent key={`theme-${themeId}`} {...themeProps} />
-        </Suspense>
-      </div>
-      {store.ai_enabled && <StoreAIChat store={store} products={products} />}
-      <Footer />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=${(themeConfig.font || 'Inter').replace(/ /g,'+')}:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${themeConfig.primaryColor}40; border-radius: 4px; }
+        .page-transition { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+      `}</style>
+      
+      <Suspense key={themeId} fallback={<ThemeLoader />}>
+        <ThemeComponent
+          store={store}
+          modules={modules}
+          pages={computedPages}         // ← Onglets construits depuis la BD (sans doublons)
+          activePage={activePage}        // ← Clé de page ('accueil', 'produits'…) ou UUID pour theme 00-05
+          setActivePage={setActivePage}  // ← Navigateur intelligent
+          handleShare={handleShare}
+          handleDirections={handleDirections}
+          shared={shared}
+          cartCount={cart.reduce((s,i)=>s+(i.quantity||1), 0)}
+          cartTotal={`${getCartTotal()} FCFA`}
+          onOpenCart={() => router.push('/cart')}
+          currency="FCFA"
+        >
+          {/* Rendu de TOUS les modules de la page active (jamais vide) */}
+          {modulesToRender.length > 0 ? modulesToRender.map(mod => {
+            const Renderer = MODULE_RENDERERS[mod.type];
+            if (!Renderer) return null;
+            return (
+              <div key={mod.id} className="page-transition">
+                <Renderer
+                  config={mod.config}
+                  store={store}
+                  theme={themeVars}
+                  isMobile={isMobile}
+                  storeId={store.id}
+                  preview={false}
+                  onNavigate={setActivePage}
+                  modules={modules}
+                  globalCart={cart}
+                />
+              </div>
+            );
+          }) : (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔧</div>
+              <p style={{ fontWeight: '700', fontSize: '15px', margin: 0 }}>Cette section n'a pas encore de contenu.</p>
+              <p style={{ fontSize: '13px', marginTop: '8px', opacity: 0.7 }}>Ajoutez des blocs depuis votre espace Vendeur.</p>
+            </div>
+          )}
+        </ThemeComponent>
+      </Suspense>
+
+      {/* ── PANIER GLOBAL (HEADER) ── */}
+      <button
+        onClick={() => router.push('/cart')}
+        style={{
+          position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+          background: themeVars['--prim'], color: '#fff', border: 'none', borderRadius: '50%',
+          width: '56px', height: '56px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 8px 25px rgba(0,0,0,0.3)', cursor: 'pointer', transition: 'all 0.3s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+      >
+        <div style={{ position: 'relative' }}>
+          <ShoppingCart size={24} />
+          {cart.length > 0 && (
+            <span style={{
+              position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: '#fff',
+              fontSize: '10px', fontWeight: 'bold', width: '20px', height: '20px', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '2px solid #fff'
+            }}>
+              {cart.reduce((s,i)=>s+(i.quantity||1), 0)}
+            </span>
+          )}
+        </div>
+      </button>
+
+      {store?.chat_enabled !== false && (
+        <StoreChatWidget
+          storeId={store?.id}
+          storeSlug={store?.slug}
+          primaryColor={store?.theme_color || '#6366f1'}
+          storeName={store?.name || 'Boutique'}
+        />
+      )}
     </>
   );
 }

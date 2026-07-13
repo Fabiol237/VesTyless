@@ -123,12 +123,18 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, description, imageUrl })
         });
+        
         if (embedRes.ok) {
           const embedData = await embedRes.json();
-          if (embedData.embedding) embeddingVector = embedData.embedding;
+          if (embedData.embedding && Array.isArray(embedData.embedding)) {
+            embeddingVector = embedData.embedding;
+          }
+        } else {
+          const errorData = await embedRes.json().catch(() => ({ error: 'Unknown error' }));
+          console.warn('Embedding API error:', errorData.error || 'Request failed');
         }
       } catch (e) {
-        console.warn('Embedding warning (non-bloquant):', e);
+        console.warn('Embedding warning (non-bloquant):', e.message);
       }
       
       if (embeddingVector) {

@@ -54,13 +54,32 @@ async function handleUpload(formData) {
     body: uploadForm,
   });
 
-  const cloudinaryData = await cloudinaryRes.json();
+  let cloudinaryData;
+  try {
+    const text = await cloudinaryRes.text();
+    if (!text) {
+      return NextResponse.json({ error: 'Réponse Cloudinary vide' }, { status: 500 });
+    }
+    cloudinaryData = JSON.parse(text);
+  } catch (parseErr) {
+    console.error('Cloudinary JSON Parse Error:', parseErr.message);
+    return NextResponse.json({ error: `Erreur réponse Cloudinary: ${parseErr.message}` }, { status: 500 });
+  }
+
   if (!cloudinaryRes.ok) {
     console.error('Cloudinary Upload Error Details:', JSON.stringify(cloudinaryData, null, 2));
     return NextResponse.json({ 
       error: cloudinaryData?.error?.message || 'Echec upload Cloudinary',
       details: cloudinaryData
     }, { status: 400 });
+  }
+
+  if (!cloudinaryData.secure_url || !cloudinaryData.public_id) {
+    console.error('Cloudinary Response Missing Fields:', cloudinaryData);
+    return NextResponse.json({ 
+      error: 'Réponse Cloudinary incomplète',
+      details: cloudinaryData
+    }, { status: 500 });
   }
 
   console.log(`[Cloudinary API] Upload réussi: ${cloudinaryData.secure_url}`);
@@ -104,7 +123,18 @@ async function handleDelete(publicId) {
     body: deleteForm.toString(),
   });
 
-  const cloudinaryData = await cloudinaryRes.json();
+  let cloudinaryData;
+  try {
+    const text = await cloudinaryRes.text();
+    if (!text) {
+      return NextResponse.json({ error: 'Réponse Cloudinary vide' }, { status: 500 });
+    }
+    cloudinaryData = JSON.parse(text);
+  } catch (parseErr) {
+    console.error('Cloudinary Delete JSON Parse Error:', parseErr.message);
+    return NextResponse.json({ error: `Erreur réponse Cloudinary: ${parseErr.message}` }, { status: 500 });
+  }
+
   if (!cloudinaryRes.ok) {
     console.error('Cloudinary Delete Error Details:', cloudinaryData);
     return NextResponse.json({ error: cloudinaryData?.error?.message || 'Echec suppression Cloudinary' }, { status: 400 });
