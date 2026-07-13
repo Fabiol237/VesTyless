@@ -185,36 +185,43 @@ export default function StorefrontClient({ params }) {
     const load = async () => {
       // Si on a déjà des données en cache → on rafraîchit en silence (pas de spinner)
       const hasCached = !!(storeCache[slug]?.store);
-      if (hasCached) {
-        setRefreshing(true);
-      }
+      if (hasCached) setRefreshing(true);
 
       try {
+        // ✅ UNE SEULE requête : store + modules en même temps (join Supabase)
         const { data: storeData } = await supabase
           .from('stores')
-          .select('*')
+          .select(`
+            *,
+            store_modules (
+              id, type, config, position, is_active
+            )
+          `)
           .eq('slug', slug)
+          .eq('store_modules.is_active', true)
+          .order('position', { ascending: true, foreignTable: 'store_modules' })
           .single();
 
         if (!storeData) return;
-        setStore(storeData);
 
-        try { supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {}
+        // Extraire et trier les modules
+        const active = (storeData.store_modules || [])
+          .filter(m => m.is_active !== false)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-        const { data: modulesData } = await supabase
-          .from('store_modules')
-          .select('*')
-          .eq('store_id', storeData.id)
-          .eq('is_active', true)
-          .order('position', { ascending: true });
+        // Supprimer la clé store_modules de l'objet store pour éviter la pollution
+        const { store_modules: _, ...cleanStore } = storeData;
 
-        const active = modulesData || [];
+        setStore(cleanStore);
         setModules(active);
 
         // Mettre à jour le cache mémoire
-        storeCache[slug] = { store: storeData, modules: active };
+        storeCache[slug] = { store: cleanStore, modules: active };
 
-        // Initialise sur la première clé de page disponible (pas un UUID)
+        // Incrémenter le compteur de vues (sans bloquer l'affichage)
+        supabase.rpc('increment_store_view', { st_id: storeData.id }).catch(() => {});
+
+        // Initialise l'onglet actif seulement à la première visite (pas de cache)
         if (!hasCached && active.length > 0) {
           const firstType = active[0].type;
           const firstKey = Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
