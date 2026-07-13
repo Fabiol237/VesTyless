@@ -227,24 +227,23 @@ function HistoryModal({ product, onClose }) {
 }
 
 import { getCached, setCached } from '@/lib/dataCache';
+// Importing RefreshBar as js component to ensure cross-platform bundler resolution
 import RefreshBar from '@/components/RefreshBar';
+
 
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const { store } = useAuth();
   const storeId = store?.id;
 
-  const cacheKey = storeId ? `products:${storeId}` : null;
-  const cached = cacheKey ? getCached(cacheKey) : null;
-
-  const [products, setProducts]     = useState(cached || []);
+  const [products, setProducts]     = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
   const [categories, setCategories] = useState([]);
   const [search, setSearch]         = useState('');
   
   // Loading is only true if there is no cache
-  const [loading, setLoading]       = useState(!cached && !!storeId);
+  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   const [qrModalProduct, setQrModalProduct] = useState(null);
@@ -258,6 +257,18 @@ export default function ProductsPage() {
   const [catFilter,   setCatFilter]   = useState('all');
   const [lowThreshold, setLowThreshold] = useState(5);
   const [adjustSuccess, setAdjustSuccess] = useState(null);
+
+  const cacheKey = storeId ? `products:${storeId}` : null;
+
+  // Charger le cache sur le client après le montage (évite le mismatch de hydration)
+  useEffect(() => {
+    if (!storeId) return;
+    const cached = getCached(`products:${storeId}`);
+    if (cached) {
+      setProducts(cached);
+      setLoading(false);
+    }
+  }, [storeId]);
 
   const fetchCategories = useCallback(async () => {
     const { data } = await supabase.from('global_categories').select('*').is('parent_id', null).order('name');
@@ -287,7 +298,8 @@ export default function ProductsPage() {
     if (!storeId) return;
     fetchCategories();
     // Silent refresh if we already have cache
-    fetchProducts(!!cached);
+    const hasCached = !!getCached(`products:${storeId}`);
+    fetchProducts(hasCached);
   }, [fetchCategories, fetchProducts, storeId]);
 
   // ── Ajustement de stock ────────────────────────────────────────────────────

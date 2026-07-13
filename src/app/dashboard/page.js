@@ -116,25 +116,36 @@ export default function SellerDashboard() {
   const { loading: authLoading, store } = useAuth();
   const storeId = store?.id;
 
-  // ── Cache stale-while-revalidate ──────────────────────────────────────────
-  // Les données sont lues depuis le cache au premier rendu → pas de spinner.
-  const cacheKey = storeId ? `dashboard:${storeId}` : null;
-  const cached = cacheKey ? getCached(cacheKey) : null;
+  const [products,      setProducts]      = useState([]);
+  const [orders,        setOrders]        = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [analytics,     setAnalytics]     = useState([]);
+  const [livreur,       setLivreur]       = useState(null);
+  const [deliveryCount, setDeliveryCount] = useState(0);
 
-  const [products,      setProducts]      = useState(cached?.products      || []);
-  const [orders,        setOrders]        = useState(cached?.orders        || []);
-  const [notifications, setNotifications] = useState(cached?.notifications || []);
-  const [analytics,     setAnalytics]     = useState(cached?.analytics     || []);
-  const [livreur,       setLivreur]       = useState(cached?.livreur       || null);
-  const [deliveryCount, setDeliveryCount] = useState(cached?.deliveryCount || 0);
-
-  // loading = true seulement si AUCUN cache ET pas encore de données
-  const [dashboardLoading, setDashboardLoading] = useState(!cached && !authLoading);
-  // refreshing = synchro silencieuse en arrière-plan (fine barre verte)
+  // loading = true seulement si pas de cache
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
   const [periodOpen, setPeriodOpen] = useState(false);
+
+  const cacheKey = storeId ? `dashboard:${storeId}` : null;
+
+  // Charger le cache sur le client après le montage (évite le mismatch de hydration)
+  useEffect(() => {
+    if (!storeId) return;
+    const cached = getCached(`dashboard:${storeId}`);
+    if (cached) {
+      setProducts(cached.products || []);
+      setOrders(cached.orders || []);
+      setNotifications(cached.notifications || []);
+      setAnalytics(cached.analytics || []);
+      setLivreur(cached.livreur || null);
+      setDeliveryCount(cached.deliveryCount || 0);
+      setDashboardLoading(false);
+    }
+  }, [storeId]);
 
   const loadDashboardData = useCallback(async (isSilent = false) => {
     if (!storeId) { setDashboardLoading(false); return; }

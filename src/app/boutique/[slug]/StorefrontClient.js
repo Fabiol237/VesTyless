@@ -121,24 +121,27 @@ function RefreshBar() {
 export default function StorefrontClient({ params }) {
   const { slug } = use(params);
 
-  // Initialiser depuis le cache si disponible → pas d'écran blanc au retour
-  const cached = storeCache[slug];
-  const [store, setStore]     = useState(cached?.store   || null);
-  const [modules, setModules] = useState(cached?.modules || []);
-  // loading = true seulement si AUCUN cache (première visite)
-  const [loading, setLoading] = useState(!cached);
-  // refreshing = true pendant un rafraîchissement silencieux en arrière-plan
+  const [store, setStore]     = useState(null);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Initialiser activePage depuis le cache pour éviter un onglet vide au retour
-  const getInitialPage = () => {
-    const mods = cached?.modules || [];
-    if (mods.length > 0) {
-      const firstType = mods[0].type;
-      return Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
+  const [activePage, setActivePageRaw] = useState(null);
+
+  // Charger le cache sur le client après le montage (évite le mismatch de hydration)
+  useEffect(() => {
+    const cached = storeCache[slug];
+    if (cached) {
+      setStore(cached.store);
+      setModules(cached.modules);
+      setLoading(false);
+      const mods = cached.modules || [];
+      if (mods.length > 0) {
+        const firstType = mods[0].type;
+        const firstKey = Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
+        setActivePageRaw(firstKey);
+      }
     }
-    return null;
-  };
-  const [activePage, setActivePageRaw] = useState(getInitialPage);
+  }, [slug]);
 
   const [isMobile, setIsMobile] = useState(false);
   const [shared, setShared]     = useState(false);
