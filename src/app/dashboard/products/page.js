@@ -226,15 +226,27 @@ function HistoryModal({ product, onClose }) {
   );
 }
 
+import { getCached, setCached } from '@/lib/dataCache';
+import RefreshBar from '@/components/RefreshBar';
+
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const { store } = useAuth();
-  const [products, setProducts]     = useState([]);
+  const storeId = store?.id;
+
+  const cacheKey = storeId ? `products:${storeId}` : null;
+  const cached = cacheKey ? getCached(cacheKey) : null;
+
+  const [products, setProducts]     = useState(cached || []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
   const [categories, setCategories] = useState([]);
   const [search, setSearch]         = useState('');
-  const [loading, setLoading]       = useState(true);
+  
+  // Loading is only true if there is no cache
+  const [loading, setLoading]       = useState(!cached && !!storeId);
+  const [refreshing, setRefreshing] = useState(false);
+  
   const [qrModalProduct, setQrModalProduct] = useState(null);
   const [historyProduct, setHistoryProduct] = useState(null);
 
@@ -252,23 +264,31 @@ export default function ProductsPage() {
     if (data) setCategories(data);
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    if (!store) return;
-    setLoading(true);
+  const fetchProducts = useCallback(async (isSilent = false) => {
+    if (!storeId) return;
+    if (isSilent) setRefreshing(true);
+    else if (products.length === 0) setLoading(true);
+
     const { data } = await supabase
       .from('products')
       .select('*, global_categories(name)')
-      .eq('store_id', store.id)
+      .eq('store_id', storeId)
       .order('created_at', { ascending: false });
-    if (data) setProducts(data);
+
+    if (data) {
+      setProducts(data);
+      if (cacheKey) setCached(cacheKey, data);
+    }
     setLoading(false);
-  }, [store]);
+    setRefreshing(false);
+  }, [storeId, cacheKey, products.length]);
 
   useEffect(() => {
-    if (!store) return;
+    if (!storeId) return;
     fetchCategories();
-    fetchProducts();
-  }, [fetchCategories, fetchProducts, store]);
+    // Silent refresh if we already have cache
+    fetchProducts(!!cached);
+  }, [fetchCategories, fetchProducts, storeId]);
 
   // ── Ajustement de stock ────────────────────────────────────────────────────
   const handleAdjust = async (productId, type, quantity, note, beforeQty) => {
@@ -358,6 +378,7 @@ export default function ProductsPage() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'24px', paddingBottom:'48px' }}>
+      {refreshing && <RefreshBar color="#059669" />}
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div style={{ background:'#fff', borderRadius:'24px', border:'1px solid #f3f4f6', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:'24px 28px' }}>
