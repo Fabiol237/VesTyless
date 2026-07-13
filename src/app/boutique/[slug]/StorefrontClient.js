@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback, use, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, use, Suspense, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Store } from 'lucide-react';
 import Link from 'next/link';
@@ -84,7 +84,12 @@ const DEFAULT_TAB_LABELS = {
   accueil: 'Accueil', produits: 'Boutique', promotions: 'Offres', profil: 'Profil',
 };
 
-// ─── Écran de chargement ────────────────────────────────────────────────────
+// ─── Cache mémoire (persiste tant que l'onglet navigateur reste ouvert) ──────
+// Permet d'afficher les données IMMÉDIATEMENT au retour sur la page,
+// sans écran de chargement, tout en rafraîchissant en arrière-plan.
+const storeCache = {}; // { [slug]: { store, modules } }
+
+// ─── Écran de chargement (utilisé UNIQUEMENT à la toute première visite) ─────
 function LoadingScreen() {
   return (
     <div style={{ minHeight:'100vh', background:'#f0f2f5', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', fontFamily:'Inter, sans-serif' }}>
@@ -96,19 +101,45 @@ function LoadingScreen() {
   );
 }
 
-function ThemeLoader() {
-  return <div style={{ minHeight:'100vh', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>Changement de thème...</div>;
+// ─── Barre de progression discrète (rafraîchissement en arrière-plan) ─────────
+function RefreshBar() {
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,
+      height: '3px', background: 'linear-gradient(90deg, #25D366, #128C7E, #25D366)',
+      backgroundSize: '200% 100%',
+      animation: 'refreshSlide 1.2s ease-in-out infinite',
+      pointerEvents: 'none',
+    }}>
+      <style>{`@keyframes refreshSlide { 0%{background-position:100% 0} 100%{background-position:-100% 0} }`}</style>
+    </div>
+  );
 }
+
 
 // ─── Composant principal ─────────────────────────────────────────────────────
 export default function StorefrontClient({ params }) {
   const { slug } = use(params);
-  const [store, setStore]     = useState(null);
-  const [modules, setModules] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // activePage stocke la CLÉ de page ('accueil', 'produits', 'promotions', 'profil')
-  // ou bien un UUID de module si le thème classique (theme_00 à 05) passe directement l'UUID.
-  const [activePage, setActivePageRaw] = useState(null);
+
+  // Initialiser depuis le cache si disponible → pas d'écran blanc au retour
+  const cached = storeCache[slug];
+  const [store, setStore]     = useState(cached?.store   || null);
+  const [modules, setModules] = useState(cached?.modules || []);
+  // loading = true seulement si AUCUN cache (première visite)
+  const [loading, setLoading] = useState(!cached);
+  // refreshing = true pendant un rafraîchissement silencieux en arrière-plan
+  const [refreshing, setRefreshing] = useState(false);
+  // Initialiser activePage depuis le cache pour éviter un onglet vide au retour
+  const getInitialPage = () => {
+    const mods = cached?.modules || [];
+    if (mods.length > 0) {
+      const firstType = mods[0].type;
+      return Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
+    }
+    return null;
+  };
+  const [activePage, setActivePageRaw] = useState(getInitialPage);
+
   const [isMobile, setIsMobile] = useState(false);
   const [shared, setShared]     = useState(false);
   const router = useRouter();
@@ -152,6 +183,12 @@ export default function StorefrontClient({ params }) {
 
   useEffect(() => {
     const load = async () => {
+      // Si on a déjà des données en cache → on rafraîchit en silence (pas de spinner)
+      const hasCached = !!(storeCache[slug]?.store);
+      if (hasCached) {
+        setRefreshing(true);
+      }
+
       try {
         const { data: storeData } = await supabase
           .from('stores')
@@ -174,8 +211,11 @@ export default function StorefrontClient({ params }) {
         const active = modulesData || [];
         setModules(active);
 
+        // Mettre à jour le cache mémoire
+        storeCache[slug] = { store: storeData, modules: active };
+
         // Initialise sur la première clé de page disponible (pas un UUID)
-        if (active.length > 0) {
+        if (!hasCached && active.length > 0) {
           const firstType = active[0].type;
           const firstKey = Object.entries(TAB_TYPE_MAP).find(([, types]) => types.includes(firstType))?.[0] || 'accueil';
           setActivePageRaw(firstKey);
@@ -184,11 +224,13 @@ export default function StorefrontClient({ params }) {
         console.error('[StorefrontClient] Erreur lors du chargement de la boutique:', err);
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     };
     load();
   }, [slug]);
 
+  // Premier chargement sans cache → écran de chargement complet
   if (loading) return <LoadingScreen />;
 
   if (!store) {
@@ -276,6 +318,9 @@ export default function StorefrontClient({ params }) {
 
   return (
     <>
+      {/* Barre de rafraîchissement discrète — visible seulement lors d'une synchro silencieuse */}
+      {refreshing && <RefreshBar />}
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=${(themeConfig.font || 'Inter').replace(/ /g,'+')}:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
