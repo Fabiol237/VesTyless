@@ -219,7 +219,7 @@ export default function StorefrontClient({ params }) {
         storeCache[slug] = { store: cleanStore, modules: active };
 
         // Incrémenter le compteur de vues (sans bloquer l'affichage)
-        supabase.rpc('increment_store_view', { st_id: storeData.id }).catch(() => {});
+        try { supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {}
 
         // Initialise l'onglet actif seulement à la première visite (pas de cache)
         if (!hasCached && active.length > 0) {

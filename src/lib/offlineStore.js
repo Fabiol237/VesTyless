@@ -1,115 +1,75 @@
 /**
  * Vestyle Offline Store (IndexedDB wrapper)
- * ✅ OPTIMISÉ v5: Connexion singleton pour éviter l'overhead de réouverture à chaque opération.
+ * Optimized for high-speed local data access and background sync.
  */
 
-const DB_NAME = 'vestyle_v5_db';
+const DB_NAME = 'vestyle_v4_db';
 const DB_VERSION = 1;
 
-// ── SINGLETON: une seule connexion réutilisée partout ──────────────────────
-let _dbPromise = null;
-
-function getDB() {
-  if (_dbPromise) return _dbPromise;
-
-  _dbPromise = new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB not available'));
-      return;
-    }
+export const openDB = () => {
+  return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+      // Store for products/stores data
       if (!db.objectStoreNames.contains('cache')) {
         db.createObjectStore('cache');
       }
+      // Store for pending operations (sync queue)
       if (!db.objectStoreNames.contains('sync_queue')) {
         db.createObjectStore('sync_queue', { keyPath: 'id', autoIncrement: true });
       }
     };
 
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => {
-      _dbPromise = null; // Reset so it can retry on next call
-      reject(request.error);
-    };
+    request.onerror = () => reject(request.error);
   });
-
-  return _dbPromise;
-}
-
-// ── LEGACY EXPORT (rétrocompatibilité) ───────────────────────────────────
-export const openDB = getDB;
+};
 
 export const offlineStore = {
   async get(key) {
-    try {
-      const db = await getDB();
-      return new Promise((resolve) => {
-        const tx = db.transaction('cache', 'readonly');
-        const req = tx.objectStore('cache').get(key);
-        req.onsuccess = () => resolve(req.result ?? null);
-        req.onerror = () => resolve(null);
-      });
-    } catch {
-      return null;
-    }
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const transaction = db.transaction('cache', 'readonly');
+      const store = transaction.objectStore('cache');
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    });
   },
 
   async set(key, value) {
-    try {
-      const db = await getDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('cache', 'readwrite');
-        tx.objectStore('cache').put(value, key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch {
-      // Silently fail - caching is best-effort
-    }
+    const db = await openDB();
+    const transaction = db.transaction('cache', 'readwrite');
+    const store = transaction.objectStore('cache');
+    store.put(value, key);
+    return transaction.complete;
   },
 
   async addToQueue(operation) {
-    try {
-      const db = await getDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('sync_queue', 'readwrite');
-        tx.objectStore('sync_queue').add({ ...operation, timestamp: Date.now() });
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch {
-      // Silently fail
-    }
+    const db = await openDB();
+    const transaction = db.transaction('sync_queue', 'readwrite');
+    const store = transaction.objectStore('sync_queue');
+    store.add({ ...operation, timestamp: Date.now() });
+    return transaction.complete;
   },
 
   async getQueue() {
-    try {
-      const db = await getDB();
-      return new Promise((resolve) => {
-        const tx = db.transaction('sync_queue', 'readonly');
-        const req = tx.objectStore('sync_queue').getAll();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => resolve([]);
-      });
-    } catch {
-      return [];
-    }
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const transaction = db.transaction('sync_queue', 'readonly');
+      const store = transaction.objectStore('sync_queue');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+    });
   },
 
   async removeFromQueue(id) {
-    try {
-      const db = await getDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('sync_queue', 'readwrite');
-        tx.objectStore('sync_queue').delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch {
-      // Silently fail
-    }
-  },
+    const db = await openDB();
+    const transaction = db.transaction('sync_queue', 'readwrite');
+    const store = transaction.objectStore('sync_queue');
+    store.delete(id);
+    return transaction.complete;
+  }
 };

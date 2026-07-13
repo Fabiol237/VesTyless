@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY; 
 
+// Helper pour convertir la clé VAPID
 function urlBase64ToUint8Array(base64String) {
   if (!base64String) return new Uint8Array(0);
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -18,47 +19,88 @@ function urlBase64ToUint8Array(base64String) {
 
 export default function PwaRegistry() {
   const [isOnline, setIsOnline] = useState(true);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // === INSTALLATION DISCRÈTE ===
+    // === GESTION DE L'INSTALLATION DISCRÈTE ===
+    let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
+      deferredPrompt = e;
+      console.log('[Vestyle PWA] Prêt pour installation.');
     });
 
-    // === ENREGISTREMENT SERVICE WORKER ===
+    // === ENREGISTREMENT ET ABONNEMENT ===
     const initPwa = async () => {
-      if (!('serviceWorker' in navigator)) return;
+      if (!('serviceWorker' in navigator)) {
+        console.warn('[Vestyle PWA] Service Worker non supporté.');
+        return;
+      }
 
       try {
         const reg = await navigator.serviceWorker.register('/sw.js');
+        console.log('[Vestyle PWA] Service Worker enregistré:', reg.scope);
 
-        // ✅ FIX CRITIQUE: Pas de confirm() bloquant.
-        // On affiche un bandeau discret non-bloquant à la place.
+        // --- FORCE UPDATE LOGIC ---
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
-          newWorker?.addEventListener('statechange', () => {
+          newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nouveau SW prêt → informer sans bloquer
-              setUpdateAvailable(true);
+              // Nouvelle version disponible !
+              if (confirm('🎉 Une nouvelle version de Vestyle est disponible ! Voulez-vous mettre à jour ?')) {
+                window.location.reload();
+              }
             }
           });
         });
 
-        // Attendre l'activation sans polling bloquant
-        if (reg.active) {
-          scheduleAuthSync(reg);
-        } else {
-          reg.addEventListener('activate', () => scheduleAuthSync(reg), { once: true });
-          navigator.serviceWorker.addEventListener('controllerchange', () => scheduleAuthSync(reg), { once: true });
-        }
+        // --- SYNC AUTH & PUSH (Wait for Service Worker to be active) ---
+        const waitForActivation = () => {
+          return new Promise((resolve) => {
+            if (reg.active) {
+              resolve();
+            } else {
+              const checkActive = setInterval(() => {
+                if (reg.active) {
+                  clearInterval(checkActive);
+                  resolve();
+                }
+              }, 100);
+              setTimeout(() => clearInterval(checkActive), 5000);
+            }
+          });
+        };
+
+        await waitForActivation();
+
+        setTimeout(async () => {
+          try {
+            if (!VAPID_PUBLIC_KEY) {
+              console.warn('[Vestyle PWA] VAPID_PUBLIC_KEY non configurée.');
+              return;
+            }
+
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) throw sessionError;
+
+            const user = session?.user;
+            if (user && Notification.permission === 'granted') {
+              await syncPushSubscription(reg, user);
+            }
+          } catch (err) {
+            // Silence auth lock errors as they are common and self-correcting in multi-tab PWA
+            if (!err.message?.includes('lock')) {
+              console.warn('[Vestyle PWA] Auth sync skipped:', err.message);
+            }
+          }
+        }, 500);
 
       } catch (err) {
         if (!err.message?.includes('lock')) {
@@ -67,38 +109,25 @@ export default function PwaRegistry() {
       }
     };
 
-    const scheduleAuthSync = (reg) => {
-      // Délai court pour ne pas bloquer le rendu initial
-      setTimeout(async () => {
-        try {
-          if (!VAPID_PUBLIC_KEY) return;
-          const { data: { session } } = await supabase.auth.getSession();
-          const user = session?.user;
-          if (user && 'Notification' in window && Notification.permission === 'granted') {
-            await syncPushSubscription(reg, user);
-          }
-        } catch (err) {
-          if (!err.message?.includes('lock')) {
-            console.warn('[Vestyle PWA] Auth sync skipped:', err.message);
-          }
-        }
-      }, 1500);
-    };
-
     const syncPushSubscription = async (reg, user) => {
       try {
         let sub = await reg.pushManager.getSubscription();
+        
         if (!sub) {
+          console.log('[Vestyle PWA] Création d\'un nouvel abonnement...');
+          const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            applicationServerKey: convertedKey
           });
         }
+
         await supabase.from('push_subscriptions').upsert({
           user_id: user.id,
           email: user.email,
-          subscription: sub,
+          subscription: sub
         });
+        console.log('[Vestyle PWA] Abonnement Push OK.');
       } catch (err) {
         console.error('[Vestyle PWA] Erreur synchro Push:', err);
       }
@@ -112,65 +141,56 @@ export default function PwaRegistry() {
     };
   }, []);
 
-  const handleApplyUpdate = () => {
-    window.location.reload();
-  };
-
   return (
     <>
-      {/* Bandeau hors-ligne */}
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-600 text-white text-[10px] font-black uppercase tracking-widest py-1 text-center animate-pulse">
           Mode Hors-Ligne Actif • Navigation Locale Uniquement
         </div>
       )}
-
-      {/* ✅ Bandeau de mise à jour non-bloquant (remplace confirm()) */}
-      {updateAvailable && (
-        <div className="fixed bottom-4 left-4 right-4 z-[9999] flex items-center justify-between gap-3 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 animate-slide-up">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🎉</span>
-            <p className="text-xs font-bold">Nouvelle version disponible !</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setUpdateAvailable(false)} className="text-[10px] text-slate-400 font-bold uppercase tracking-wider hover:text-white transition-colors px-2">
-              Plus tard
-            </button>
-            <button onClick={handleApplyUpdate} className="text-[10px] font-black uppercase tracking-wider bg-wa-teal text-white px-3 py-1.5 rounded-xl hover:bg-emerald-500 transition-colors">
-              Mettre à jour
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bouton notifications discret */}
-      {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default' && (
-        <div className="fixed bottom-4 right-4 z-[9998]">
-          <button
+      
+      {/* Petit indicateur discret pour activer les notifications si nécessaire */}
+      {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
+        <div className="fixed bottom-4 right-4 z-[9999] animate-bounce">
+          <button 
             onClick={async () => {
               try {
+                console.log('[Vestyle PWA] Demande de permission manuelle...');
                 const permission = await Notification.requestPermission();
+                console.log('[Vestyle PWA] Permission accordée ?', permission);
+                
                 if (permission === 'granted') {
                   const reg = await navigator.serviceWorker.getRegistration();
                   const { data: { user } } = await supabase.auth.getUser();
-                  if (reg && user && VAPID_PUBLIC_KEY) {
+                  
+                  if (reg && user) {
+                    const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
                     const sub = await reg.pushManager.subscribe({
                       userVisibleOnly: true,
-                      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                      applicationServerKey: convertedKey
                     });
-                    await supabase.from('push_subscriptions').upsert({ user_id: user.id, email: user.email, subscription: sub });
+                    
+                    await supabase.from('push_subscriptions').upsert({
+                      user_id: user.id,
+                      email: user.email,
+                      subscription: sub
+                    });
+                    alert('Notifications activées !');
+                  } else {
+                    alert('Erreur : Session ou Service Worker introuvable.');
                   }
+                } else {
+                  alert('Vous avez refusé les notifications.');
                 }
               } catch (err) {
-                console.error('[Vestyle PWA] Erreur notifications:', err);
+                console.error('[Vestyle PWA] Erreur manuelle:', err);
+                alert('Erreur lors de l\'activation : ' + err.message);
               }
             }}
             className="bg-wa-teal text-white p-3 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group"
           >
             <div className="w-2 h-2 bg-white rounded-full animate-ping" />
-            <span className="text-[10px] font-black uppercase tracking-tighter max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap">
-              Activer les Notifications
-            </span>
+            <span className="text-[10px] font-black uppercase tracking-tighter max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 whitespace-nowrap">Activer les Notifications</span>
           </button>
         </div>
       )}

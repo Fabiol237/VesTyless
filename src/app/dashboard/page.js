@@ -13,6 +13,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumChart from '@/components/PremiumChart';
 import SellerAssistantPanel from '@/components/SellerAssistantPanel';
+import RefreshBar from '@/components/RefreshBar';
+import { getCached, setCached } from '@/lib/dataCache';
 
 const currencyFormatter = new Intl.NumberFormat('fr-FR', {
   style: 'currency', currency: 'XOF', maximumFractionDigits: 0,
@@ -112,24 +114,36 @@ function buildChartData(orders, period) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SellerDashboard() {
   const { loading: authLoading, store } = useAuth();
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [analytics, setAnalytics] = useState([]);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const storeId = store?.id;
+
+  // ── Cache stale-while-revalidate ──────────────────────────────────────────
+  // Les données sont lues depuis le cache au premier rendu → pas de spinner.
+  const cacheKey = storeId ? `dashboard:${storeId}` : null;
+  const cached = cacheKey ? getCached(cacheKey) : null;
+
+  const [products,      setProducts]      = useState(cached?.products      || []);
+  const [orders,        setOrders]        = useState(cached?.orders        || []);
+  const [notifications, setNotifications] = useState(cached?.notifications || []);
+  const [analytics,     setAnalytics]     = useState(cached?.analytics     || []);
+  const [livreur,       setLivreur]       = useState(cached?.livreur       || null);
+  const [deliveryCount, setDeliveryCount] = useState(cached?.deliveryCount || 0);
+
+  // loading = true seulement si AUCUN cache ET pas encore de données
+  const [dashboardLoading, setDashboardLoading] = useState(!cached && !authLoading);
+  // refreshing = synchro silencieuse en arrière-plan (fine barre verte)
+  const [refreshing, setRefreshing] = useState(false);
+
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
   const [periodOpen, setPeriodOpen] = useState(false);
-  const [livreur, setLivreur] = useState(null);
-  const [deliveryCount, setDeliveryCount] = useState(0);
-
-  const storeId = store?.id;
 
   const loadDashboardData = useCallback(async (isSilent = false) => {
     if (!storeId) { setDashboardLoading(false); return; }
-    if (!isSilent) setDashboardLoading(true);
+    // Affichage non-bloquant : spinner complet seulement si AUCUNE donnée visible
+    const hasCached = products.length > 0 || orders.length > 0;
+    if (!isSilent && !hasCached) setDashboardLoading(true);
+    if (isSilent || hasCached) setRefreshing(true);
 
     try {
-      // Optimized: Fetch only last 90 days by default (covers 7d, 30d, 90d filters)
       const since = new Date();
       since.setDate(since.getDate() - 90);
 
@@ -143,10 +157,19 @@ export default function SellerDashboard() {
         supabase.rpc('get_store_weekly_analytics', { store_id_param: storeId })
       ]);
 
-      setProducts(productsRes.data || []);
-      setOrders(ordersRes.data || []);
-      setNotifications(notifsRes.data || []);
-      setAnalytics(analyticsRes.data || []);
+      const fresh = {
+        products:      productsRes.data || [],
+        orders:        ordersRes.data   || [],
+        notifications: notifsRes.data  || [],
+        analytics:     analyticsRes.data || [],
+        livreur:       livreur,
+        deliveryCount: deliveryCount,
+      };
+
+      setProducts(fresh.products);
+      setOrders(fresh.orders);
+      setNotifications(fresh.notifications);
+      setAnalytics(fresh.analytics);
 
       // Check if user is also a livreur
       const { data: liv } = await supabase.from('livreurs').select('id').eq('user_id', store.owner_id).maybeSingle();
@@ -156,13 +179,19 @@ export default function SellerDashboard() {
           .eq('livreur_id', liv.id)
           .not('status', 'in', '("delivered","cancelled")');
         setDeliveryCount(count || 0);
+        fresh.livreur = liv;
+        fresh.deliveryCount = count || 0;
       }
+
+      // Sauvegarder dans le cache global
+      if (cacheKey) setCached(cacheKey, fresh);
     } catch (err) {
       console.error('Dashboard Load Error:', err);
     } finally {
       setDashboardLoading(false);
+      setRefreshing(false);
     }
-  }, [storeId, store?.owner_id]);
+  }, [storeId, store?.owner_id, cacheKey, products.length, orders.length, livreur, deliveryCount]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -248,8 +277,9 @@ export default function SellerDashboard() {
     );
   }
 
-return (
+  return (
     <div className="min-h-screen bg-slate-50 pb-20">
+      {refreshing && <RefreshBar />}
       <div className="max-w-7xl mx-auto pt-6 px-6">
         <BackNavigation title="Tableau de Bord" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

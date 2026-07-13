@@ -96,19 +96,25 @@ export function AuthProvider({ children }) {
 
   const fetchUserData = async (userId) => {
     try {
-      // ✅ OPTIMISATION: Profile + Store en PARALLÈLE (2x plus rapide)
-      const [
-        { data: profileData, error: profileError },
-        { data: storeData, error: storeError }
-      ] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('stores').select('*').eq('owner_id', userId)
-          .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      ]);
-
+      // 1. Fetch Profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
       if (!profileError && profileData) {
         setProfile(profileData);
       }
+
+      // 2. Fetch Store
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
         
       if (!storeError && storeData) {
         setStore(storeData);
