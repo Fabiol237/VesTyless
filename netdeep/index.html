@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetDeep - Laboratoire Réseau Immersif</title>
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-panel: #111827;
+            --bg-input: #1f2937;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: #334155;
+            --font-mono: 'Courier New', Courier, monospace;
+            --font-sans: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: linear-gradient(90deg, rgba(17,24,39,1) 0%, rgba(15,23,42,1) 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid var(--accent-cyan);
+            box-shadow: 0 4px 20px rgba(6, 182, 212, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1::before {
+            content: ">>";
+            color: var(--accent-purple);
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .container {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Sidebar Tabs */
+        .sidebar {
+            width: 250px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            text-align: left;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-family: var(--font-sans);
+        }
+
+        .tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-cyan);
+            border-left: 3px solid var(--accent-cyan);
+            background-color: rgba(6, 182, 212, 0.1);
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Cards and Inputs */
+        .card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        button.action-btn {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button.action-btn:hover {
+            background-color: #2563eb;
+        }
+
+        /* Output Terminals */
+        .terminal {
+            background-color: #000;
+            color: #0f0;
+            font-family: var(--font-mono);
+            padding: 1rem;
+            border-radius: 4px;
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #333;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .terminal .error { color: var(--accent-red); }
+        .terminal .info { color: var(--accent-cyan); }
+
+        /* Theory Section */
+        .theory-box {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--accent-purple);
+            padding: 1rem 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .theory-box h3 {
+            color: var(--accent-purple);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid var(--accent-cyan);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+            display: none;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge.bg-blue { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6;}
+        .badge.bg-green { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981;}
+        .badge.bg-purple { background-color: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid #8b5cf6;}
+
+        /* Grid layouts */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .data-item {
+            background: rgba(255,255,255,0.02);
+            padding: 0.75rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .data-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .data-value {
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            word-break: break-all;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>NetDeep</h1>
+            <div class="subtitle">Laboratoire d'Apprentissage & Diagnostics Réseau Immersif</div>
+        </div>
+        <div>
+            <span class="badge bg-green" id="connection-status">En ligne</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <button class="tab-btn active" onclick="openTab('tab-my-connection')">Ma Connexion (Cloudflare)</button>
+            <button class="tab-btn" onclick="openTab('tab-dns')">Recherche DNS (Google)</button>
+            <button class="tab-btn" onclick="openTab('tab-ipinfo')">Info IP & Géo (IPinfo)</button>
+            <button class="tab-btn" onclick="openTab('tab-bgp')">Routage BGP (RIPE Stat)</button>
+            <button class="tab-btn" onclick="openTab('tab-about')">À Propos des APIs</button>
+        </aside>
+
+        <main class="main-content">
+            
+            <!-- TAB: Ma Connexion -->
+            <div id="tab-my-connection" class="tab-content active">
+                <h2>Analyse de votre connexion actuelle</h2>
+                
+                <div class="card">
+                    <h3>Traces Cloudflare (1.1.1.1)</h3>
+                    <p>Récupération de vos métadonnées de connexion réseau telles que perçues par les serveurs Cloudflare Edge.</p>
+                    <button class="action-btn" onclick="fetchMyConnection()">Analyser ma connexion</button>
+                    <div id="loader-my-conn" class="loader"></div>
+                    
+                    <div id="my-conn-grid" class="data-grid" style="display:none;"></div>
+                    
+                    <div class="terminal" id="my-conn-term">En attente d'exécution...</div>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Théorie Contextuelle : Le réseau Anycast et les CDN</h3>
+                    <p>Cloudflare utilise le routage <strong>Anycast</strong>. Cela signifie que l'adresse IP (comme 1.1.1.1) est annoncée par de multiples serveurs à travers le monde. Votre trafic est automatiquement routé par le protocole BGP vers le centre de données Cloudflare le plus proche de vous (indiqué par le paramètre <code>colo</code> - Colocation center). Cela réduit la latence et améliore les performances globales d'internet.</p>
+                </div>
+            </div>
+
+            <!-- TAB: DNS -->
+            <div id="tab-dns" class="tab-content">
+                <h2>Résolution DNS sur HTTPS (DoH)</h2>
+                
+                <div class="card">
+                    <h3>Interroger Google DNS</h3>
+                    <div class="input-group">
+                        <input type="text" id="dns-target" placeholder="ex: google.com, example.com" value="example.com">
+                        <select id="dns-type" style="padding: 0.5rem; background: var(--bg-input); color: white; border: 1px solid var(--border-color);">
+                            <option value="A">A (IPv4)</option>
+                            <option value="AAAA">AAAA (IPv6)</option>
+                            <option value="MX">MX (Mail)</option>
+                            <option value="TXT">TXT (Texte/SPF)</option>
+                            <option value="NS">NS (Name Server)</option>
+                        </select>
+                        <button class="action-btn" onclick="fetchDNS()">Résoudre</button>
+                        <div id="loader-dns" class="loader"></div>
+                    </div>
+                    <div class="terminal" id="dns-term">Entrez un nom de domaine pour voir ses enregistrements DNS.</div>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Théorie Contextuelle : DNS et DoH</h3>
+                    <p>Le <strong>DNS (Domain Name System)</strong> traduit les noms de domaine lisibles par l'homme en adresses IP. Le <strong>DoH (DNS over HTTPS)</strong> chiffre ces requêtes via HTTPS, empêchant votre FAI ou un attaquant local d'espionner ou de manipuler les sites que vous visitez. Les types courants incluent <strong>A</strong> (adresse IPv4), <strong>AAAA</strong> (IPv6), et <strong>MX</strong> (serveur de messagerie).</p>
+                </div>
+            </div>
+
+            <!-- TAB: IP Info -->
+            <div id="tab-ipinfo" class="tab-content">
+                <h2>Renseignement sur Adresse IP</h2>
+                
+                <div class="card">
+                    <h3>IPinfo & Géolocalisation</h3>
+                    <div class="input-group">
+                        <input type="text" id="ip-target" placeholder="ex: 8.8.8.8, 1.1.1.1" value="8.8.8.8">
+                        <button class="action-btn" onclick="fetchIPInfo()">Analyser l'IP</button>
+                        <div id="loader-ip" class="loader"></div>
+                    </div>
+                    
+                    <div id="ip-grid" class="data-grid" style="display:none;"></div>
+                    <div class="terminal" id="ip-term">Entrez une IP pour obtenir son ASN, son organisation et sa localisation.</div>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Théorie Contextuelle : ASN (Autonomous System Number)</h3>
+                    <p>Un <strong>Système Autonome (AS)</strong> est un vaste réseau ou un groupe de réseaux gérés par une entité unique (comme un FAI, une grande entreprise ou une université) qui possède une politique de routage claire. Chaque AS se voit attribuer un numéro unique (<strong>ASN</strong>). Internet est fondamentalement une interconnexion de ces AS qui s'échangent du trafic.</p>
+                </div>
+            </div>
+
+            <!-- TAB: BGP (RIPE Stat) -->
+            <div id="tab-bgp" class="tab-content">
+                <h2>Analyse de Routage BGP</h2>
+                
+                <div class="card">
+                    <h3>RIPE Stat - Statut de Routage</h3>
+                    <div class="input-group">
+                        <input type="text" id="bgp-target" placeholder="ex: AS15169 (Google) ou 8.8.8.0/24" value="AS15169">
+                        <button class="action-btn" onclick="fetchBGP()">Voir Statut</button>
+                        <div id="loader-bgp" class="loader"></div>
+                    </div>
+                    <div class="terminal" id="bgp-term">Entrez un numéro d'AS ou un préfixe IP pour voir sa visibilité dans la table de routage globale.</div>
+                </div>
+
+                <div class="theory-box">
+                    <h3>Théorie Contextuelle : Le protocole BGP</h3>
+                    <p>Le <strong>BGP (Border Gateway Protocol)</strong> est le protocole de routage d'Internet. Il permet aux différents Systèmes Autonomes (AS) d'annoncer les préfixes IP qu'ils contrôlent ou peuvent atteindre. Si un préfixe perd sa visibilité BGP (souvent suite à une erreur de configuration ou une rupture de fibre), la portion correspondante d'Internet devient inaccessible.</p>
+                </div>
+            </div>
+
+            <!-- TAB: About -->
+            <div id="tab-about" class="tab-content">
+                <h2>À Propos des APIs utilisées</h2>
+                <div class="card">
+                    <p>NetDeep utilise des APIs publiques réelles pour fournir des données en direct :</p>
+                    <ul style="margin-left: 20px; margin-top: 10px; color: var(--text-muted);">
+                        <li><strong style="color:var(--accent-cyan)">Cloudflare Trace API :</strong> (<code>/cdn-cgi/trace</code>) Permet de voir les données de la requête HTTP brute qui atteint le réseau Cloudflare, incluant IP, SNI, et chiffrement.</li>
+                        <li><strong style="color:var(--accent-cyan)">Cloudflare Speed Meta API :</strong> (<code>speed.cloudflare.com/meta</code>) Fournit des métadonnées de géolocalisation ultra-rapides liées au point de présence du client.</li>
+                        <li><strong style="color:var(--accent-cyan)">Google DNS over HTTPS :</strong> (<code>dns.google/resolve</code>) Offre une interface REST pour interroger les serveurs DNS de Google (8.8.8.8) sans utiliser le protocole DNS natif (UDP/53).</li>
+                        <li><strong style="color:var(--accent-cyan)">IPinfo API :</strong> (<code>ipinfo.io</code>) Une des APIs les plus populaires pour associer une IP à des données géographiques, un ASN et un nom d'entreprise.</li>
+                        <li><strong style="color:var(--accent-cyan)">RIPE Stat API :</strong> L'outil officiel du RIPE NCC (le registre internet européen) fournissant des tonnes de données sur l'état d'Internet, le routage BGP et l'historique des allocations IP.</li>
+                        <li><strong style="color:var(--accent-cyan)">Globalping & AbuseIPDB :</strong> (Note: En raison des limitations d'authentification CORS/API Key depuis un navigateur pur, ces APIs sont conceptuellement intégrées ou émulées via les outils de recherche IP dans la version sans back-end).</li>
+                    </ul>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Helper: Output to terminal
+        function logTerm(termId, text, type = 'normal') {
+            const term = document.getElementById(termId);
+            const prefix = '> ';
+            if(type === 'error') {
+                term.innerHTML += `<div class="error">${prefix}${text}</div>`;
+            } else if (type === 'info') {
+                term.innerHTML += `<div class="info">${prefix}${text}</div>`;
+            } else {
+                term.innerHTML += `<div>${prefix}${text}</div>`;
+            }
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearTerm(termId) {
+            document.getElementById(termId).innerHTML = '';
+        }
+
+        function toggleLoader(id, show) {
+            document.getElementById(id).style.display = show ? 'inline-block' : 'none';
+        }
+
+        // 1. Cloudflare Connection Analysis
+        async function fetchMyConnection() {
+            const termId = 'my-conn-term';
+            const gridId = 'my-conn-grid';
+            clearTerm(termId);
+            document.getElementById(gridId).style.display = 'none';
+            toggleLoader('loader-my-conn', true);
+            
+            logTerm(termId, 'INITIATING CLOUDFLARE TRACE...', 'info');
+
+            try {
+                // Fetch basic trace
+                logTerm(termId, 'Fetching https://one.one.one.one/cdn-cgi/trace ...');
+                let traceRes = await fetch('https://one.one.one.one/cdn-cgi/trace');
+                let traceText = await traceRes.text();
+                logTerm(termId, 'Trace response received.\n' + traceText);
+                
+                // Fetch meta
+                logTerm(termId, 'Fetching https://speed.cloudflare.com/meta ...', 'info');
+                let metaRes = await fetch('https://speed.cloudflare.com/meta');
+                let metaData = await metaRes.json();
+                logTerm(termId, 'Meta response received: ' + JSON.stringify(metaData, null, 2));
+
+                // Parse trace text to object
+                const traceLines = traceText.trim().split('\n');
+                const traceObj = {};
+                traceLines.forEach(line => {
+                    const [k, v] = line.split('=');
+                    traceObj[k] = v;
+                });
+
+                // Display Grid
+                const grid = document.getElementById(gridId);
+                grid.style.display = 'grid';
+                grid.innerHTML = `
+                    <div class="data-item"><div class="data-label">Votre IP</div><div class="data-value">${traceObj.ip || metaData.clientIp}</div></div>
+                    <div class="data-item"><div class="data-label">Localisation</div><div class="data-value">${metaData.city || 'Inconnu'}, ${metaData.country || traceObj.loc}</div></div>
+                    <div class="data-item"><div class="data-label">ASN / FAI</div><div class="data-value">AS${metaData.asn} (${metaData.asOrganization})</div></div>
+                    <div class="data-item"><div class="data-label">Cloudflare Colo</div><div class="data-value">${traceObj.colo}</div></div>
+                    <div class="data-item"><div class="data-label">Protocole / TLS</div><div class="data-value">${traceObj.http} / ${traceObj.tls}</div></div>
+                `;
+
+                logTerm(termId, 'ANALYSIS COMPLETE.', 'info');
+            } catch (err) {
+                logTerm(termId, 'Erreur lors de la récupération des données : ' + err.message, 'error');
+            } finally {
+                toggleLoader('loader-my-conn', false);
+            }
+        }
+
+        // 2. Google DoH
+        async function fetchDNS() {
+            const target = document.getElementById('dns-target').value;
+            const type = document.getElementById('dns-type').value;
+            const termId = 'dns-term';
+            
+            if(!target) return;
+
+            clearTerm(termId);
+            toggleLoader('loader-dns', true);
+            logTerm(termId, `QUERY: ${target} IN ${type} via dns.google`, 'info');
+
+            try {
+                const url = `https://dns.google/resolve?name=${encodeURIComponent(target)}&type=${type}`;
+                logTerm(termId, `GET ${url}`);
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                logTerm(termId, `STATUS: ${data.Status === 0 ? 'NOERROR' : 'ERROR/NXDOMAIN'}`);
+                
+                if (data.Answer) {
+                    logTerm(termId, `\n;; ANSWER SECTION:`);
+                    data.Answer.forEach(ans => {
+                        logTerm(termId, `${ans.name}\t${ans.TTL}\tIN\t${type}\t${ans.data}`);
+                    });
+                } else {
+                    logTerm(termId, `\n;; NO ANSWER (Aucun enregistrement trouvé pour ce type)`, 'error');
+                }
+                
+            } catch (err) {
+                logTerm(termId, 'Erreur DNS : ' + err.message, 'error');
+            } finally {
+                toggleLoader('loader-dns', false);
+            }
+        }
+
+        // 3. IPinfo
+        async function fetchIPInfo() {
+            const target = document.getElementById('ip-target').value;
+            const termId = 'ip-term';
+            const gridId = 'ip-grid';
+            
+            if(!target) return;
+
+            clearTerm(termId);
+            document.getElementById(gridId).style.display = 'none';
+            toggleLoader('loader-ip', true);
+            logTerm(termId, `LOOKUP IP: ${target}`, 'info');
+
+            try {
+                // Using ipapi.co as it allows free CORS requests without explicit key in URL for simple use cases, 
+                // or ipinfo.io/json which sometimes works without CORS errors depending on the network.
+                // Let's use ipapi.co for reliability in browser.
+                const url = `https://ipapi.co/${target}/json/`;
+                logTerm(termId, `GET ${url}`);
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if(data.error) {
+                    logTerm(termId, `API Error: ${data.reason}`, 'error');
+                    return;
+                }
+
+                logTerm(termId, JSON.stringify(data, null, 2));
+
+                const grid = document.getElementById(gridId);
+                grid.style.display = 'grid';
+                grid.innerHTML = `
+                    <div class="data-item"><div class="data-label">IP</div><div class="data-value">${data.ip}</div></div>
+                    <div class="data-item"><div class="data-label">Organisation</div><div class="data-value">${data.org}</div></div>
+                    <div class="data-item"><div class="data-label">ASN</div><div class="data-value">${data.asn}</div></div>
+                    <div class="data-item"><div class="data-label">Ville / Pays</div><div class="data-value">${data.city}, ${data.country_name}</div></div>
+                `;
+
+            } catch (err) {
+                logTerm(termId, 'Erreur Lookup : ' + err.message, 'error');
+                logTerm(termId, 'Note: Certaines APIs d\'IP bloquent les requêtes provenant directement du navigateur (CORS).', 'error');
+            } finally {
+                toggleLoader('loader-ip', false);
+            }
+        }
+
+        // 4. RIPE Stat BGP
+        async function fetchBGP() {
+            const target = document.getElementById('bgp-target').value;
+            const termId = 'bgp-term';
+            
+            if(!target) return;
+
+            clearTerm(termId);
+            toggleLoader('loader-bgp', true);
+            logTerm(termId, `FETCHING RIPE STAT BGP DATA FOR: ${target}`, 'info');
+
+            try {
+                const url = `https://stat.ripe.net/data/routing-status/data.json?resource=${encodeURIComponent(target)}`;
+                logTerm(termId, `GET ${url}`);
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.data) {
+                    const status = data.data.visibility || data.data.status;
+                    const block = data.data.first_seen || data.data;
+                    logTerm(termId, `\n=== RIPE NETWORK COORDINATION CENTRE ===`, 'info');
+                    logTerm(termId, `Resource: ${data.data.resource}`);
+                    logTerm(termId, `Status / Visibility: ${JSON.stringify(status)}`);
+                    
+                    if(data.data.announced_space) {
+                        logTerm(termId, `Announced Space (IPv4): ${data.data.announced_space.v4.ips} IPs`);
+                        logTerm(termId, `Announced Space (IPv6): ${data.data.announced_space.v6.ips} IPs`);
+                    }
+                    
+                    logTerm(termId, `\nRaw Data Sample:`);
+                    logTerm(termId, JSON.stringify(data.data, null, 2).substring(0, 500) + '... [TRUNCATED]');
+                } else {
+                    logTerm(termId, `Aucune donnée trouvée pour ${target}`, 'error');
+                }
+            } catch (err) {
+                logTerm(termId, 'Erreur RIPE Stat : ' + err.message, 'error');
+            } finally {
+                toggleLoader('loader-bgp', false);
+            }
+        }
+    </script>
+</body>
+</html>

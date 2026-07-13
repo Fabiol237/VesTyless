@@ -1,0 +1,100 @@
+classDiagram
+    class Profile {
+        +UUID id
+        +String email
+        +String full_name
+        +String avatar_url
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class Store {
+        +UUID id
+        +UUID owner_id
+        +String name
+        +String slug
+        +String description
+        +String logo_url
+        +String banner_url
+        +String theme_color
+        +String secondary_color
+        +String store_code
+        +String city
+        +String phone
+        +String font_family
+        +String custom_message
+        +Boolean is_active
+        +Boolean is_boosted
+        +Integer daily_views
+        +Decimal latitude
+        +Decimal longitude
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class Category {
+        +UUID id
+        +UUID store_id
+        +String name
+        +String slug
+        +DateTime created_at
+    }
+
+    class Product {
+        +UUID id
+        +UUID store_id
+        +UUID category_id
+        +String name
+        +String description
+        +Decimal price
+        +String image_url
+        +Integer stock_quantity
+        +Boolean is_active
+        +Vector1024 image_embedding_1024
+        +String ai_caption
+        +String[] ai_tags
+        +DateTime ai_indexed_at
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class Order {
+        +UUID id
+        +UUID store_id
+        +String customer_name
+        +String customer_email
+        +String customer_phone
+        +Decimal total_amount
+        +String status
+        +JSONB order_items
+        +Decimal delivery_lat
+        +Decimal delivery_lng
+        +UUID delivery_agent_id
+        +DateTime created_at
+    }
+
+    class CartItem {
+        +UUID id
+        +UUID user_id
+        +UUID product_id
+        +Integer quantity
+        +DateTime created_at
+    }
+
+    class DeliveryTracking {
+        +UUID id
+        +UUID order_id
+        +Decimal lat
+        +Decimal lng
+        +DateTime updated_at
+    }
+
+    Profile "1" --> "0..*" Store : owns
+    Store "1" --> "0..*" Category : contains
+    Store "1" --> "0..*" Product : sells
+    Category "1" --> "0..*" Product : groups
+    Store "1" --> "0..*" Order : processes
+    Profile "1" --> "0..*" Order : delivers
+    Profile "1" --> "0..*" CartItem : has
+    Product "1" --> "0..*" CartItem : added_to
+    Order "1" --> "1" DeliveryTracking : tracks

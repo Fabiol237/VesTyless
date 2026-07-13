@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    actor Client as 📱 Utilisateur / Client
+    participant API as 🚀 Next.js API (/api/search/visual)
+    participant HF as 🤗 Hugging Face Space (fabiol237-vestyle-ai-engine)
+    participant Supabase as 🗄️ Supabase DB (pgvector)
+    participant Mistral as 🤖 Pixtral Vision (Fallback)
+    participant Voyage as 🧠 Voyage AI (Fallback)
+
+    Client->>API: POST /api/search/visual (Image, category_filter)
+    rect rgb(230, 245, 255)
+        note right of API: MOTEUR PRINCIPAL (Hugging Face)
+        API->>HF: Call "search" endpoint (Base64 Image)
+        activate HF
+        HF->>HF: Run Florence-2 (Caption & OCR)
+        HF->>HF: Run DINOv2 (Structural features)
+        HF->>HF: Run SigLIP (Semantic features)
+        HF->>HF: Fusion vector (1024 dims)
+        HF->>Supabase: Query similarity (pgvector HNSW)
+        Supabase-->>HF: Return Top Matched Products
+        HF-->>API: Return products, description, OCR tags
+        deactivate HF
+    end
+
+    alt Si HF Space échoue / Timeout
+        rect rgb(255, 240, 240)
+            note right of API: MOTEUR FALLBACK
+            API->>Mistral: POST Chat completion (Image + VISION_PROMPT)
+            Mistral-->>API: Return Image Description
+            API->>Voyage: POST Multimodal embedding (Image + Description)
+            Voyage-->>API: Return Embedding (1024D)
+            API->>Supabase: Call RPC match_products_v2(embedding)
+            Supabase-->>API: Return Top Matched Products
+        end
+    end
+
+    API->>API: Post-process (filter by category, limit to 12)
+    API-->>Client: Response (success, products, engine, elapsed_ms)

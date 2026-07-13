@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VESTYLE — Diagramme de Séquence UML</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0D1117;
+      font-family: 'Inter', sans-serif;
+      color: #E6EDF3;
+      overflow-x: auto;
+    }
+    header {
+      text-align: center;
+      padding: 30px 20px 18px;
+      border-bottom: 1px solid #21262D;
+      background: linear-gradient(180deg, #0D1117 0%, #161B22 100%);
+    }
+    header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #58A6FF, #A78BFA, #F97316);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.04em;
+    }
+    header p { color: #8B949E; font-size: 0.88rem; margin-top: 6px; }
+    .badge {
+      display: inline-block;
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.75rem;
+      color: #8B949E;
+      margin-top: 10px;
+      margin-right: 5px;
+    }
+    .canvas-wrap {
+      padding: 30px 20px 60px;
+      overflow-x: auto;
+    }
+    svg { display: block; margin: 0 auto; }
+
+    /* GROUP BOX */
+    .grp-box { rx: 6; ry: 6; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🔄 VESTYLE — Diagramme de Séquence UML</h1>
+  <p>Flux complet : Authentification → Recherche IA → Panier → Commande → Livraison GPS</p>
+  <br/>
+  <span class="badge">🧑 7 Acteurs</span>
+  <span class="badge">📨 29 Messages</span>
+  <span class="badge">🗂️ 5 Groupes</span>
+  <span class="badge">⚡ Realtime Supabase</span>
+</header>
+
+<div class="canvas-wrap">
+<svg width="1380" height="1700" viewBox="0 0 1380 1700" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Arrow heads -->
+  <marker id="arr-solid" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#58A6FF"/>
+  </marker>
+  <marker id="arr-return" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#8B949E"/>
+  </marker>
+  <marker id="arr-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#22C55E"/>
+  </marker>
+  <marker id="arr-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#F97316"/>
+  </marker>
+  <marker id="arr-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#A78BFA"/>
+  </marker>
+  <marker id="arr-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#EF4444"/>
+  </marker>
+  <marker id="arr-yellow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#EAB308"/>
+  </marker>
+  <marker id="arr-teal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#14B8A6"/>
+  </marker>
+
+  <!-- Gradients for actor heads -->
+  <linearGradient id="g-client" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1D4ED8"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient>
+  <linearGradient id="g-browser" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6D28D9"/><stop offset="100%" stop-color="#8B5CF6"/></linearGradient>
+  <linearGradient id="g-auth" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4338CA"/><stop offset="100%" stop-color="#6366F1"/></linearGradient>
+  <linearGradient id="g-supa" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488"/><stop offset="100%" stop-color="#14B8A6"/></linearGradient>
+  <linearGradient id="g-ai" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C2410C"/><stop offset="100%" stop-color="#F97316"/></linearGradient>
+  <linearGradient id="g-api" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#991B1B"/><stop offset="100%" stop-color="#EF4444"/></linearGradient>
+  <linearGradient id="g-email" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9D174D"/><stop offset="100%" stop-color="#EC4899"/></linearGradient>
+
+  <!-- Background grid -->
+  <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#161B22" stroke-width="0.5"/>
+  </pattern>
+</defs>
+
+<!-- Background -->
+<rect width="1380" height="1700" fill="url(#grid)"/>
+
+<!-- ═══════════════════════════════════════════
+     ACTOR COLUMNS (x positions)
+     Client=90, Browser=270, Auth=430, Supabase=600, AI=770, API=940, Email=1110
+═══════════════════════════════════════════ -->
+
+<!-- ── ACTOR BOXES ── -->
+<!-- Client -->
+<g transform="translate(40,30)">
+  <rect width="100" height="52" rx="8" fill="url(#g-client)" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="50" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">🧑</text>
+  <text x="50" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">Client</text>
+  <text x="50" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(Utilisateur)</text>
+</g>
+
+<!-- Browser/Next.js -->
+<g transform="translate(210,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-browser)" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">📱</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">Navigateur</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(Next.js App)</text>
+</g>
+
+<!-- AuthContext -->
+<g transform="translate(385,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-auth)" stroke="#6366F1" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">🔐</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">AuthContext</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(React Context)</text>
+</g>
+
+<!-- Supabase -->
+<g transform="translate(560,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-supa)" stroke="#14B8A6" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">🗄️</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">Supabase DB</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(PostgreSQL)</text>
+</g>
+
+<!-- AI Service -->
+<g transform="translate(735,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-ai)" stroke="#F97316" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">🤖</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">IA Service</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(Cohere / Mistral)</text>
+</g>
+
+<!-- API Routes -->
+<g transform="translate(910,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-api)" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">📦</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">API Routes</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(Next.js /api)</text>
+</g>
+
+<!-- Email Service -->
+<g transform="translate(1085,30)">
+  <rect width="120" height="52" rx="8" fill="url(#g-email)" stroke="#EC4899" stroke-width="1.5"/>
+  <text x="60" y="20" text-anchor="middle" font-family="Inter" font-size="18" fill="white">📧</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Inter" font-size="11" font-weight="700" fill="white">Email Service</text>
+  <text x="60" y="49" text-anchor="middle" font-family="Inter" font-size="9" fill="rgba(255,255,255,0.7)">(Resend / Nodemailer)</text>
+</g>
+
+<!-- ── LIFELINES (vertical dashed) ── -->
+<!-- Client x=90 -->
+<line x1="90"   y1="82" x2="90"   y2="1650" stroke="#3B82F6" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- Browser x=270 -->
+<line x1="270"  y1="82" x2="270"  y2="1650" stroke="#8B5CF6" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- Auth x=445 -->
+<line x1="445"  y1="82" x2="445"  y2="1650" stroke="#6366F1" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- Supabase x=620 -->
+<line x1="620"  y1="82" x2="620"  y2="1650" stroke="#14B8A6" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- AI x=795 -->
+<line x1="795"  y1="82" x2="795"  y2="1650" stroke="#F97316" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- API x=970 -->
+<line x1="970"  y1="82" x2="970"  y2="1650" stroke="#EF4444" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+<!-- Email x=1145 -->
+<line x1="1145" y1="82" x2="1145" y2="1650" stroke="#EC4899" stroke-width="1.2" stroke-dasharray="6,5" opacity="0.5"/>
+
+
+<!-- ════════════════════════════════════════════════════
+     GROUP 1 — AUTHENTIFICATION  (y: 120 → 350)
+════════════════════════════════════════════════════ -->
+<rect x="20" y="110" width="1330" height="260" rx="6" fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-dasharray="10,4" opacity="0.4"/>
+<rect x="20" y="110" width="185" height="22" rx="4" fill="#1D4ED8" opacity="0.8"/>
+<text x="30" y="126" font-family="Inter" font-size="12" font-weight="700" fill="white">🔐 GROUPE 1 — AUTHENTIFICATION</text>
+
+<!-- Activation boxes -->
+<rect x="83"  y="145" width="14" height="205" rx="2" fill="#3B82F6" opacity="0.6"/>
+<rect x="263" y="160" width="14" height="190" rx="2" fill="#8B5CF6" opacity="0.6"/>
+<rect x="438" y="175" width="14" height="140" rx="2" fill="#6366F1" opacity="0.6"/>
+<rect x="613" y="190" width="14" height="90"  rx="2" fill="#14B8A6" opacity="0.6"/>
+
+<!-- MSG 1: Client → Browser -->
+<line x1="97" y1="155" x2="263" y2="155" stroke="#58A6FF" stroke-width="2" marker-end="url(#arr-solid)"/>
+<text x="175" y="150" text-anchor="middle" font-family="Inter" font-size="11" fill="#58A6FF" font-weight="500">1. GET /login</text>
+<text x="175" y="163" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Accéder à la page de connexion</text>
+
+<!-- MSG 2: Browser → AuthContext -->
+<line x1="277" y1="178" x2="438" y2="178" stroke="#A78BFA" stroke-width="2" marker-end="url(#arr-purple)"/>
+<text x="357" y="173" text-anchor="middle" font-family="Inter" font-size="11" fill="#A78BFA" font-weight="500">2. initialiser()</text>
+<text x="357" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">onAuthStateChange()</text>
+
+<!-- MSG 3: Auth → Supabase -->
+<line x1="452" y1="200" x2="613" y2="200" stroke="#14B8A6" stroke-width="2" marker-end="url(#arr-teal)"/>
+<text x="532" y="195" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">3. getSession()</text>
+<text x="532" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">supabase.auth.getSession()</text>
+
+<!-- MSG 4: Supabase → Auth (return) -->
+<line x1="613" y1="230" x2="452" y2="230" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="532" y="225" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">4. ← Session JWT + user_id</text>
+<text x="532" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">+ profile + store</text>
+
+<!-- MSG 5: Auth → Browser (return) -->
+<line x1="438" y1="265" x2="277" y2="265" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="357" y="258" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">5. ← setUser() / setProfile() / setStore()</text>
+
+<!-- MSG 6: Browser → Client (return) -->
+<line x1="263" y1="310" x2="97" y2="310" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="175" y="303" text-anchor="middle" font-family="Inter" font-size="11" fill="#22C55E">6. ✅ Afficher page d'accueil (authentifié)</text>
+
+
+<!-- ════════════════════════════════════════════════════
+     GROUP 2 — RECHERCHE VISUELLE IA  (y: 390 → 590)
+════════════════════════════════════════════════════ -->
+<rect x="20" y="380" width="1330" height="240" rx="6" fill="none" stroke="#F97316" stroke-width="1.5" stroke-dasharray="10,4" opacity="0.4"/>
+<rect x="20" y="380" width="240" height="22" rx="4" fill="#C2410C" opacity="0.85"/>
+<text x="30" y="396" font-family="Inter" font-size="12" font-weight="700" fill="white">🤖 GROUPE 2 — RECHERCHE VISUELLE IA</text>
+
+<!-- Activation boxes -->
+<rect x="83"  y="410" width="14" height="185" rx="2" fill="#3B82F6" opacity="0.5"/>
+<rect x="263" y="425" width="14" height="165" rx="2" fill="#8B5CF6" opacity="0.5"/>
+<rect x="963" y="440" width="14" height="110" rx="2" fill="#EF4444" opacity="0.5"/>
+<rect x="788" y="455" width="14" height="65"  rx="2" fill="#F97316" opacity="0.5"/>
+<rect x="613" y="470" width="14" height="65"  rx="2" fill="#14B8A6" opacity="0.5"/>
+
+<!-- MSG 7: Client → Browser -->
+<line x1="97" y1="420" x2="263" y2="420" stroke="#F97316" stroke-width="2" marker-end="url(#arr-orange)"/>
+<text x="175" y="414" text-anchor="middle" font-family="Inter" font-size="11" fill="#F97316" font-weight="500">7. Upload photo (recherche visuelle)</text>
+<text x="175" y="428" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">VestyleLens / VisualSearchModal</text>
+
+<!-- MSG 8: Browser → API -->
+<line x1="277" y1="448" x2="963" y2="448" stroke="#EF4444" stroke-width="2" marker-end="url(#arr-red)"/>
+<text x="620" y="442" text-anchor="middle" font-family="Inter" font-size="11" fill="#EF4444" font-weight="500">8. POST /api/search/visual { image_base64 }</text>
+
+<!-- MSG 9: API → AI -->
+<line x1="963" y1="470" x2="802" y2="470" stroke="#F97316" stroke-width="2" marker-end="url(#arr-orange)"/>
+<text x="882" y="464" text-anchor="middle" font-family="Inter" font-size="11" fill="#F97316" font-weight="500">9. embed(image)</text>
+<text x="882" y="478" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Cohere embed-v3 / Mistral Pixtral</text>
+
+<!-- MSG 10: AI → Supabase -->
+<line x1="788" y1="492" x2="627" y2="492" stroke="#14B8A6" stroke-width="2" marker-end="url(#arr-teal)"/>
+<text x="707" y="486" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">10. match_products_by_vector(embedding)</text>
+<text x="707" y="500" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">RPC pgvector similarity search</text>
+
+<!-- MSG 11: Supabase → API (return) -->
+<line x1="613" y1="520" x2="963" y2="520" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="790" y="514" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">11. ← Produits similaires [ ] (top-K)</text>
+
+<!-- MSG 12: API → Browser (return) -->
+<line x1="963" y1="545" x2="277" y2="545" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="620" y="539" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">12. ← Résultats JSON { products[], scores[] }</text>
+
+<!-- MSG 13: Browser → Client (return) -->
+<line x1="263" y1="568" x2="97" y2="568" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="175" y="562" text-anchor="middle" font-family="Inter" font-size="11" fill="#22C55E">13. ✅ Afficher produits similaires (carte produits)</text>
+
+
+<!-- ════════════════════════════════════════════════════
+     GROUP 3 — AJOUT AU PANIER  (y: 640 → 800)
+════════════════════════════════════════════════════ -->
+<rect x="20" y="630" width="1330" height="195" rx="6" fill="none" stroke="#EAB308" stroke-width="1.5" stroke-dasharray="10,4" opacity="0.4"/>
+<rect x="20" y="630" width="210" height="22" rx="4" fill="#92400E" opacity="0.85"/>
+<text x="30" y="646" font-family="Inter" font-size="12" font-weight="700" fill="white">🛒 GROUPE 3 — AJOUT AU PANIER</text>
+
+<!-- Activation boxes -->
+<rect x="83"  y="660" width="14" height="140" rx="2" fill="#3B82F6" opacity="0.5"/>
+<rect x="263" y="675" width="14" height="125" rx="2" fill="#8B5CF6" opacity="0.5"/>
+
+<!-- MSG 14: Client → Browser -->
+<line x1="97" y1="668" x2="263" y2="668" stroke="#EAB308" stroke-width="2" marker-end="url(#arr-yellow)"/>
+<text x="175" y="662" text-anchor="middle" font-family="Inter" font-size="11" fill="#EAB308" font-weight="500">14. Cliquer "Ajouter au panier"</text>
+<text x="175" y="676" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">+ sélection taille / couleur</text>
+
+<!-- MSG 15: Browser → CartContext (shown on Browser line) -->
+<line x1="277" y1="698" x2="400" y2="698" stroke="#EAB308" stroke-width="2" marker-end="url(#arr-yellow)"/>
+<text x="338" y="692" text-anchor="middle" font-family="Inter" font-size="11" fill="#EAB308" font-weight="500">15. addToCart(product, qty)</text>
+<text x="338" y="706" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">CartContext.addToCart()</text>
+
+<!-- MSG 16: CartContext persist -->
+<line x1="400" y1="725" x2="277" y2="725" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<text x="338" y="719" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">16. localStorage.setItem('vestyle_cart')</text>
+
+<!-- MSG 17: Browser → Client -->
+<line x1="263" y1="762" x2="97" y2="762" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arr-return)"/>
+<text x="175" y="755" text-anchor="middle" font-family="Inter" font-size="11" fill="#22C55E">17. ✅ Badge panier mis à jour (+1)</text>
+<text x="175" y="768" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Animation Framer Motion</text>
+
+
+<!-- ════════════════════════════════════════════════════
+     GROUP 4 — PASSAGE DE COMMANDE  (y: 850 → 1130)
+════════════════════════════════════════════════════ -->
+<rect x="20" y="840" width="1330" height="320" rx="6" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="10,4" opacity="0.4"/>
+<rect x="20" y="840" width="235" height="22" rx="4" fill="#991B1B" opacity="0.85"/>
+<text x="30" y="856" font-family="Inter" font-size="12" font-weight="700" fill="white">🛍️ GROUPE 4 — PASSAGE DE COMMANDE</text>
+
+<!-- Activation boxes -->
+<rect x="83"  y="868" width="14" height="265" rx="2" fill="#3B82F6" opacity="0.5"/>
+<rect x="263" y="882" width="14" height="250" rx="2" fill="#8B5CF6" opacity="0.5"/>
+<rect x="963" y="900" width="14" height="185" rx="2" fill="#EF4444" opacity="0.5"/>
+<rect x="613" y="918" width="14" height="80"  rx="2" fill="#14B8A6" opacity="0.5"/>
+<rect x="1138" y="985" width="14" height="60" rx="2" fill="#EC4899" opacity="0.5"/>
+
+<!-- MSG 18: Client → Browser -->
+<line x1="97" y1="878" x2="263" y2="878" stroke="#EF4444" stroke-width="2" marker-end="url(#arr-red)"/>
+<text x="175" y="872" text-anchor="middle" font-family="Inter" font-size="11" fill="#EF4444" font-weight="500">18. Cliquer "Valider ma commande"</text>
+<text x="175" y="886" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Formulaire: nom, tel, adresse</text>
+
+<!-- MSG 19: Browser → API -->
+<line x1="277" y1="908" x2="963" y2="908" stroke="#EF4444" stroke-width="2" marker-end="url(#arr-red)"/>
+<text x="620" y="900" text-anchor="middle" font-family="Inter" font-size="11" fill="#EF4444" font-weight="500">19. POST /api/orders</text>
+<text x="620" y="915" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">{ customer, items[], store_id, total }</text>
+
+<!-- MSG 20: API → Supabase -->
+<line x1="963" y1="935" x2="627" y2="935" stroke="#14B8A6" stroke-width="2" marker-end="url(#arr-teal)"/>
+<text x="795" y="929" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">20. INSERT INTO orders { ... }</text>
+<text x="795" y="943" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">status='pending', order_items JSONB</text>
+
+<!-- MSG 21: Supabase → API (return) -->
+<line x1="613" y1="965" x2="963" y2="965" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="790" y="958" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">21. ← { order_id, status: 'pending' }</text>
+
+<!-- MSG 22: API → Email -->
+<line x1="977" y1="993" x2="1138" y2="993" stroke="#EC4899" stroke-width="2" marker-end="url(#arr-purple)"/>
+<text x="1057" y="987" text-anchor="middle" font-family="Inter" font-size="11" fill="#EC4899" font-weight="500">22. sendOrderConfirmation()</text>
+<text x="1057" y="1001" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">resend.emails.send({ to, subject, html })</text>
+
+<!-- MSG 23: Email → Client (email arrow across) -->
+<line x1="1138" y1="1022" x2="97" y2="1022" stroke="#EC4899" stroke-width="1.8" stroke-dasharray="8,4" marker-end="url(#arr-purple)"/>
+<text x="620" y="1016" text-anchor="middle" font-family="Inter" font-size="11" fill="#EC4899" font-weight="500">23. 📧 Email de confirmation envoyé au client</text>
+
+<!-- MSG 24: API → Browser (return) -->
+<line x1="963" y1="1050" x2="277" y2="1050" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="620" y="1044" text-anchor="middle" font-family="Inter" font-size="11" fill="#8B949E">24. ← { success: true, orderId, qrCode }</text>
+
+<!-- MSG 25: Browser → Client (return) -->
+<line x1="263" y1="1118" x2="97" y2="1118" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="175" y="1111" text-anchor="middle" font-family="Inter" font-size="11" fill="#22C55E">25. ✅ Page de confirmation + QR Code commande</text>
+
+
+<!-- ════════════════════════════════════════════════════
+     GROUP 5 — SUIVI LIVRAISON GPS REALTIME  (y: 1180 → 1420)
+════════════════════════════════════════════════════ -->
+<rect x="20" y="1170" width="1330" height="290" rx="6" fill="none" stroke="#14B8A6" stroke-width="1.5" stroke-dasharray="10,4" opacity="0.4"/>
+<rect x="20" y="1170" width="275" height="22" rx="4" fill="#0D9488" opacity="0.85"/>
+<text x="30" y="1186" font-family="Inter" font-size="12" font-weight="700" fill="white">📍 GROUPE 5 — SUIVI LIVRAISON GPS (REALTIME)</text>
+
+<!-- Activation boxes -->
+<rect x="83"  y="1198" width="14" height="235" rx="2" fill="#3B82F6" opacity="0.5"/>
+<rect x="263" y="1213" width="14" height="220" rx="2" fill="#8B5CF6" opacity="0.5"/>
+<rect x="613" y="1245" width="14" height="155" rx="2" fill="#14B8A6" opacity="0.6"/>
+
+<!-- MSG 26: Client → Browser -->
+<line x1="97" y1="1208" x2="263" y2="1208" stroke="#14B8A6" stroke-width="2" marker-end="url(#arr-teal)"/>
+<text x="175" y="1202" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">26. Accéder à /suivi/{orderId}</text>
+<text x="175" y="1216" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Page de suivi en temps réel</text>
+
+<!-- MSG 27: Browser → Supabase (subscribe) -->
+<line x1="277" y1="1240" x2="613" y2="1240" stroke="#14B8A6" stroke-width="2" marker-end="url(#arr-teal)"/>
+<text x="445" y="1232" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">27. SUBSCRIBE delivery_tracking</text>
+<text x="445" y="1246" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">supabase.channel().on('UPDATE')...</text>
+
+<!-- MSG 28: Supabase → Browser (realtime push) - loop -->
+<rect x="580" y="1268" width="80" height="18" rx="3" fill="#0D9488" opacity="0.3"/>
+<text x="620" y="1281" text-anchor="middle" font-family="Inter" font-size="9" fill="#14B8A6">loop [GPS updates]</text>
+<line x1="613" y1="1300" x2="277" y2="1300" stroke="#14B8A6" stroke-width="2.2" stroke-dasharray="4,2" marker-end="url(#arr-teal)"/>
+<text x="445" y="1293" text-anchor="middle" font-family="Inter" font-size="11" fill="#14B8A6" font-weight="500">28. ⚡ GPS update { lat, lng, timestamp }</text>
+<text x="445" y="1307" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Realtime WebSocket (supabase_realtime pub.)</text>
+
+<!-- MSG 28b: loop arrow -->
+<line x1="620" y1="1328" x2="620" y2="1348" stroke="#14B8A6" stroke-width="1.5" stroke-dasharray="4,2"/>
+<line x1="620" y1="1348" x2="655" y2="1348" stroke="#14B8A6" stroke-width="1.5" stroke-dasharray="4,2"/>
+<line x1="655" y1="1300" x2="655" y2="1348" stroke="#14B8A6" stroke-width="1.5" stroke-dasharray="4,2"/>
+<text x="670" y="1328" font-family="Inter" font-size="9" fill="#8B949E">toutes les</text>
+<text x="670" y="1340" font-family="Inter" font-size="9" fill="#8B949E">5 secondes</text>
+
+<!-- MSG 29: Browser → Client (map update) -->
+<line x1="263" y1="1380" x2="97" y2="1380" stroke="#8B949E" stroke-width="1.8" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+<text x="175" y="1373" text-anchor="middle" font-family="Inter" font-size="11" fill="#22C55E">29. ✅ Carte Leaflet mise à jour</text>
+<text x="175" y="1387" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#8B949E">Position livreur + itinéraire (RoutingMachine)</text>
+
+
+<!-- ════════════════════════════════════════════════════
+     LEGEND BOX
+════════════════════════════════════════════════════ -->
+<g transform="translate(20, 1480)">
+  <rect width="1330" height="180" rx="8" fill="#161B22" stroke="#30363D" stroke-width="1"/>
+  <text x="665" y="28" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#F0C040">📖 LÉGENDE DU DIAGRAMME DE SÉQUENCE</text>
+  <!-- Row 1 -->
+  <line x1="30" y1="55" x2="100" y2="55" stroke="#58A6FF" stroke-width="2.5" marker-end="url(#arr-solid)"/>
+  <text x="110" y="60" font-family="Inter" font-size="11" fill="#C9D1D9">Message synchrone (appel direct)</text>
+  <line x1="330" y1="55" x2="400" y2="55" stroke="#8B949E" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-return)"/>
+  <text x="410" y="60" font-family="Inter" font-size="11" fill="#C9D1D9">Message de retour (réponse)</text>
+  <line x1="640" y1="55" x2="710" y2="55" stroke="#14B8A6" stroke-width="2.5" stroke-dasharray="4,2" marker-end="url(#arr-teal)"/>
+  <text x="720" y="60" font-family="Inter" font-size="11" fill="#C9D1D9">Événement Realtime (WebSocket)</text>
+  <line x1="1000" y1="55" x2="1070" y2="55" stroke="#EC4899" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arr-purple)"/>
+  <text x="1080" y="60" font-family="Inter" font-size="11" fill="#C9D1D9">Message asynchrone (email)</text>
+  <!-- Row 2 -->
+  <rect x="30" y="80" width="60" height="16" rx="3" fill="#3B82F6" opacity="0.6"/>
+  <text x="100" y="93" font-family="Inter" font-size="11" fill="#C9D1D9">Boîte d'activation (traitement actif)</text>
+  <rect x="330" y="80" width="60" height="16" rx="3" fill="none" stroke="#F97316" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="400" y="93" font-family="Inter" font-size="11" fill="#C9D1D9">Groupe / Fragment (alt, loop, opt)</text>
+  <text x="640" y="93" font-family="JetBrains Mono" font-size="11" fill="#22C55E">✅ Message final</text>
+  <text x="750" y="93" font-family="Inter" font-size="11" fill="#C9D1D9">= résultat visible par l'utilisateur</text>
+  <!-- Row 3 -->
+  <text x="30" y="130" font-family="Inter" font-size="11" fill="#8B949E">Acteurs :</text>
+  <rect x="90" y="118" width="12" height="12" rx="2" fill="#3B82F6"/>  <text x="108" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">Client</text>
+  <rect x="160" y="118" width="12" height="12" rx="2" fill="#8B5CF6"/> <text x="178" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">Next.js</text>
+  <rect x="235" y="118" width="12" height="12" rx="2" fill="#6366F1"/> <text x="253" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">AuthContext</text>
+  <rect x="340" y="118" width="12" height="12" rx="2" fill="#14B8A6"/> <text x="358" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">Supabase</text>
+  <rect x="430" y="118" width="12" height="12" rx="2" fill="#F97316"/> <text x="448" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">IA (Cohere/Mistral)</text>
+  <rect x="570" y="118" width="12" height="12" rx="2" fill="#EF4444"/> <text x="588" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">API Routes</text>
+  <rect x="665" y="118" width="12" height="12" rx="2" fill="#EC4899"/> <text x="683" y="130" font-family="Inter" font-size="11" fill="#C9D1D9">Email (Resend)</text>
+  <!-- Row 4 -->
+  <text x="30" y="162" font-family="Inter" font-size="10" fill="#8B949E">VESTYLE Marketplace — Diagramme de Séquence UML — Architecture Next.js 15 + Supabase + IA</text>
+</g>
+
+<!-- TITLE WATERMARK at bottom -->
+<text x="690" y="1688" text-anchor="middle" font-family="Inter" font-size="11" fill="#21262D">Généré automatiquement — VESTYLE v0.1.0 — 2026</text>
+
+</svg>
+</div>
+</body>
+</html>
