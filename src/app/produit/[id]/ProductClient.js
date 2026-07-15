@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { ShoppingCart, ArrowLeft, Store, MapPin, CheckCircle2, Package, Loader2, Zap, Shield, ChevronRight } from 'lucide-react';
 
 export default function ProductClient({ params }) {
-  const { id } = use(params);
+  const { id } = params;
   const { addToCart, cart } = useCart();
   const [product, setProduct] = useState(null);
   const [recommendations, setRecommendations] = useState([]);

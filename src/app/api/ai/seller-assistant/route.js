@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export const maxDuration = 30;
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const { storeId, action, messages, period = '24h' } = await request.json();
+    console.log('[SellerAssistant] storeId=', storeId, 'SUPABASE_SERVICE_ROLE_KEY present=', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
     if (!storeId || !action) {
       return NextResponse.json({ error: 'storeId et action requis' }, { status: 400 });
     }
@@ -20,12 +22,13 @@ export async function POST(request) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
     );
 
+
     // Récupérer la boutique
-    const { data: store } = await supabase
-      .from('stores')
-      .select('id, name, description, city, phone, whatsapp')
-      .eq('id', storeId)
-      .single();
+      const { data: store } = await supabase
+        .from('stores')
+        .select('id, name, description, city, phone')
+        .eq('id', storeId)
+        .single();
 
     if (!store) return NextResponse.json({ error: 'Boutique introuvable' }, { status: 404 });
 

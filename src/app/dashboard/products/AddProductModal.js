@@ -114,27 +114,35 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
     };
 
     try {
-      // Générer l'embedding via Cohere
-      setStatusText('Génération de l\'embedding...');
+      // Ne régénérer l'embedding QUE si c'est un NOUVEAU produit, OU si l'image/nom/description ont changé lors d'une édition
+      const hasImageChanged = !isEdit || (productToEdit && productToEdit.image_url !== imageUrl);
+      const hasDetailsChanged = !isEdit || (productToEdit && (productToEdit.name !== name.trim() || productToEdit.description !== description?.trim()));
+
       let embeddingVector = null;
-      try {
-        const embedRes = await fetch('/api/products/generate-embeddings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description, imageUrl })
-        });
-        
-        if (embedRes.ok) {
-          const embedData = await embedRes.json();
-          if (embedData.embedding && Array.isArray(embedData.embedding)) {
-            embeddingVector = embedData.embedding;
+
+      if (hasImageChanged || hasDetailsChanged) {
+        setStatusText('Génération de l\'embedding...');
+        try {
+          const embedRes = await fetch('/api/products/generate-embeddings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description, imageUrl })
+          });
+          
+          if (embedRes.ok) {
+            const embedData = await embedRes.json();
+            if (embedData.embedding && Array.isArray(embedData.embedding)) {
+              embeddingVector = embedData.embedding;
+            }
+          } else {
+            const errorData = await embedRes.json().catch(() => ({ error: 'Unknown error' }));
+            console.warn('Embedding API error:', errorData.error || 'Request failed');
           }
-        } else {
-          const errorData = await embedRes.json().catch(() => ({ error: 'Unknown error' }));
-          console.warn('Embedding API error:', errorData.error || 'Request failed');
+        } catch (e) {
+          console.warn('Embedding warning (non-bloquant):', e.message);
         }
-      } catch (e) {
-        console.warn('Embedding warning (non-bloquant):', e.message);
+      } else {
+        console.log('[AddProductModal] Aucun changement d\'image ou de détails textuels détecté. Réutilisation de l\'embedding existant.');
       }
       
       if (embeddingVector) {

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { BuilderProvider, useBuilder, BUSINESS_TYPES } from '@/context/BuilderContext';
+import { normalizeStoreModules } from '@/lib/storeModuleUtils.mjs';
 import BuilderEditor from './BuilderEditor';
 import BuilderPreview from './BuilderPreview';
 import BuilderTopBar from './BuilderTopBar';
@@ -48,7 +49,8 @@ function BuilderInner({ storeId }) {
       };
       const businessType = storeData.business_type || null;
 
-      init(storeData, modulesData || [], themeConfig, businessType);
+      const normalizedModules = normalizeStoreModules(modulesData || []);
+      init(storeData, normalizedModules, themeConfig, businessType);
       setLoading(false);
     };
     load();
@@ -134,8 +136,7 @@ function BuilderInner({ storeId }) {
 }
 
 export default function BuilderPage({ params }) {
-  const resolvedParams = use(params);
-  const storeId = resolvedParams.storeId;
+  const { storeId } = params;
 
   return (
     <BuilderProvider>

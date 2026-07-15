@@ -1,59 +1,74 @@
-// Removed CohereClient
+/**
+ * API : Recherche Sémantique (Texte) — VESTYLE
+ * Moteur : Jina AI CLIP v2 (1024D) — ~0.3s
+ * Pipeline : Texte → Jina CLIP 1024D → Supabase pgvector
+ */
+
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { embedText } from "@/lib/vectorSearchProvider.mjs";
+
+export const maxDuration = 30;
 
 export async function POST(req) {
+  const startTime = Date.now();
+
   try {
-    const { query, threshold = 0.5, limit = 12 } = await req.json();
+    const { query, threshold = 0.2, limit = 12 } = await req.json();
 
-    if (!query) {
-      return NextResponse.json({ error: "La requête (query) est requise." }, { status: 400 });
+    if (!query?.trim()) {
+      return NextResponse.json(
+        { error: "La requête (query) est requise." },
+        { status: 400 }
+      );
     }
 
-    // 1. Générer l'embedding avec Voyage AI
-    const res = await fetch("https://api.voyageai.com/v1/multimodalembeddings", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.VOYAGE_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "voyage-multimodal-3",
-        inputs: [{ content: [{ type: "text", text: query }] }],
-        input_type: "query"
-      })
-    });
+    console.log(`[Semantic Search] 🔍 "${query.slice(0, 60)}" — Jina CLIP v2...`);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Erreur Voyage API: ${res.status} ${errText}`);
-    }
-
-    const data = await res.json();
-    const queryEmbedding = data.data[0].embedding; // Array de floats
-
-    // 3. Recherche Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // 1. Embedding texte via Jina CLIP v2
+    const queryEmbedding = await embedText(query.trim());
+    const embedTime = Date.now() - startTime;
+    console.log(
+      `[Semantic Search] ✅ Embedding 1024D en ${embedTime}ms`
     );
 
-    // Adapter la requête RPC pour Cohere (dimensions peuvent varier)
-    const { data: products, error } = await supabase.rpc('search_products_text', {
+    // 2. Recherche Supabase pgvector
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const { data: products, error } = await supabase.rpc("match_products_v2", {
       query_embedding: queryEmbedding,
       match_threshold: threshold,
       match_count: limit,
     });
 
     if (error) {
-      console.error("Erreur RPC Supabase:", error);
-      throw error;
+      console.error("[Semantic Search] Supabase RPC error:", error);
+      throw new Error(`Supabase: ${error.message}`);
     }
 
-    return NextResponse.json({ success: true, products });
+    const elapsed = Date.now() - startTime;
+    console.log(
+      `[Semantic Search] 🏁 ${(products || []).length} résultat(s) en ${elapsed}ms`
+    );
 
-  } catch (error) {
-    console.error("Erreur recherche sémantique (Cohere):", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success:    true,
+      products:   products || [],
+      count:      (products || []).length,
+      elapsed_ms: elapsed,
+      embed_ms:   embedTime,
+      model:      "jina-clip-v2",
+      dimensions: queryEmbedding.length,
+    });
+
+  } catch (err) {
+    console.error("[Semantic Search] ❌ Erreur:", err.message);
+    return NextResponse.json(
+      { error: err.message, products: [] },
+      { status: 500 }
+    );
   }
 }

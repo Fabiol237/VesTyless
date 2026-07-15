@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, useReducer, useCallback } from 'react';
+import { normalizeStoreModules } from '@/lib/storeModuleUtils.mjs';
 
 // ─── Secteurs d'activité enrichis ──────────────────────────────────────────
 export const BUSINESS_TYPES = {
@@ -474,7 +475,7 @@ function builderReducer(state, action) {
       return {
         ...state,
         store: action.store,
-        modules: action.modules,
+        modules: normalizeStoreModules(action.modules || []),
         themeConfig: action.themeConfig,
         businessType: action.businessType || null,
         isDirty: false,
@@ -483,7 +484,7 @@ function builderReducer(state, action) {
     case 'SET_BUSINESS_TYPE': {
       const bt = BUSINESS_TYPES[action.businessType];
       if (!bt) return state;
-      const newModules = bt.modules.map((type, i) => {
+      const newModules = normalizeStoreModules(bt.modules.map((type, i) => {
         const def = MODULE_DEFINITIONS[type];
         if (!def) return null;
         return {
@@ -495,7 +496,7 @@ function builderReducer(state, action) {
           is_active: true,
           config: { ...def.defaultConfig },
         };
-      }).filter(Boolean);
+      }).filter(Boolean));
       return {
         ...state,
         businessType: action.businessType,
@@ -507,7 +508,7 @@ function builderReducer(state, action) {
     }
 
     case 'LOAD_TEMPLATE': {
-      const newModules = action.modules.map((type, i) => {
+      const newModules = normalizeStoreModules(action.modules.map((type, i) => {
         const def = MODULE_DEFINITIONS[type];
         if (!def) return null;
         return {
@@ -516,13 +517,16 @@ function builderReducer(state, action) {
           position: i, is_active: true,
           config: { ...def.defaultConfig },
         };
-      }).filter(Boolean);
+      }).filter(Boolean));
       return { ...state, modules: newModules, themeConfig: action.themeConfig, activeModuleId: newModules[0]?.id, isDirty: true };
     }
 
     case 'ADD_MODULE': {
       const def = MODULE_DEFINITIONS[action.moduleType];
       if (!def) return state;
+      if (state.modules.some((module) => module.type === action.moduleType)) {
+        return state;
+      }
       const newModule = {
         id: `temp_${Date.now()}`,
         type: action.moduleType, label: def.label, icon: def.icon,

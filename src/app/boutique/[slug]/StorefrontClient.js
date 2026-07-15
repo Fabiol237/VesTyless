@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback, use, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Store } from 'lucide-react';
 import Link from 'next/link';
@@ -68,6 +68,7 @@ const MODULE_RENDERERS = {
 // ─── Import des Thèmes ──────────────────────────────────────────────────────
 import { getThemeById } from './themes';
 import StoreAIChat from '@/components/StoreAIChat';
+import { normalizeStoreModules } from '@/lib/storeModuleUtils.mjs';
 
 // ─── Correspondance Type de module → Groupe de page ─────────────────────────
 // Chaque onglet (accueil, produits, promotions, profil) regroupe plusieurs types de modules.
@@ -116,10 +117,22 @@ function RefreshBar() {
   );
 }
 
+// ─── Fallback de chargement de thème ──────────────────────────────────────────
+function ThemeLoader() {
+  return (
+    <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '32px', height: '32px', border: '3px solid rgba(0,0,0,0.1)', borderTop: '3px solid #6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+}
+
+
+import { use } from 'react';
 
 // ─── Composant principal ─────────────────────────────────────────────────────
 export default function StorefrontClient({ params }) {
-  const { slug } = use(params);
+  const resolvedParams = use(params);
+  const slug = resolvedParams?.slug;
 
   const [store, setStore]     = useState(null);
   const [modules, setModules] = useState([]);
@@ -191,35 +204,37 @@ export default function StorefrontClient({ params }) {
       if (hasCached) setRefreshing(true);
 
       try {
-        // ✅ UNE SEULE requête : store + modules en même temps (join Supabase)
-        const { data: storeData } = await supabase
+        // Charger d'abord la boutique
+        const { data: storeData, error: storeErr } = await supabase
           .from('stores')
-          .select(`
-            *,
-            store_modules (
-              id, type, config, position, is_active
-            )
-          `)
+          .select('*')
           .eq('slug', slug)
-          .eq('store_modules.is_active', true)
-          .order('position', { ascending: true, foreignTable: 'store_modules' })
           .single();
 
-        if (!storeData) return;
+        if (storeErr || !storeData) {
+          console.error('[StorefrontClient] Store non trouvé pour le slug:', slug, storeErr);
+          setStore(null);
+          setLoading(false);
+          return;
+        }
 
-        // Extraire et trier les modules
-        const active = (storeData.store_modules || [])
+        // Charger ensuite ses modules actifs
+        const { data: modulesData } = await supabase
+          .from('store_modules')
+          .select('id, type, config, position, is_active')
+          .eq('store_id', storeData.id)
+          .eq('is_active', true)
+          .order('position', { ascending: true });
+
+        const active = normalizeStoreModules((modulesData || [])
           .filter(m => m.is_active !== false)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)));
 
-        // Supprimer la clé store_modules de l'objet store pour éviter la pollution
-        const { store_modules: _, ...cleanStore } = storeData;
-
-        setStore(cleanStore);
+        setStore(storeData);
         setModules(active);
 
         // Mettre à jour le cache mémoire
-        storeCache[slug] = { store: cleanStore, modules: active };
+        storeCache[slug] = { store: storeData, modules: active };
 
         // Incrémenter le compteur de vues (sans bloquer l'affichage)
         try { supabase.rpc('increment_store_view', { st_id: storeData.id }); } catch (_) {}

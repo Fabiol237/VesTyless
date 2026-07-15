@@ -232,11 +232,7 @@ export default function AddProductPage() {
     // ============ SUCCÈS ============
     saveSucceededRef.current = true;
     
-    const successMsg = `✅ Produit créé avec succès!
-    
-📸 Embedding: généré pour l'image principale
-🔍 Description: ${primaryText.substring(0, 60)}...
-🎯 Prêt pour la recherche visuelle!`;
+    const successMsg = `✅ Produit créé avec succès!\n\n📸 Embedding 1024D généré (Jina CLIP v2)\n🎯 Prêt pour la recherche visuelle!`;
     
     alert(successMsg);
     

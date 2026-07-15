@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/morning-pulse",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/warmup",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

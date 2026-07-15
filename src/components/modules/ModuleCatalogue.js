@@ -45,13 +45,23 @@ export default function ModuleCatalogue({
     (async () => {
       try {
         const { supabase } = await import('@/lib/supabase');
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('products')
           .select('*')
           .eq('store_id', storeId)
+          .eq('is_active', true)
           .order('created_at', { ascending: false });
-        setProducts(data || []);
-        setCategories([...new Set((data || []).map(p => p.category).filter(Boolean))]);
+        if (error) throw error;
+
+        const normalizedProducts = (data || []).filter((product) => {
+          if (!product) return false;
+          const name = String(product.name || '').trim();
+          const category = String(product.category || '').trim();
+          return name.length > 0 || category.length > 0 || product.image_url || product.price != null;
+        });
+
+        setProducts(normalizedProducts);
+        setCategories([...new Set(normalizedProducts.map((product) => product.category).filter(Boolean))]);
       } catch (err) {
         console.error('[ModuleCatalogue] Erreur chargement produits:', err);
         setProducts([]);
