@@ -8,41 +8,44 @@ import BackNavigation from '@/components/BackNavigation';
 import Link from 'next/link';
 import { ShoppingCart, ArrowLeft, Store, MapPin, CheckCircle2, Package, Loader2, Zap, Shield, ChevronRight } from 'lucide-react';
 
-export default function ProductClient({ params }) {
-  const { id } = params;
+export default function ProductClient({ productId, initialProduct, initialVariants }) {
+  const id = productId;
   const { addToCart, cart } = useCart();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState(initialProduct);
   const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProduct);
   const [added, setAdded] = useState(false);
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
-  const [variants, setVariants] = useState([]);
+  const [variants, setVariants] = useState(initialVariants);
   const [selectedVariants, setSelectedVariants] = useState({}); // {taille: 'XL', couleur: 'Rouge'}
 
   useEffect(() => {
     if (!id) return;
     
     async function loadData() {
-      // 1. Charger le produit
-      const { data: p } = await supabase
-        .from('products')
-        .select('*, stores(id,name,slug,logo_url,city)')
-        .eq('id', id)
-        .single();
-      
-      if (p) {
-        setProduct(p);
-        // 2. Charger les variantes
-        const { data: v } = await supabase
-          .from('product_variants')
-          .select('*')
-          .eq('product_id', id);
-        if (v) setVariants(v);
+      // Si on n'a pas reçu le produit initialement par le serveur (fallback)
+      if (!product) {
+        const { data: p } = await supabase
+          .from('products')
+          .select('*, stores(id,name,slug,logo_url,city)')
+          .eq('id', id)
+          .single();
+        
+        if (p) {
+          setProduct(p);
+          const { data: v } = await supabase
+            .from('product_variants')
+            .select('*')
+            .eq('product_id', id);
+          if (v) setVariants(v);
+        }
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
 
-      // 3. Recommandations
+      // 3. Recommandations (toujours asynchrone pour ne pas ralentir le reste)
       supabase.rpc('get_product_recommendations', { target_product_id: id, limit_count: 4 })
         .then(({ data: recs }) => { if (recs) setRecommendations(recs); });
       
@@ -50,12 +53,12 @@ export default function ProductClient({ params }) {
       try {
         await supabase.rpc('increment_daily_views', { product_id: id });
       } catch (e) {
-        // Ignorer silencieusement si la fonction RPC n'existe pas encore
+        // Ignorer silencieusement
       }
     }
 
     loadData();
-  }, [id]);
+  }, [id, product]);
 
   const handleAdd = () => {
     if (!product) return;

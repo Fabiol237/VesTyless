@@ -37,6 +37,27 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function ProductPage({ params }) {
-  return <ProductClient params={params} />;
+export default async function ProductPage({ params }) {
+  const { id } = await params;
+
+  // Charger le produit et les variantes en parallèle côté serveur (beaucoup plus rapide)
+  const [productRes, variantsRes] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*, stores(id,name,slug,logo_url,city)')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', id)
+  ]);
+
+  return (
+    <ProductClient 
+      productId={id}
+      initialProduct={productRes.data || null} 
+      initialVariants={variantsRes.data || []} 
+    />
+  );
 }
