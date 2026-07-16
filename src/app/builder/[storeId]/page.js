@@ -11,7 +11,7 @@ import BuilderTopBar from './BuilderTopBar';
 
 function BuilderInner({ storeId }) {
   const { user } = useAuth();
-  const { init, state, togglePreview, setTheme } = useBuilder();
+  const { init, state, toggleMobilePreview, setTheme } = useBuilder();
   const router = useRouter();
   const [loading, setLoading]   = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -115,10 +115,10 @@ function BuilderInner({ storeId }) {
         </div>
       </div>
 
-      {/* Mobile toggle */}
+      {/* Mobile toggle - Bouton Aperçu web / Modifier */}
       {isMobile && (
         <button
-          onClick={togglePreview}
+          onClick={toggleMobilePreview}
           style={{
             position: 'fixed', bottom: '24px', right: '24px', zIndex: 100,
             padding: '14px 20px', borderRadius: '999px', border: 'none',
@@ -136,7 +136,7 @@ function BuilderInner({ storeId }) {
 }
 
 export default function BuilderPage({ params }) {
-  const { storeId } = params;
+  const { storeId } = use(params);
 
   return (
     <BuilderProvider>

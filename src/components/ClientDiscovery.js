@@ -9,6 +9,7 @@ import { normalizeStr } from '@/lib/searchUtils';
 import ProductCard from '@/components/ProductCard';
 import { useOfflineData } from '@/hooks/useOfflineData';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import { 
   LayoutGrid, 
   ShoppingBag, 
@@ -26,16 +27,18 @@ import {
   Home,
   HeartPulse,
   Gamepad2,
-  MoreHorizontal
+  MoreHorizontal,
+  Globe
 } from 'lucide-react';
 
 const categoryIcons = {
+  'all': Globe,
+  'Alimentation & Supermarché': Utensils,
+  'Électronique & High-Tech': Smartphone,
+  'Maison & Électroménager': Home,
   'Mode & Beauté': Shirt,
-  'Alimentation': Utensils,
-  'High-Tech': Smartphone,
-  'Maison': Home,
-  'Santé': HeartPulse,
-  'Loisirs': Gamepad2,
+  'Santé & Bien-être': HeartPulse,
+  'Services & Loisirs': Gamepad2,
   'Divers': MoreHorizontal,
 };
 
@@ -113,9 +116,9 @@ export default function ClientDiscovery({
   // Suggestions pour l'autocomplétion de la recherche principale
   const mainSuggestions = useMemo(() => {
     const items = [];
-    categories.forEach(c => items.push({ label: c.name || c, value: c.name || c, type: 'Catégorie', emoji: '🏷️' }));
-    stores.slice(0, 20).forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', emoji: '🏪', sublabel: s.city || '' }));
-    products.slice(0, 40).forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', emoji: '🛍️', sublabel: p.stores?.name || '' }));
+    categories.forEach(c => items.push({ label: c.name || c, value: c.name || c, type: 'Catégorie' }));
+    stores.slice(0, 20).forEach(s => items.push({ label: s.name, value: s.name, type: 'Boutique', sublabel: s.city || '' }));
+    products.slice(0, 40).forEach(p => items.push({ label: p.name, value: p.name, type: 'Produit', sublabel: p.stores?.name || '' }));
     // Dédoublonner par label
     return [...new Map(items.map(i => [normalizeStr(i.label), i])).values()];
   }, [products, stores, categories]);
@@ -330,10 +333,11 @@ export default function ClientDiscovery({
           1. WHATSAPP STYLE SEARCH BAR - Hide if external search is handled by parent (e.g. Home Page)
       ════════════════════════════════════════════ */}
       {!externalSearchQuery && (
-        <section className="sticky top-[70px] z-40 transition-all duration-500 py-4 bg-[#F8F9FA]/80 backdrop-blur-xl">
+        <section className="sticky top-[70px] z-40 transition-all duration-500 py-4 bg-slate-950/20 backdrop-blur-xl rounded-3xl px-2">
           <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-wa-teal to-wa-green rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative bg-white px-4 py-3 rounded-2xl shadow-sm border border-neutral-100 flex items-center gap-3">
+            {/* Soft pulsing emerald/teal background shadow */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-wa-teal to-wa-green rounded-3xl blur-md opacity-20 group-hover:opacity-40 transition duration-500"></div>
+            <div className="relative bg-[#0d2137]/80 backdrop-blur-2xl px-5 py-4 rounded-3xl shadow-2xl border border-white/5 flex items-center gap-4 focus-within:border-wa-green/30 transition-all duration-300">
               <SearchAutocomplete
                 value={searchQuery}
                 onChange={setSearchQuery}
@@ -341,33 +345,33 @@ export default function ClientDiscovery({
                 suggestions={mainSuggestions}
                 placeholder="Chercher le meilleur de Douala..."
                 className="flex-1"
-                inputClassName="w-full pl-10 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none focus:ring-0 placeholder-neutral-400"
-                dropdownOffset="mt-3"
-                leftIcon={<SearchIcon className={`transition-colors ${isSearching ? 'text-wa-teal' : 'text-neutral-400'}`} size={20} />}
+                inputClassName="w-full pl-12 pr-20 py-3 bg-transparent rounded-xl text-base font-medium border-none outline-none text-white placeholder:text-slate-400 focus:ring-0"
+                dropdownOffset="mt-4"
+                leftIcon={<SearchIcon className={`transition-colors ${isSearching ? 'text-wa-green text-glow-wa' : 'text-slate-400'}`} size={22} />}
               >
                 <div className="absolute right-3 flex items-center gap-2">
                   {isSearching && (
-                    <div className="w-5 h-5 border-2 border-wa-teal border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-wa-green border-t-transparent rounded-full animate-spin"></div>
                   )}
                   <VoiceSearchButton
                     onInterimResult={(text) => setSearchQuery(text)}
                     onResult={(text) => setSearchQuery(text)}
-                    className="p-1"
+                    className="p-1 text-wa-green hover:scale-110 transition-transform"
                   />
                 </div>
               </SearchAutocomplete>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-3 rounded-xl transition-all flex-shrink-0 ${showFilters ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/30' : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
+                className={`p-3 rounded-2xl transition-all duration-300 flex-shrink-0 border ${showFilters ? 'bg-wa-green text-slate-950 border-wa-green shadow-lg shadow-wa-green/20' : 'bg-white/5 text-slate-300 border-white/5 hover:bg-white/10'}`}
               >
                 <SlidersHorizontalIcon size={20} />
               </button>
               <button
                 onClick={() => setShowMap(!showMap)}
-                className={`p-3 rounded-xl transition-all flex-shrink-0 flex items-center gap-2 ${showMap ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+                className={`p-3 rounded-2xl transition-all duration-300 flex-shrink-0 flex items-center gap-2 border ${showMap ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/10 hover:bg-indigo-500/20'}`}
               >
                 <MapPinIcon size={20} />
-                <span className="hidden md:inline font-bold text-xs uppercase tracking-widest">Carte</span>
+                <span className="hidden md:inline font-black text-[10px] uppercase tracking-widest">Carte</span>
               </button>
             </div>
           </div>
@@ -394,7 +398,7 @@ export default function ClientDiscovery({
               <div className="pt-2 border-t border-neutral-50 flex flex-wrap gap-2">
                 <span className="text-[10px] font-black text-neutral-400 w-full mb-1 uppercase tracking-widest">Trier par</span>
                 <button onClick={() => setSortBy('boost')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'boost' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Suggérés</button>
-                <button onClick={() => setSortBy('distance')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'distance' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>À proximité 📍</button>
+                <button onClick={() => setSortBy('distance')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'distance' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>À proximité</button>
                 <button onClick={() => setSortBy('newest')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'newest' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Nouveautés</button>
                 <button onClick={() => setSortBy('price_asc')} className={`px-4 py-2 rounded-xl text-xs font-bold ${sortBy === 'price_asc' ? 'bg-wa-teal/10 text-wa-teal' : 'bg-neutral-50 text-neutral-500'}`}>Prix croissant</button>
               </div>
@@ -454,24 +458,37 @@ export default function ClientDiscovery({
           AIRBNB STYLE CATEGORY RIBBON (MOBILE)
       ════════════════════════════════════════════ */}
       {!sq && !showMap && categories.length > 0 && !overrideProducts && (
-        <div className="lg:hidden -mx-4 px-4 bg-white sticky top-[70px] z-30 shadow-sm border-b border-neutral-100 pt-2 pb-1 animate-fade-in">
-          <div className="flex gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+        <div className="lg:hidden -mx-4 px-4 bg-slate-950/90 backdrop-blur-xl sticky top-[70px] z-30 shadow-[0_4px_30px_rgba(0,0,0,0.3)] border-b border-slate-800/80 pt-3 pb-2 animate-fade-in overflow-hidden">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory relative z-10 px-2">
             {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
               const isActive = activeCategory === cat.name;
+              const displayName = cat.name === 'all' ? 'Tout' : cat.name;
               return (
                 <button
                   key={cat.id || 'all'}
                   onClick={() => { setActiveCategory(cat.name); }}
-                  className={`flex flex-col items-center gap-2 flex-shrink-0 snap-start pb-3 relative min-w-[60px] transition-all group`}
+                  className={`flex flex-col items-center gap-1.5 flex-shrink-0 snap-start pb-2 relative min-w-[70px] transition-all group`}
                 >
-                  <div className={`p-2 rounded-full transition-all duration-300 ${isActive ? 'bg-wa-teal/10 text-wa-teal scale-110' : 'text-neutral-500 group-hover:bg-neutral-50 group-hover:text-neutral-900'}`}>
-                    <CategoryIcon name={cat.icon || 'LayoutGrid'} size={24} />
+                  <div className="relative">
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeMobileCatBg"
+                        className="absolute -inset-2 bg-gradient-to-tr from-emerald-500/20 to-teal-500/25 rounded-2xl blur-[2px] border border-emerald-500/30"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                    <div className={`relative z-10 p-2.5 rounded-xl transition-all duration-300 ${isActive ? 'text-[#25D366] scale-110' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                      <CategoryIcon name={cat.name} size={22} />
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-bold whitespace-nowrap transition-colors ${isActive ? 'text-slate-900' : 'text-neutral-500'}`}>
-                    {cat.name === 'all' ? 'Tout' : cat.name}
+                  <span className={`relative z-10 text-[10px] font-mono uppercase tracking-widest transition-colors ${isActive ? 'text-white font-black' : 'text-slate-400 font-medium'}`}>
+                    {displayName.split(' ')[0]}
                   </span>
                   {isActive && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-wa-teal rounded-t-full shadow-[0_0_8px_#128c7e]"></div>
+                    <motion.div 
+                      layoutId="activeMobileIndicatorLine"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-[#25D366] rounded-t-full shadow-[0_0_12px_#25D366]" 
+                    />
                   )}
                 </button>
               );
@@ -563,24 +580,47 @@ export default function ClientDiscovery({
             
             {/* Desktop Sidebar */}
             {!overrideProducts && (
-              <div className="hidden lg:block w-64 flex-shrink-0">
-                <div className="sticky top-[160px] bg-white p-6 rounded-3xl border border-neutral-100 shadow-xl shadow-neutral-100/50">
-                  <h3 className="font-black text-xl mb-6 text-slate-900 tracking-tight">Catégories</h3>
-                  <div className="space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+              <div className="hidden lg:block w-72 flex-shrink-0">
+                <div className="sticky top-[160px] bg-slate-950/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                  {/* Decorative ambient background light */}
+                  <div className="absolute -top-12 -left-12 w-24 h-24 bg-[#25D366]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#25D366]/15 transition-all duration-700" />
+                  
+                  <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-[#25D366] mb-6 font-black flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
+                    SÉLECTEUR DE FLUX
+                  </h3>
+                  
+                  <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
                     {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
                       const isActive = activeCategory === cat.name;
                       return (
-                      <button
-                        key={cat.id || 'all'}
-                        onClick={() => { setActiveCategory(cat.name); }}
-                        className={`w-full text-left px-4 py-3.5 rounded-2xl font-bold transition-all flex items-center gap-4 group ${isActive ? 'bg-wa-teal text-white shadow-lg shadow-wa-teal/20 scale-[1.02]' : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 hover:scale-[1.01]'}`}
-                      >
-                        <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-white/20' : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-wa-teal group-hover:shadow-sm'}`}>
-                          <CategoryIcon name={cat.icon || 'LayoutGrid'} size={20} />
-                        </div>
-                        <span className="text-sm">{cat.name === 'all' ? 'Toutes les catégories' : cat.name}</span>
-                        {isActive && <ChevronRightIcon className="ml-auto opacity-70" size={16} />}
-                      </button>
+                        <button
+                          key={cat.id || 'all'}
+                          onClick={() => { setActiveCategory(cat.name); }}
+                          className={`w-full text-left px-4 py-4 rounded-2xl font-mono text-xs uppercase tracking-wider transition-all flex items-center gap-4 relative group`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeDesktopCatBg"
+                              className="absolute inset-0 bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900/60 border border-emerald-500/30 rounded-2xl shadow-[0_0_20px_rgba(37,211,102,0.05)]"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <div className={`relative z-10 p-2.5 rounded-xl transition-all ${isActive ? 'bg-[#25D366]/15 text-[#25D366] shadow-[0_0_15px_rgba(37,211,102,0.2)]' : 'bg-slate-900 text-slate-400 group-hover:bg-slate-800 group-hover:text-slate-200'}`}>
+                            <CategoryIcon name={cat.name} size={18} />
+                          </div>
+                          <span className={`relative z-10 font-bold ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                            {cat.name === 'all' ? 'Toutes catégories' : cat.name}
+                          </span>
+                          {isActive && (
+                            <motion.div 
+                              layoutId="activeDesktopIndicator"
+                              className="relative z-10 ml-auto"
+                            >
+                              <ChevronRightIcon className="text-[#25D366] drop-shadow-[0_0_8px_#25D366]" size={16} />
+                            </motion.div>
+                          )}
+                        </button>
                       );
                     })}
                   </div>

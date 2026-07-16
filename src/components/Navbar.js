@@ -71,41 +71,41 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl shadow-sm text-slate-900 border-b border-slate-200 py-3 sm:py-4 transition-all duration-300">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-md border-b border-slate-100/80 py-2 sm:py-3 transition-all duration-300 shadow-sm shadow-slate-100/40">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex items-center justify-between">
 
         {/* Left: LOGO */}
-        <Link href="/" className="flex items-center gap-3 group z-50">
-          <div className="relative w-14 h-14 rounded-xl overflow-visible shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-300">
-            {/* Gradient background ultra-lumineux */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500"></div>
+        <Link href="/" className="flex items-center gap-4 group z-50">
+          <div className="relative w-16 h-16 rounded-2xl overflow-visible shadow-md flex items-center justify-center transition-all duration-500 ease-out group-hover:scale-105">
+            {/* Lueur externe dynamique */}
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
             
-            {/* Effet de lueur externe */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-300 to-teal-400 rounded-xl blur-md opacity-75 group-hover:opacity-100 transition-all duration-300"></div>
+            {/* Gradient background premium */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 rounded-2xl"></div>
             
-            {/* Bordure brillante */}
-            <div className="absolute inset-0 border-3 border-white/60 rounded-xl group-hover:border-white transition-all duration-300"></div>
+            {/* Bordure de brillance */}
+            <div className="absolute inset-0 border border-white/30 rounded-2xl"></div>
             
-            {/* Image avec contraste amélioré */}
-            <img src="/icon-512.png" className="w-11 h-11 object-cover relative z-10 contrast-150 brightness-110" alt="Vestyle" />
+            {/* Image du logo agrandie et sublimée */}
+            <img src="/icon-512.png" className="w-12 h-12 object-cover relative z-10 contrast-125 brightness-110 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500" alt="Vestyle" />
             
-            {/* Reflet blanc */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-white/60 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-            
-            {/* Animation pulse */}
-            <div className="absolute inset-0 rounded-xl animate-pulse bg-white/10"></div>
+            {/* Reflet au survol */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
           </div>
-          <span className="text-2xl font-black hidden sm:block tracking-wide bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent group-hover:from-emerald-500 group-hover:to-cyan-500 transition-all duration-300" style={{fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontWeight: '800', letterSpacing: '0.06em'}}>
-            Vestyle
-          </span>
+          <div className="flex flex-col">
+            <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-slate-900 via-emerald-800 to-teal-800 bg-clip-text text-transparent group-hover:from-emerald-600 group-hover:to-teal-600 transition-all duration-300" style={{fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontWeight: '900'}}>
+              Vestyle
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-600/80">Live Marketplace</span>
+          </div>
         </Link>
 
         {/* Right: DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-2">
-          <Link href="/cart" className="relative p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600">
+        <nav className="hidden md:flex items-center gap-4">
+          <Link href="/cart" className="relative p-2.5 rounded-xl transition-all duration-200 hover:bg-slate-50 text-slate-700 hover:text-emerald-600">
             <ShoppingCartIcon size={22} />
             {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
+              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10.5px] font-bold h-5.5 w-5.5 flex items-center justify-center rounded-full shadow-sm border-2 border-white">
                 {totalCartItems}
               </span>
             )}
@@ -113,78 +113,77 @@ export default function Navbar() {
 
           <button
             onClick={toggleDataSaver}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${dataSaver ? 'bg-orange-500 text-white animate-pulse shadow-lg' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'}`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${dataSaver ? 'bg-orange-500 text-white shadow-sm shadow-orange-100' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
           >
             <ZapIcon size={12} /> {dataSaver ? 'Lite ON' : 'Lite Mode'}
           </button>
 
-          <Link href="/mes-commandes" className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-emerald-600" title="Suivre mes commandes">
+          <Link href="/mes-commandes" className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-emerald-600 border border-slate-100" title="Suivre mes commandes">
             <PackageIcon size={14} /> Mes Commandes
           </Link>
 
           <Link
             href="/profile"
-            className="p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600"
+            className="p-2.5 rounded-xl transition-all duration-200 hover:bg-slate-50 text-slate-700 hover:text-emerald-600"
           >
             <UserIcon size={22} />
           </Link>
 
           {session ? (
-            <div className="flex items-center gap-1 pl-2 border-l border-white/20 ml-1">
-              <Link href="/dashboard" className="p-2.5 rounded-full transition-colors hover:bg-slate-100 text-slate-700 hover:text-emerald-600" title="Tableau de bord vendeur">
+            <div className="flex items-center gap-1 pl-3 border-l border-slate-200/80 ml-1">
+              <Link href="/dashboard" className="p-2.5 rounded-xl transition-all duration-200 hover:bg-slate-50 text-slate-700 hover:text-emerald-600" title="Tableau de bord vendeur">
                 <StoreIcon size={20} />
               </Link>
-              <button onClick={() => signOut()} className="p-2.5 rounded-full transition-colors hover:bg-rose-50 text-rose-500 hover:text-rose-600" title="Déconnexion">
+              <button onClick={() => signOut()} className="p-2.5 rounded-xl transition-all duration-200 hover:bg-rose-50 text-rose-500 hover:text-rose-600" title="Déconnexion">
                 <LogOutIcon size={20} />
               </button>
             </div>
           ) : (
-            <div className="flex items-center pl-2 ml-1">
-              <Link href="/login" className="text-xs font-bold px-4 py-2 rounded-full transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-md">
+            <div className="flex items-center pl-3 border-l border-slate-200/80 ml-1">
+              <Link href="/login" className="text-xs font-bold px-4 py-2.5 rounded-xl transition-all bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-100/50 hover:shadow-emerald-200 hover:scale-[1.02]">
                 Vendre
               </Link>
             </div>
           )}
         </nav>
 
-        {/* Right: MOBILE TOGGLE */}
-        <div className="flex md:hidden items-center gap-2 z-50 text-slate-700">
-          <Link href="/cart" className="relative p-2 rounded-full hover:bg-slate-100">
-            <ShoppingCartIcon size={22} />
+        {/* Right: MOBILE TOGGLE - Encapsulated in a premium glass capsule */}
+        <div className="flex md:hidden items-center gap-1 bg-slate-50/90 border border-slate-100/80 p-1.5 rounded-full shadow-sm z-50">
+          <Link href="/cart" className="relative p-2 rounded-full hover:bg-white text-slate-700 transition-colors">
+            <ShoppingCartIcon size={18} />
             {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md border-2 border-white">
+              <span className="absolute -top-0.5 -right-0.5 bg-emerald-500 text-white text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full shadow-sm border border-white">
                 {totalCartItems}
               </span>
             )}
           </Link>
-          <button onClick={() => router.push('/profile')} className="p-2 rounded-full hover:bg-slate-100">
-            <UserIcon size={22} />
+          <button onClick={() => router.push('/profile')} className="p-2 rounded-full hover:bg-white text-slate-700 transition-colors">
+            <UserIcon size={18} />
           </button>
           <button
-            className="p-2 rounded-full focus:outline-none hover:bg-slate-100"
+            className="p-2 rounded-full focus:outline-none hover:bg-white text-slate-850 transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
+            {isMobileMenuOpen ? <XIcon size={20} /> : <MenuIcon size={20} />}
           </button>
         </div>
 
       </div>
 
       {/* MOBILE MENU */}
-      <div className={`md:hidden fixed inset-0 bg-white z-40 flex flex-col transition-transform duration-200 pt-20 px-4 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-
-        <nav className="flex flex-col gap-1 text-base font-medium text-neutral-800">
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Accueil <ArrowRightIcon size={16} className="text-neutral-400" /></Link>
-          <Link href="/mes-commandes" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100">Mes Commandes <PackageIcon size={18} className="text-wa-teal" /></Link>
+      <div className={`md:hidden fixed inset-0 bg-[#0a1628]/98 backdrop-blur-2xl z-40 flex flex-col transition-all duration-300 pt-24 px-6 ${isMobileMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+        <nav className="flex flex-col gap-2 text-base font-bold text-white">
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-4 border-b border-white/10 hover:text-[#25D366] transition-colors text-white">Accueil <ArrowRightIcon size={16} className="text-slate-400" /></Link>
+          <Link href="/mes-commandes" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-4 border-b border-white/10 hover:text-[#25D366] transition-colors text-white">Mes Commandes <PackageIcon size={18} className="text-[#25D366]" /></Link>
 
           {session ? (
             <>
-              <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-3 border-b border-neutral-100 text-wa-teal">Tableau de Bord Vendeur <StoreIcon size={18} /></Link>
-              <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-3 text-red-500 text-left">Déconnexion <LogOutIcon size={18} /></button>
+              <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between py-4 border-b border-white/10 text-[#25D366] hover:text-emerald-400 font-bold transition-colors">Tableau de Bord Vendeur <StoreIcon size={18} /></Link>
+              <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="flex items-center justify-between py-4 text-rose-500 text-left font-bold transition-colors">Déconnexion <LogOutIcon size={18} /></button>
             </>
           ) : (
-            <div className="mt-4 flex flex-col">
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full bg-wa-teal text-white py-3 rounded-lg text-center font-medium">Connexion Vendeur</Link>
+            <div className="mt-8 flex flex-col">
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full bg-[#25D366] text-slate-950 py-4 rounded-2xl text-center font-black uppercase tracking-wider shadow-lg shadow-[#25D366]/20">Connexion Vendeur</Link>
             </div>
           )}
         </nav>
@@ -199,3 +198,4 @@ export default function Navbar() {
     </header>
   );
 }
+

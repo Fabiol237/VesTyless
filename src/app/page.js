@@ -7,6 +7,8 @@ import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ClientDiscovery from '@/components/ClientDiscovery';
 import VisualSearchModal from '@/components/VisualSearchModal';
 import Link from 'next/link';
+import InteractiveFluidBg from '@/components/InteractiveFluidBg';
+import LiveShowcase from '@/components/LiveShowcase';
 import { motion, useReducedMotion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
 import { useOfflineData } from '@/hooks/useOfflineData';
@@ -208,6 +210,20 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
 
+  // ── HERO BANNER BACKGROUND SLIDER ──
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  const heroSlides = [
+    '/hero_slide_1.png',
+    '/hero_slide_2.png',
+    '/hero_slide_3.png'
+  ];
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentHeroSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ── WOW EFFECT: 3D Mouse Tracking ──
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -315,17 +331,26 @@ export default function Home() {
         className="relative min-h-[100svh] flex flex-col justify-center items-center overflow-hidden bg-[#0a1628]"
         style={{ perspective: 1200 }}
       >
-        {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-center bg-cover bg-no-repeat opacity-100" 
-          style={{ backgroundImage: 'url("/hero_image.png")' }} 
-        />
+        {/* Background Image Slider */}
+        <div className="absolute inset-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentHeroSlide}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              className="absolute inset-0 bg-center bg-cover bg-no-repeat"
+              style={{ backgroundImage: `url("${heroSlides[currentHeroSlide]}")` }}
+            />
+          </AnimatePresence>
+        </div>
         {/* Lighter overlay to let the impressive image shine */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/40 via-[#0a1628]/10 to-[#0a1628]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/45 via-[#0a1628]/15 to-[#0a1628]" />
 
         {/* Particle canvas */}
         <div className="absolute inset-0">
-          <ParticleBackground />
+          <InteractiveFluidBg />
         </div>
 
         {/* Glow blobs */}
@@ -342,11 +367,11 @@ export default function Home() {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-black uppercase tracking-widest"
-            style={{ borderColor: 'rgba(37,211,102,0.3)', background: 'rgba(37,211,102,0.08)', color: '#25D366' }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] shadow-[0_0_15px_rgba(179,135,40,0.1)]"
+            style={{ borderColor: 'rgba(179,135,40,0.3)', background: 'rgba(179,135,40,0.05)' }}
           >
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            Marketplace N°1 du Cameroun
+            <span className="w-2 h-2 rounded-full bg-[#BF953F] animate-pulse" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728]">Marketplace N°1 du Cameroun</span>
           </motion.div>
 
           {/* Title with 3D Tilt Wow Effect */}
@@ -357,21 +382,85 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
             className="will-change-transform flex flex-col items-center mt-[-40px]"
           >
+            {/* OISEAU LOGISTIQUE STYLE ART AFRICAIN (SVG) */}
+            <div className="mb-4 text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] drop-shadow-[0_4px_12px_rgba(179,135,40,0.35)]">
+              <svg width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Corps et ailes géométriques de l'oiseau en or métallique */}
+                <path d="M50 12 L64 36 L92 36 L70 51 L78 78 L50 61 L22 78 L30 51 L8 36 L36 36 Z" fill="url(#goldGradient)" />
+                
+                {/* Lignes intérieures de gravure (art ethnique et plumes) */}
+                <path d="M50 20 L57 36 L75 36 L61 47 L66 68 L50 56 L34 68 L39 47 L25 36 L43 36 Z" fill="#0a1628" />
+                
+                {/* Plumes et reflets internes en or fin */}
+                <path d="M50 25 L54 35 L70 35 L57 44 L61 60 L50 50 L39 60 L43 44 L30 35 L46 35 Z" fill="url(#goldGradient)" />
+                <circle cx="50" cy="30" r="1.5" fill="#0a1628" /> {/* Œil de l'oiseau */}
+                
+                {/* Bec et tête pointée vers l'avant (Logistique) */}
+                <path d="M50 6 L53 14 L47 14 Z" fill="url(#goldGradient)" />
+                
+                {/* Lignes dynamiques de vol sous l'oiseau */}
+                <path d="M35 83 L65 83" stroke="url(#goldGradient)" strokeWidth="2" strokeLinecap="round" strokeDasharray="1 5" />
+                <path d="M42 88 L58 88" stroke="url(#goldGradient)" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1 4" />
+
+                {/* Définition du dégradé d'or métallique */}
+                <defs>
+                  <linearGradient id="goldGradient" x1="12" y1="10" x2="88" y2="78" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#BF953F" />
+                    <stop offset="50%" stopColor="#FCF6BA" />
+                    <stop offset="100%" stopColor="#B38728" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            
             <motion.h1 
               style={reduceMotion ? {} : { transform: 'translateZ(60px)' }} 
-              className={`text-[80px] sm:text-[130px] tracking-tighter leading-none font-black ${artFont.className}`}
+              className={`text-[80px] sm:text-[120px] tracking-tight leading-none font-black ${artFont.className} text-center relative group/title cursor-pointer select-none`}
             >
-              <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-[#e6fff0] to-[#25D366] drop-shadow-[0_0_30px_rgba(37,211,102,0.6)]">
+              {/* PHÉNIX / OISEAU DE FEU ANIMÉ (S'active au hover) */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                {/* Le Phénix central */}
+                <svg 
+                  className="w-40 h-40 opacity-0 group-hover/title:opacity-100 group-hover/title:scale-150 group-hover/title:-translate-y-12 transition-all duration-700 ease-out filter drop-shadow-[0_0_25px_#FF4D00]" 
+                  viewBox="0 0 100 100" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M50 50 C20 40 10 20 5 10 C15 30 35 45 50 50 Z" fill="url(#fireGradient)" className="animate-pulse" />
+                  <path d="M50 50 C80 40 90 20 95 10 C85 30 65 45 50 50 Z" fill="url(#fireGradient)" className="animate-pulse" />
+                  <path d="M50 20 L54 45 L50 65 L46 45 Z" fill="url(#goldGradient)" />
+                  <path d="M50 65 L55 85 L50 95 L45 85 Z" fill="url(#fireGradient)" />
+                  <path d="M50 65 L63 80 L62 90 L50 75 Z" fill="url(#fireGradient)" />
+                  <path d="M50 65 L37 80 L38 90 L50 75 Z" fill="url(#fireGradient)" />
+                  {/* Définitions des dégradés de feu et d'or */}
+                  <defs>
+                    <linearGradient id="fireGradient" x1="0" y1="0" x2="100" y2="100">
+                      <stop offset="0%" stopColor="#FF4D00" />
+                      <stop offset="50%" stopColor="#FF8700" />
+                      <stop offset="100%" stopColor="#FFC107" />
+                    </linearGradient>
+                    <linearGradient id="goldGradient" x1="0" y1="20" x2="0" y2="65">
+                      <stop offset="0%" stopColor="#FCF6BA" />
+                      <stop offset="100%" stopColor="#BF953F" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+
+              {/* Effet WOW : Ombre de lueur dorée diffuse derrière le nom */}
+              <span className="absolute inset-0 blur-2xl opacity-20 group-hover/title:opacity-60 bg-gradient-to-r from-[#FF4D00] via-[#BF953F] to-[#FFC107] pointer-events-none select-none transition-opacity duration-500">VesTyle</span>
+              
+              {/* Le nom avec dégradé d'art africain texturé */}
+              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#C84B31] via-[#FCF6BA] to-[#2D4263] filter drop-shadow-[0_5px_15px_rgba(0,0,0,0.7)] group-hover/title:brightness-125 transition-all duration-300" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.1)' }}>
                 Ves
-              </span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-bl from-white via-[#e0f7f4] to-[#128C7E] drop-shadow-[0_0_30px_rgba(18,140,126,0.6)]">
-                Tyle
+                {/* Lettre T en or pur texturé */}
+                <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#FCF6BA] via-[#BF953F] to-[#B38728] font-black">T</span>
+                yle
               </span>
             </motion.h1>
-            <p className="mt-6 text-[10px] sm:text-xs font-mono uppercase tracking-[0.4em] text-[#25D366] flex items-center gap-4">
-              <span className="w-8 sm:w-16 h-[2px] bg-gradient-to-r from-transparent to-[#25D366]/50"></span>
-              Plateforme E-Commerce Algorithmique
-              <span className="w-8 sm:w-16 h-[2px] bg-gradient-to-l from-transparent to-[#25D366]/50"></span>
+            
+            <p className="mt-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-3">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728]">❖ Marketplace Ethno-Moderne ❖</span>
             </p>
           </motion.div>
 
@@ -384,12 +473,13 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="w-full max-w-4xl mt-6 flex flex-col gap-4 relative z-20"
           >
-            {/* Module 1: The AI Search Bar */}
+            {/* Module 1: The AI Search Bar - Futuristic Gold & Emerald Lab Style */}
             <div className="relative group w-full max-w-3xl mx-auto">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#25D366] via-transparent to-[#128C7E] rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200" />
-              <div className="relative flex flex-col sm:flex-row items-center bg-black/60 backdrop-blur-xl border border-white/20 rounded-[2rem] sm:rounded-full shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden">
+              {/* Outer multi-color neon glow border */}
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-[#BF953F] via-[#25D366] to-[#B38728] rounded-[2.5rem] blur-md opacity-25 group-hover:opacity-65 transition duration-500" />
+              <div className="relative flex flex-col sm:flex-row items-center bg-[#0d1f37]/85 backdrop-blur-2xl border border-[#BF953F]/30 rounded-[2.2rem] shadow-[0_0_50px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-300 focus-within:border-[#BF953F] focus-within:shadow-[0_0_35px_rgba(179,135,40,0.2)]">
                 <div className="flex-1 w-full flex items-center relative">
-                  <span className="absolute left-6 pointer-events-none" style={{ color: '#25D366' }}>
+                  <span className="absolute left-6 pointer-events-none text-[#BF953F] drop-shadow-[0_0_8px_rgba(191,149,63,0.4)]">
                     <SearchIcon />
                   </span>
                   <SearchAutocomplete
@@ -398,14 +488,13 @@ export default function Home() {
                     suggestions={suggestions}
                     placeholder="Rechercher par mot-clé, produit, ou catégorie..."
                     className="w-full"
-                    inputClassName="w-full outline-none bg-transparent font-mono py-5 pl-14 pr-6 text-sm sm:text-base text-white placeholder:text-white/50"
-                  >
-                  </SearchAutocomplete>
+                    inputClassName="w-full outline-none bg-transparent font-mono py-5 pl-14 pr-6 text-sm sm:text-base text-[#FCF6BA] placeholder:text-[#BF953F]/40"
+                  />
                 </div>
                 <button
                   type="button"
                   onClick={scrollToFeed}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-[#0a1628] bg-[#25D366] transition-all hover:bg-[#1ebd5a]"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-5 text-xs font-black uppercase tracking-[0.25em] text-slate-950 bg-gradient-to-r from-[#BF953F] to-[#B38728] transition-all duration-300 hover:from-[#FCF6BA] hover:to-[#BF953F] hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(179,135,40,0.25)]"
                 >
                   Analyser <ArrowRightIcon />
                 </button>
@@ -416,46 +505,75 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-2">
               
               {/* Unique Button: Visual Search (Round, Glowing) */}
-              <button
+              <motion.button
                 type="button"
                 onClick={() => setVisualSearchOpen(true)}
-                className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-gradient-to-r from-[#128C7E] to-[#25D366] text-white font-black transition-all shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:scale-105 hover:shadow-[0_0_30px_rgba(37,211,102,0.6)]"
+                whileHover={{ scale: 1.06, shadow: "0 0 25px rgba(179,135,40,0.5)" }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-slate-950 font-black transition-all shadow-[0_0_20px_rgba(179,135,40,0.3)]"
               >
                 <CameraIcon />
                 <span className="uppercase tracking-widest text-xs font-mono">Scan Photo</span>
-              </button>
+              </motion.button>
 
-              {/* Unique Button: GPS Radar (Pill, High-Tech Outline) */}
-              <button
+              {/* Unique Button: GPS Radar (Style iOS Activable) */}
+              <motion.button
                 type="button"
                 onClick={requestLocation}
-                className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-white/10 border-2 border-white/30 text-white font-bold transition-all hover:bg-white/20 hover:border-white hover:scale-105 backdrop-blur-md"
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-3 px-6 py-3.5 rounded-full border-2 transition-all duration-300 backdrop-blur-md relative ${
+                  userLocation 
+                    ? 'bg-[#BF953F]/10 border-[#BF953F] text-[#FCF6BA]' 
+                    : 'bg-white/5 border-[#BF953F]/30 text-white'
+                }`}
               >
+                {/* Petit voyant vert style iOS si la localisation est active */}
+                {userLocation && (
+                  <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)] animate-pulse" />
+                )}
                 {isGpsLocating ? <LoaderIcon /> : <MapPinIcon />}
-                <span className="uppercase tracking-widest text-xs font-mono">{isGpsLocating ? "Recherche..." : "Autour de moi"}</span>
-              </button>
+                <span className="uppercase tracking-widest text-xs font-mono">
+                  {isGpsLocating ? "Recherche..." : userLocation ? "Localisé" : "Autour de moi"}
+                </span>
+              </motion.button>
 
-              {/* Unique Input: Code Vendeur (Glassmorphism minimalist) */}
-              <form onSubmit={handleCodeSearch} className="flex items-center rounded-full bg-black/50 border border-[#25D366]/40 focus-within:border-[#25D366] transition-all backdrop-blur-xl p-1 pr-2 shadow-inner">
-                <div className="pl-4 pr-2 text-[#25D366]/80">
-                  <HashIcon />
+              {/* Unique Input: Code Vendeur (Glassmorphism et Or Massif) */}
+              <div className="relative group/code">
+                {/* Infobulle d'accueil aimable */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 rounded-lg bg-slate-900 border border-[#BF953F]/40 text-[#FCF6BA] text-[10px] font-bold tracking-wider uppercase opacity-0 pointer-events-none group-hover/code:opacity-100 transition-all duration-300 whitespace-nowrap shadow-lg">
+                  🏪 Entrez le code d'un vendeur !
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-[#BF953F]/40 rotate-45 -mt-1"></div>
                 </div>
-                <input
-                  type="text"
-                  maxLength={5}
-                  value={codeQuery}
-                  onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
-                  placeholder="CODE BOUTIQUE"
-                  className="w-32 sm:w-40 bg-transparent border-none outline-none text-xs sm:text-sm font-mono font-bold text-white placeholder:text-white/40 tracking-[0.1em] py-2.5"
-                />
-                <button
-                  type="submit"
-                  disabled={codeQuery.length !== 5 || codeLoading}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#25D366]/20 flex items-center justify-center text-[#25D366] disabled:opacity-30 disabled:scale-95 hover:bg-[#25D366] hover:text-[#0a1628] transition-all"
+
+                <motion.form 
+                  onSubmit={handleCodeSearch} 
+                  whileHover={{ scale: 1.04 }}
+                  className="flex items-center rounded-full bg-black/40 border border-[#BF953F]/30 focus-within:border-[#BF953F] transition-all duration-300 backdrop-blur-xl p-1 pr-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] focus-within:shadow-[0_0_15px_rgba(179,135,40,0.25)]"
                 >
-                  {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
-                </button>
-              </form>
+                  <div className="pl-4 pr-1 text-[#BF953F]">
+                    <HashIcon />
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={5}
+                    value={codeQuery}
+                    onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
+                    placeholder="CODE BOUTIQUE"
+                    className="w-32 sm:w-40 bg-transparent border-none outline-none text-xs sm:text-sm font-mono font-bold text-[#FCF6BA] placeholder:text-[#BF953F]/40 tracking-[0.15em] py-2.5"
+                  />
+                  <motion.button
+                    type="submit"
+                    disabled={codeQuery.length !== 5 || codeLoading}
+                    whileTap={{ scale: 0.9 }}
+                    animate={codeQuery.length === 5 ? { scale: [1, 1.08, 1], boxShadow: ["0 0 5px rgba(179,135,40,0.3)", "0 0 15px rgba(179,135,40,0.8)", "0 0 5px rgba(179,135,40,0.3)"] } : {}}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[#BF953F] to-[#B38728] text-slate-950 flex items-center justify-center disabled:opacity-30 disabled:scale-95 hover:from-[#FCF6BA] hover:to-[#BF953F] transition-all shadow-[0_2px_5px_rgba(0,0,0,0.3)]"
+                  >
+                    {codeLoading ? <LoaderIcon /> : <ArrowRightIcon />}
+                  </motion.button>
+                </motion.form>
+              </div>
             </div>
             
             <AnimatePresence>
@@ -495,60 +613,94 @@ export default function Home() {
         </motion.button>
       </section>
 
-      {/* ── COMMENT ÇA MARCHE ─────────────────────────────────────────────── */}
+      {/* ── COMMENT ÇA MARCHE + LIVE FEED ─────────────────────────────── */}
       <section className="py-24 sm:py-32 px-4 relative bg-[#0a1628] overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 sm:mb-24">
-            <h2 className={`text-4xl sm:text-6xl font-black text-white mb-6 tracking-tight ${artFont.className}`}>
+        {/* Ambient background blobs */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#25D366]/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#128C7E]/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-16 sm:mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#25D366]/20 bg-[#25D366]/5 text-[#25D366] text-[10px] font-black uppercase tracking-[0.3em] font-mono mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
+              Plateforme e-commerce de proximité
+            </div>
+            <h2 className={`text-4xl sm:text-6xl font-black text-white mb-5 tracking-tight ${artFont.className}`}>
               Comment ça <span style={{ color: '#25D366' }}>marche ?</span>
             </h2>
-            <p className="text-lg max-w-2xl mx-auto font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Une expérience fluide, pensée pour vous simplifier la vie.
+            <p className="text-base sm:text-lg max-w-xl mx-auto font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              En 3 étapes simples, accédez aux meilleures boutiques locales du Cameroun.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 items-center relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-start">
             
-            {/* Ligne connectrice verticale animée */}
-            <div className="hidden lg:block absolute left-[45px] top-10 bottom-10 w-[2px] bg-gradient-to-b from-[#25D366] to-transparent opacity-30 z-0" />
+            {/* LEFT — Steps */}
+            <div className="flex flex-col gap-8 relative">
+              {/* Animated vertical connector */}
+              <div className="hidden lg:block absolute left-[28px] top-10 bottom-10 w-[2px]"
+                style={{ background: 'linear-gradient(to bottom, #25D366, rgba(37,211,102,0.1), transparent)' }} />
 
-            <div className="flex flex-col gap-10 sm:gap-12 relative z-10">
               {[
                 {
-                  step: "01",
-                  title: "Explorez",
-                  desc: "Recherche intelligente par photo, texte ou géolocalisation pour trouver la perle rare autour de vous."
+                  step: '01',
+                  title: 'Explorez',
+                  desc: 'Recherchez par photo, texte ou géolocalisation. Notre IA vous trouve la perle rare dans votre quartier en quelques secondes.',
+                  color: '#25D366',
                 },
                 {
-                  step: "02",
-                  title: "Commandez",
-                  desc: "Paiement sécurisé et échange direct avec nos marchands locaux certifiés."
+                  step: '02',
+                  title: 'Commandez',
+                  desc: 'Paiement sécurisé, échange direct avec nos marchands locaux certifiés. Aucune surprise, prix affichés en FCFA.',
+                  color: '#25D366',
                 },
                 {
-                  step: "03",
-                  title: "Recevez",
-                  desc: "Livraison ultra-rapide par nos coursiers tout-terrain ou retrait express en boutique."
-                }
+                  step: '03',
+                  title: 'Recevez',
+                  desc: 'Livraison ultra-rapide par coursier ou retrait express en boutique. Suivez votre commande en temps réel.',
+                  color: '#25D366',
+                },
               ].map((item, i) => (
-                <div key={i} className="flex items-start gap-6 sm:gap-8 group">
-                  <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#0d2137] rounded-[2rem] border border-white/5 flex items-center justify-center shadow-[0_0_30px_rgba(37,211,102,0.1)] group-hover:scale-105 group-hover:border-[#25D366]/50 transition-all duration-300 relative z-10">
-                    <span className="text-4xl font-black" style={{ color: '#25D366' }}>
-                      {item.step}
-                    </span>
+                <motion.div
+                  key={item.step}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15, duration: 0.5 }}
+                  className="flex items-start gap-6 group relative z-10 p-6 rounded-3xl glass-premium glass-glow-wa transition-all duration-300"
+                >
+                  {/* Glowing Step Badge */}
+                  <div className="flex-shrink-0 relative">
+                    <div className="absolute inset-0 bg-[#25D366]/20 rounded-2xl blur-lg group-hover:bg-[#25D366]/40 transition-all duration-500" />
+                    <div className="relative w-14 h-14 bg-[#0d2137] border border-[#25D366]/20 rounded-2xl flex items-center justify-center group-hover:border-[#25D366]/60 transition-all duration-300 shadow-[0_0_20px_rgba(37,211,102,0.05)] group-hover:shadow-[0_0_30px_rgba(37,211,102,0.15)]">
+                      <span className="text-2xl font-black font-mono" style={{ color: '#25D366' }}>{item.step}</span>
+                    </div>
                   </div>
-                  <div className="pt-2 sm:pt-4">
-                    <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 group-hover:text-[#25D366] transition-colors">{item.title}</h3>
-                    <p className="text-base sm:text-lg leading-relaxed max-w-md" style={{ color: 'rgba(255,255,255,0.6)' }}>
+
+                  {/* Text */}
+                  <div className="pt-1 flex-1">
+                    <h3 className="text-2xl sm:text-3xl font-black text-white mb-2 group-hover:text-[#25D366] transition-colors duration-300 tracking-tight">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm sm:text-base leading-relaxed text-slate-300 group-hover:text-white transition-colors duration-300">
                       {item.desc}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="relative w-full h-[400px] sm:h-[500px] flex items-center justify-center lg:justify-end mt-12 lg:mt-0">
-              <AnimatedProductShowcase />
-            </div>
+            {/* RIGHT — Real-time Live Showcase */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="relative lg:self-start lg:sticky lg:top-32"
+            >
+              <LiveShowcase />
+            </motion.div>
           </div>
         </div>
       </section>
@@ -556,10 +708,14 @@ export default function Home() {
       {/* ── FEED SECTION ──────────────────────────────────────────────────── */}
       <div
         id="discovery-section"
-        className="relative min-h-screen pt-8 pb-24 px-4 scroll-mt-20"
-        style={{ background: '#F8F9FA' }}
+        className="relative min-h-screen pt-16 pb-24 px-4 scroll-mt-20 overflow-hidden"
+        style={{ background: '#0a1628' }}
       >
-        <div className="max-w-6xl mx-auto">
+        {/* Halos de lumière de fond */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-10 left-1/4 w-[500px] h-[500px] bg-[#BF953F]/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
           <ClientDiscovery
             externalSearchQuery={searchQuery}
             onExternalSearchChange={setSearchQuery}
@@ -571,41 +727,45 @@ export default function Home() {
 
       {/* ── SECTION PROMO ÉCLAIR (FOMO) ─────────────────────────────────────────────────────────── */}
       {flashSales.length > 0 && (
-        <section className="w-full bg-gradient-to-r from-red-600 to-orange-500 py-12 px-4 relative overflow-hidden">
+        <section className="w-full py-16 px-4 relative overflow-hidden border-t border-b border-white/5" style={{ background: '#080f1c' }}>
+          {/* Subtle glowing ambient red blur */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
+          
           <div className="max-w-6xl mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-black text-white flex items-center gap-2">
-                  <span className="text-4xl">⚡</span> VENTES FLASH
+                <h2 className="text-3xl font-black text-white flex items-center gap-3">
+                  <span className="text-4xl text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse">⚡</span> 
+                  <span className="tracking-tight uppercase font-black">Ventes Flash</span>
                 </h2>
-                <p className="text-red-100 mt-1 font-medium">Les prix remontent bientôt, dépêchez-vous !</p>
+                <p className="text-slate-400 mt-2 text-sm font-medium">Offres exclusives de proximité. Les prix remontent bientôt !</p>
               </div>
-              <div className="mt-4 md:mt-0 bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30">
-                <span className="text-sm text-red-100 uppercase tracking-widest font-bold mr-3">Fin dans</span>
-                <span className="text-2xl font-mono font-black text-white">{timeLeft || 'Calcul...'}</span>
+              <div className="mt-4 md:mt-0 bg-red-500/10 border border-red-500/30 backdrop-blur-md px-6 py-3.5 rounded-2xl flex items-center gap-3">
+                <span className="text-[10px] text-red-400 uppercase tracking-widest font-black">Fin de l'offre :</span>
+                <span className="text-xl font-mono font-black text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">{timeLeft || 'Calcul...'}</span>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {flashSales.map(product => (
-                <div key={product.id} className="bg-white rounded-3xl p-4 shadow-xl flex gap-4 items-center transform transition-transform hover:-translate-y-1">
-                  <div className="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden relative flex-shrink-0">
+                <div key={product.id} className="glass-premium hover:border-red-500/30 rounded-3xl p-5 flex gap-4 items-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(239,68,68,0.08)]">
+                  <div className="w-24 h-24 rounded-2xl bg-slate-950/65 overflow-hidden relative flex-shrink-0 border border-white/5">
                     {product.image_url ? (
                       <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">📷</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">📷</div>
                     )}
-                    <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-xl">
+                    <div className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-black tracking-wider uppercase px-2 py-1 rounded-bl-xl shadow-md">
                       -15%
                     </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 line-clamp-1">{product.name}</h3>
-                    <p className="text-xs text-gray-500 line-clamp-1">{product.store?.name} • {product.store?.city}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-lg font-black text-red-600">{product.price} FCFA</span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-white text-base line-clamp-1">{product.name}</h3>
+                    <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{product.store?.name} • {product.store?.city}</p>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-lg font-black text-red-500 font-mono">{product.price} FCFA</span>
                       {product.original_price && (
-                        <span className="text-xs text-gray-400 line-through">{product.original_price} FCFA</span>
+                        <span className="text-xs text-slate-500 line-through font-mono">{product.original_price} FCFA</span>
                       )}
                     </div>
                   </div>
@@ -617,22 +777,28 @@ export default function Home() {
       )}
 
       {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
-      <footer style={{ background: '#070f1c', color: 'rgba(255,255,255,0.5)' }} className="py-16 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col items-center gap-8">
-          <h2 className={`text-5xl sm:text-[70px] tracking-tight text-white ${artFont.className}`}>
-            Ves<span style={{ color: '#25D366' }}>Tyle</span>
+      <footer style={{ background: '#050a12', borderTop: '1px solid rgba(255,255,255,0.03)' }} className="py-16 px-6 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[200px] bg-[#25D366]/3 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-10 relative z-10">
+          <h2 className={`text-5xl sm:text-[70px] tracking-tight text-white ${artFont.className} transition-all duration-300 hover:scale-105`}>
+            Ves<span style={{ color: '#25D366' }} className="text-glow-wa">Tyle</span>
           </h2>
-          <div className="flex flex-wrap justify-center gap-8 text-[10px] font-black uppercase tracking-widest">
-            <Link href="/login" className="hover:text-white transition-colors">Vendre sur Vestyle</Link>
-            <Link href="/suivi" className="hover:text-white transition-colors">Suivre une commande</Link>
-            <Link href="/boutiques" className="hover:text-white transition-colors">Boutiques</Link>
-            <Link href="#" className="hover:text-white transition-colors">Aide</Link>
+          <div className="flex flex-wrap justify-center gap-8 sm:gap-12 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <Link href="/login" className="hover:text-[#25D366] transition-colors">Vendre sur Vestyle</Link>
+            <Link href="/suivi" className="hover:text-[#25D366] transition-colors">Suivre une commande</Link>
+            <Link href="/boutiques" className="hover:text-[#25D366] transition-colors">Boutiques</Link>
+            <Link href="#" className="hover:text-[#25D366] transition-colors">Aide</Link>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.4em]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          <div className="w-full max-w-md h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <p className="text-[9px] uppercase tracking-[0.4em] text-slate-600">
             Cameroun Excellence • {new Date().getFullYear()}
           </p>
         </div>
       </footer>
+
+
 
       {/* ── CODE MODAL (REMOVED: Form is now directly inline in the hero) ── */}
 

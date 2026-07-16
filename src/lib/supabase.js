@@ -15,6 +15,13 @@ export const isSupabaseConfigured = Boolean(
 );
 
 export const supabase = createBrowserClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder'
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder',
+  {
+    auth: {
+      flowType: 'pkce',       // Indispensable pour que le code_verifier soit stocké en cookie
+      detectSessionInUrl: true,
+      persistSession: true,
+    },
+  }
 );

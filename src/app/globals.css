@@ -122,3 +122,42 @@ button, a { -webkit-user-select: none; user-select: none; }
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Glassmorphism design system utilities */
+.glass-premium {
+  background: rgba(255, 255, 255, 0.02) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.glass-glow-wa {
+  box-shadow: 0 0 25px rgba(37, 211, 102, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-glow-wa:hover {
+  border-color: rgba(37, 211, 102, 0.35) !important;
+  box-shadow: 0 0 35px rgba(37, 211, 102, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.glass-glow-gold {
+  box-shadow: 0 0 25px rgba(191, 149, 63, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-glow-gold:hover {
+  border-color: rgba(191, 149, 63, 0.35) !important;
+  box-shadow: 0 0 35px rgba(191, 149, 63, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.text-glow-wa {
+  text-shadow: 0 0 15px rgba(37, 211, 102, 0.35);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 15px rgba(191, 149, 63, 0.35);
+}

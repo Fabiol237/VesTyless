@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { getSuggestions } from '@/lib/searchUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Store, ShoppingBag, Search } from 'lucide-react';
 
 /**
  * Composant de recherche avec autocomplétion intelligente :
@@ -139,8 +139,11 @@ export default function SearchAutocomplete({
                         highlighted === idx ? 'bg-emerald-50 text-emerald-900 border-l-4 border-emerald-500' : 'hover:bg-slate-50 text-slate-700 border-l-4 border-transparent'
                       }`}
                     >
-                      <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-xl shadow-sm">
-                        {s.emoji || '🔍'}
+                      <div className="w-10 h-10 bg-slate-100/50 rounded-2xl flex items-center justify-center text-slate-500 shadow-sm">
+                        {type === 'Catégorie' ? <LayoutGrid size={18} /> :
+                         type === 'Boutique' ? <Store size={18} /> :
+                         type === 'Produit' ? <ShoppingBag size={18} /> :
+                         <Search size={18} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-black truncate tracking-tight">{s.label}</p>
