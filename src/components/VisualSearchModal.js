@@ -152,7 +152,7 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
               <span>Choisir une image existante</span>
             </button>
 
-            <input type="file" accept="image/*" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
+            <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
             <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={handleFileChange} />
           </div>
         </div>
