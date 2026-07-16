@@ -10,7 +10,6 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
   const [description, setDescription] = useState('');
   const [error, setError] = useState(null);
 
-  const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
   // Compression légère côté client avant envoi
@@ -118,41 +117,24 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 w-full">
             <p className="text-sm text-slate-400 font-medium text-center leading-relaxed">
-              Prenez en photo un vêtement ou importez une image pour que notre intelligence artificielle le retrouve immédiatement dans les boutiques à proximité.
+              Prenez en photo un vêtement ou importez une image pour retrouver immédiatement des articles similaires dans les boutiques partenaires.
             </p>
 
-            {/* Bouton caméra */}
             <button
-              onClick={() => cameraInputRef.current?.click()}
-              className="w-full bg-gradient-to-br from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-slate-950 p-8 rounded-[24px] shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
+              onClick={() => galleryInputRef.current?.click()}
+              className="w-full bg-gradient-to-br from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-slate-950 p-8 rounded-[24px] shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden text-center"
             >
-              {/* Reflet lumineux */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity"></div>
               
               <div className="w-14 h-14 bg-slate-950/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
                 <Camera size={32} />
               </div>
-              <h3 className="text-lg font-black mb-0.5">Prendre une photo</h3>
-              <p className="text-slate-900/60 text-[10px] font-bold uppercase tracking-wider">Lancer l'appareil photo</p>
+              <h3 className="text-lg font-black mb-0.5">Prendre ou choisir une photo</h3>
+              <p className="text-slate-900/60 text-[10px] font-bold uppercase tracking-wider">Appareil photo ou Galerie</p>
             </button>
 
-            <div className="flex items-center gap-3 w-full">
-              <div className="flex-1 h-px bg-white/5" />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ou</span>
-              <div className="flex-1 h-px bg-white/5" />
-            </div>
-
-            <button
-              onClick={() => galleryInputRef.current?.click()}
-              className="w-full bg-white/5 hover:bg-white/10 text-white p-4.5 rounded-[18px] border border-white/10 hover:border-[#BF953F]/40 transition-all flex items-center justify-center gap-3 font-bold text-sm"
-            >
-              <ImageIcon className="text-[#BF953F]" size={20} />
-              <span>Choisir une image existante</span>
-            </button>
-
-            <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={handleFileChange} />
             <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={handleFileChange} />
           </div>
         </div>
