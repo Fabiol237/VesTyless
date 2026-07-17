@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { embedImage } from "@/lib/vectorSearchProvider.mjs";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function getSupabase() {
   return createClient(
@@ -22,36 +22,56 @@ export async function POST(req) {
   const supabase = getSupabase();
 
   try {
-    const formData      = await req.formData();
-    const imageFile     = formData.get("image");
-    const imageUrlInput = formData.get("image_url");
-    const categoryFilter = formData.get("category_id");
-
-    if (!imageFile && !imageUrlInput) {
-      return NextResponse.json(
-        { error: "Une image ou une URL est requise." },
-        { status: 400 }
-      );
-    }
-
     let imageBuffer, mimeType;
+    const contentType = req.headers.get('content-type') || '';
 
-    if (imageUrlInput) {
-      // URL fournie → télécharger l'image
-      console.log("[Visual Search] 📸 Téléchargement image URL...");
-      const imgRes = await fetch(imageUrlInput, {
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!imgRes.ok) throw new Error(`Fetch image: HTTP ${imgRes.status}`);
-      const buf   = await imgRes.arrayBuffer();
-      imageBuffer = Buffer.from(buf);
-      mimeType    = imgRes.headers.get("content-type") || "image/jpeg";
+    if (contentType.includes('application/json')) {
+      // Nouveau format : JSON avec image en base64 (meilleure compatibilité mobile)
+      const body = await req.json();
+      const imageUrlInput = body.image_url;
+      const base64Data = body.image_base64;
+
+      if (!base64Data && !imageUrlInput) {
+        return NextResponse.json({ error: "Une image est requise." }, { status: 400 });
+      }
+
+      if (base64Data) {
+        // Format : data:image/jpeg;base64,/9j/...
+        const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) throw new Error('Format base64 invalide');
+        mimeType = matches[1];
+        imageBuffer = Buffer.from(matches[2], 'base64');
+        console.log(`[Visual Search] 📸 Upload base64 — ${Math.round(imageBuffer.byteLength / 1024)}KB`);
+      } else {
+        // URL fournie
+        console.log('[Visual Search] 📸 Téléchargement image URL...');
+        const imgRes = await fetch(imageUrlInput, { signal: AbortSignal.timeout(15000) });
+        if (!imgRes.ok) throw new Error(`Fetch image: HTTP ${imgRes.status}`);
+        imageBuffer = Buffer.from(await imgRes.arrayBuffer());
+        mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+      }
     } else {
-      // Fichier uploadé directement
-      const bytes = await imageFile.arrayBuffer();
-      imageBuffer = Buffer.from(bytes);
-      mimeType    = imageFile.type?.startsWith("image/") ? imageFile.type : "image/jpeg";
-      console.log(`[Visual Search] 📸 Upload direct — ${Math.round(bytes.byteLength / 1024)}KB`);
+      // Ancien format FormData (compatibilité )
+      const formData = await req.formData();
+      const imageFile = formData.get('image');
+      const imageUrlInput = formData.get('image_url');
+
+      if (!imageFile && !imageUrlInput) {
+        return NextResponse.json({ error: 'Une image ou une URL est requise.' }, { status: 400 });
+      }
+
+      if (imageUrlInput) {
+        console.log('[Visual Search] 📸 Téléchargement image URL...');
+        const imgRes = await fetch(imageUrlInput, { signal: AbortSignal.timeout(15000) });
+        if (!imgRes.ok) throw new Error(`Fetch image: HTTP ${imgRes.status}`);
+        imageBuffer = Buffer.from(await imgRes.arrayBuffer());
+        mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+      } else {
+        const bytes = await imageFile.arrayBuffer();
+        imageBuffer = Buffer.from(bytes);
+        mimeType = imageFile.type?.startsWith('image/') ? imageFile.type : 'image/jpeg';
+        console.log(`[Visual Search] 📸 Upload FormData — ${Math.round(bytes.byteLength / 1024)}KB`);
+      }
     }
 
     // ── Génération embedding via Jina CLIP v2 ──

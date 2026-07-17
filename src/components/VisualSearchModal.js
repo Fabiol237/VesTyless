@@ -143,18 +143,32 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
       setTimeout(() => setStatusText('Lecture et analyse des couleurs et de la forme...'), 1000);
       setTimeout(() => setStatusText('Recherche des boutiques partenaires les plus proches...'), 2500);
 
-      const formData = new FormData();
-      formData.append('image', compressed, 'search.jpg');
-
-      const res = await fetch('/api/search/visual', {
-        method: 'POST',
-        body: formData,
+      // Conversion en base64 pour compatibilité Android (FormData multipart peut être bloqué)
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result); // data:image/jpeg;base64,...
+        reader.readAsDataURL(compressed);
       });
 
-      const data = await res.json();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 55000); // 55s timeout
+
+      let res, data;
+      try {
+        res = await fetch('/api/search/visual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_base64: base64 }),
+          signal: controller.signal,
+        });
+        data = await res.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+
       URL.revokeObjectURL(objectUrl);
 
-      if (!res.ok || data.error) throw new Error(data.error || 'Erreur serveur');
+      if (!res.ok || data.error) throw new Error(data.error || `Erreur serveur ${res.status}`);
 
       setDescription(data.description || '');
 
