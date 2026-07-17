@@ -97,6 +97,7 @@ export default function CartPage() {
         } catch { /* GPS refusé, on continue */ }
       }
 
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
       const storeIds  = [...new Set(cart.map(item => item.store_id))];
       const newOrders = [];
 
@@ -104,34 +105,68 @@ export default function CartPage() {
         const storeItems = cart.filter(item => item.store_id === storeId);
         const storeTotal = storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-        const { data, error: orderError } = await supabase.from('orders').insert([{
-          store_id:       storeId,
-          customer_name:  name.trim(),
-          customer_phone: phone.replace(/\D/g, ''),
-          shipping_address: address.trim() || null,
-          total_amount:   storeTotal,
-          order_items:    storeItems,
-          delivery_lat:   lat,
-          delivery_lng:   lng,
-          status:         'pending',
-        }]).select('id, created_at, store_id').single();
+        let orderData = null;
+        let insertAttempts = 0;
+        const maxInsertAttempts = 3;
 
-        if (orderError) {
-          console.error('Supabase Insertion Error details:', JSON.stringify(orderError, null, 2));
-          throw new Error(orderError.message || 'Erreur d\'insertion en base de données');
+        // 1. Insertion de la commande avec retry
+        while (insertAttempts < maxInsertAttempts && !orderData) {
+          insertAttempts++;
+          try {
+            const { data, error: orderError } = await supabase.from('orders').insert([{
+              store_id:       storeId,
+              customer_name:  name.trim(),
+              customer_phone: phone.replace(/\D/g, ''),
+              shipping_address: address.trim() || null,
+              total_amount:   storeTotal,
+              order_items:    storeItems,
+              delivery_lat:   lat,
+              delivery_lng:   lng,
+              status:         'status' in storeItems[0] ? storeItems[0].status : 'pending',
+            }]).select('id, created_at, store_id').single();
+
+            if (orderError) throw orderError;
+            orderData = data;
+          } catch (err) {
+            console.warn(`[Order] Échec insertion commande (tentative ${insertAttempts}/${maxInsertAttempts}):`, err.message);
+            if (insertAttempts < maxInsertAttempts) {
+              await delay(1500 * insertAttempts);
+            } else {
+              throw new Error("La plateforme est très occupée. Votre commande n'a pas pu être validée immédiatement. Veuillez réessayer.");
+            }
+          }
         }
         
-        if (data) {
-          newOrders.push({ id: data.id, created_at: data.created_at, store_id: data.store_id });
+        if (orderData) {
+          newOrders.push({ id: orderData.id, created_at: orderData.created_at, store_id: orderData.store_id });
 
           // Post-order: notify vendor + update stock
           try {
-            const { data: storeData } = await supabase.from('stores').select('owner_id, name').eq('id', storeId).single();
+            // Récupération de la boutique avec retry
+            let storeData = null;
+            let shopAttempts = 0;
+            while (shopAttempts < 3 && !storeData) {
+              shopAttempts++;
+              try {
+                const { data } = await supabase.from('stores').select('owner_id, name').eq('id', storeId).single();
+                storeData = data;
+              } catch (_) { if (shopAttempts < 3) await delay(800); }
+            }
+
             if (storeData?.owner_id) {
-              const { data: profileData } = await supabase.from('profiles').select('email').eq('id', storeData.owner_id).single();
+              let profileData = null;
+              let profileAttempts = 0;
+              while (profileAttempts < 3 && !profileData) {
+                profileAttempts++;
+                try {
+                  const { data } = await supabase.from('profiles').select('email').eq('id', storeData.owner_id).single();
+                  profileData = data;
+                } catch (_) { if (profileAttempts < 3) await delay(800); }
+              }
 
               if (profileData?.email) {
-                await fetch('/api/emails/notify', {
+                // Email (Non critique : fire & forget)
+                fetch('/api/emails/notify', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -140,41 +175,63 @@ export default function CartPage() {
                     type: 'ORDER',
                     data: { message: `Le client ${name.trim()} vient de commander.`, amount: storeTotal.toLocaleString(), customer: name.trim() }
                   }),
-                });
-                await supabase.from('notifications').insert([{
-                  user_id: storeData.owner_id, store_id: storeId, type: 'order_placed',
-                  title: 'Nouvelle Commande !',
-                  message: `${name.trim()} a commandé pour ${storeTotal.toLocaleString()} F.`,
-                  related_order_id: data.id
-                }]);
+                }).catch(() => {});
+
+                // Insertion de notification avec retry
+                let notifSuccess = false;
+                let notifAttempts = 0;
+                while (notifAttempts < 3 && !notifSuccess) {
+                  notifAttempts++;
+                  try {
+                    const { error } = await supabase.from('notifications').insert([{
+                      user_id: storeData.owner_id, store_id: storeId, type: 'order_placed',
+                      title: 'Nouvelle Commande !',
+                      message: `${name.trim()} a commandé pour ${storeTotal.toLocaleString()} F.`,
+                      related_order_id: orderData.id
+                    }]);
+                    if (!error) notifSuccess = true;
+                  } catch (_) { if (notifAttempts < 3) await delay(1000); }
+                }
               }
 
-              // Atomic stock reduction via RPC
+              // Modification des stocks avec retry (RPC atomique)
               for (const item of storeItems) {
-                const { data: newStock, error: stockError } = await supabase.rpc('decrement_stock', {
-                  product_id: item.id,
-                  quantity_to_decrement: item.quantity
-                });
+                let stockSuccess = false;
+                let stockAttempts = 0;
+                let newStockVal = null;
 
-                if (stockError) {
-                  console.error('Stock error for', item.name, ':', stockError);
-                  continue; 
+                while (stockAttempts < 3 && !stockSuccess) {
+                  stockAttempts++;
+                  try {
+                    const { data: newStock, error: stockError } = await supabase.rpc('decrement_stock', {
+                      product_id: item.id,
+                      quantity_to_decrement: item.quantity
+                    });
+
+                    if (stockError) throw stockError;
+                    newStockVal = newStock;
+                    stockSuccess = true;
+                  } catch (err) {
+                    console.warn(`[Stock] Échec décrémentation stock de ${item.name} (tentative ${stockAttempts}):`, err.message);
+                    if (stockAttempts < 3) await delay(1000);
+                  }
                 }
 
-                // Alert if stock becomes low
-                if (newStock < 5 && storeData?.owner_id) {
+                // Alerte si stock devient faible
+                if (stockSuccess && newStockVal !== null && newStockVal < 5 && storeData?.owner_id) {
                   const { data: pd } = await supabase.from('profiles').select('email').eq('id', storeData.owner_id).single();
                   if (pd?.email) {
-                    await fetch('/api/emails/notify', {
+                    fetch('/api/emails/notify', {
                       method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ to: pd.email, subject: `Alerte Stock : ${item.name}`, type: 'STOCK', data: { productName: item.name, stock: newStock, message: 'Stock faible !' } })
-                    });
+                      body: JSON.stringify({ to: pd.email, subject: `Alerte Stock : ${item.name}`, type: 'STOCK', data: { productName: item.name, stock: newStockVal, message: 'Stock faible !' } })
+                    }).catch(() => {});
+
                     await supabase.from('notifications').insert([{
                       user_id: storeData.owner_id, store_id: storeId, type: 'stock_alert',
                       title: 'Stock Faible',
-                      message: `Il reste ${newStock} exemplaire(s) de "${item.name}".`,
+                      message: `Il reste ${newStockVal} exemplaire(s) de "${item.name}".`,
                       related_product_id: item.id
-                    }]);
+                    }]).catch(() => {});
                   }
                 }
               }

@@ -43,17 +43,49 @@ export default function StoreChatWidget({ storeId, storeSlug, primaryColor = '#6
 
     try {
       const history = messages.slice(-8);
-      const res  = await fetch('/api/ai/store-chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeId, storeSlug, message: msg, history }),
-      });
-      const data = await res.json();
-      const reply = data.reply || data.error || 'Je suis désolé, je ne peux pas répondre pour l\'instant.';
-      if (data.whatsapp) setWhatsapp(data.whatsapp);
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      let chatRes = null;
+      let chatData = null;
+      let chatAttempts = 0;
+      const maxChatAttempts = 3;
+
+      while (chatAttempts < maxChatAttempts && !chatData) {
+        chatAttempts++;
+        try {
+          const res = await fetch('/api/ai/store-chat', {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ storeId, storeSlug, message: msg, history }),
+          });
+
+          if (res.status === 429) {
+            // Surcharge détectée, on attend avant de réessayer
+            if (chatAttempts < maxChatAttempts) {
+              await delay(1200 * chatAttempts);
+              continue;
+            }
+          }
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          chatData = await res.json();
+          chatRes = res;
+        } catch (err) {
+          console.warn(`[Chat] Échec envoi message (tentative ${chatAttempts}):`, err.message);
+          if (chatAttempts < maxChatAttempts) {
+            await delay(1000 * chatAttempts);
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      const reply = chatData.reply || chatData.error || 'Je suis désolé, je ne peux pas répondre pour l\'instant.';
+      if (chatData.whatsapp) setWhatsapp(chatData.whatsapp);
       setMessages(prev => [...prev, { role: 'assistant', content: reply, ts: new Date() }]);
       if (!open) setUnread(u => u + 1);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Une erreur est survenue, réessayez.', ts: new Date() }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Une erreur est survenue lors de la communication avec la boutique. Veuillez renvoyer votre message.', ts: new Date() }]);
     }
     setLoading(false);
   };

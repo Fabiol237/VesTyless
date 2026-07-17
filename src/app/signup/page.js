@@ -40,20 +40,36 @@ export default function Signup() {
     setLoading(true);
     setError(null);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: password.trim(),
-      options: {
-        data: {
-          store_name: storeName.trim()
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    let attempts = 0;
+    const maxAttempts = 3;
+    let signupRes = null;
+
+    while (attempts < maxAttempts && !signupRes) {
+      attempts++;
+      try {
+        const res = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: {
+            data: {
+              store_name: storeName.trim()
+            }
+          }
+        });
+
+        if (res.error) throw res.error;
+        signupRes = res;
+      } catch (err) {
+        console.warn(`[Signup] Échec création de compte (tentative ${attempts}):`, err.message);
+        if (attempts < maxAttempts) {
+          await delay(1500 * attempts);
+        } else {
+          setError(err.message || "Le service d'inscription est momentanément indisponible. Veuillez réessayer.");
+          setLoading(false);
+          return;
         }
       }
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
     }
 
     setSuccess(true);
