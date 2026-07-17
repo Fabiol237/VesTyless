@@ -141,49 +141,67 @@ export default function AddProductPage() {
     
     setLoading(true);
 
-    // ============ ÉTAPE 1: Générer l'embedding pour l'image PRINCIPALE ============
+    // Fonction utilitaire de pause
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // ============ ÉTAPE 1: Générer l'embedding pour l'image PRINCIPALE (Avec Retry automatique) ============
     let primaryEmbedding = null;
     let primaryText = '';
-    
     const primaryImageUrl = formData.images[0];
-    console.log(`[AddProduct] Génération embedding pour l'image principale...`);
-    
-    try {
-      const embedRes = await fetch('/api/products/generate-embeddings-v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl: primaryImageUrl,
-          categoryId: parseInt(formData.global_category_id) || 1,
-          name: formData.name,
-          description: formData.description || ''
-        })
-      });
+    let embedAttempts = 0;
+    const maxEmbedAttempts = 3;
 
-      if (!embedRes.ok) {
-        throw new Error(`HTTP ${embedRes.status}`);
+    while (embedAttempts < maxEmbedAttempts && !primaryEmbedding) {
+      embedAttempts++;
+      try {
+        console.log(`[AddProduct] Génération embedding (Tentative ${embedAttempts}/${maxEmbedAttempts})...`);
+        const embedRes = await fetch('/api/products/generate-embeddings-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: primaryImageUrl,
+            categoryId: parseInt(formData.global_category_id) || 1,
+            name: formData.name,
+            description: formData.description || ''
+          })
+        });
+
+        // Si limitation de débit (429), on attend plus longtemps avant de réessayer
+        if (embedRes.status === 429) {
+          console.warn("[AddProduct] Surcharge détectée (Rate Limit 429). File d'attente activée...");
+          if (embedAttempts < maxEmbedAttempts) {
+            await delay(2000 * embedAttempts); // Attente progressive : 2s, 4s...
+            continue;
+          }
+        }
+
+        if (!embedRes.ok) {
+          throw new Error(`HTTP ${embedRes.status}`);
+        }
+
+        const embedData = await embedRes.json();
+        if (!embedData.success || !embedData.embedding) {
+          throw new Error(embedData.error || 'Invalid embedding response');
+        }
+
+        primaryEmbedding = embedData.embedding;
+        primaryText = embedData.visionAnalysis;
+        console.log(`[AddProduct] Embedding image principale ✅`);
+      } catch (err) {
+        console.error(`[AddProduct] Échec embedding (tentative ${embedAttempts}):`, err.message);
+        if (embedAttempts < maxEmbedAttempts) {
+          await delay(1500 * embedAttempts); // Délai progressif
+        }
       }
-
-      const embedData = await embedRes.json();
-      
-      if (!embedData.success || !embedData.embedding) {
-        throw new Error(embedData.error || 'Invalid embedding response');
-      }
-
-      primaryEmbedding = embedData.embedding;
-      primaryText = embedData.visionAnalysis;
-      console.log(`[AddProduct] Embedding image principale ✅`);
-    } catch (err) {
-      console.error(`[AddProduct] Embedding failed for primary image:`, err.message);
     }
 
     if (!primaryEmbedding) {
-      alert("❌ Impossible de générer l'embedding. Vérifiez votre image et réessayez.");
+      alert("❌ Les serveurs de traitement d'images sont actuellement très chargés. Votre image n'a pas pu être analysée. Veuillez réessayer dans quelques instants.");
       setLoading(false);
       return;
     }
 
-    // ============ ÉTAPE 2: Créer le produit ============
+    // ============ ÉTAPE 2: Créer le produit (Avec Retry de base de données) ============
     const newProduct = {
       store_id: storeId,
       global_category_id: parseInt(formData.global_category_id),
@@ -198,34 +216,64 @@ export default function AddProductPage() {
       is_active: true
     };
 
-    const { data: product, error } = await supabase
-      .from('products')
-      .insert([newProduct])
-      .select()
-      .single();
+    let product = null;
+    let dbAttempts = 0;
+    const maxDbAttempts = 3;
 
-    if (error) {
-      alert("❌ Erreur création produit : " + error.message);
-      console.error('[AddProduct] Insert error:', error);
-      setLoading(false);
-      return;
+    while (dbAttempts < maxDbAttempts && !product) {
+      dbAttempts++;
+      try {
+        console.log(`[AddProduct] Insertion base de données (Tentative ${dbAttempts}/${maxDbAttempts})...`);
+        const { data, error: insertError } = await supabase
+          .from('products')
+          .insert([newProduct])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        product = data;
+        console.log('[AddProduct] Produit inséré en base ✅');
+      } catch (err) {
+        console.error(`[AddProduct] Échec écriture base (tentative ${dbAttempts}):`, err.message);
+        if (dbAttempts < maxDbAttempts) {
+          await delay(1500 * dbAttempts); // Attente progressive avant de retenter
+        } else {
+          alert("❌ La base de données est occupée. Votre produit n'a pas pu être enregistré immédiatement. Veuillez cliquer à nouveau sur Enregistrer.");
+          setLoading(false);
+          return;
+        }
+      }
     }
 
     console.log('[AddProduct] Produit créé:', product.id);
 
-    // ============ ÉTAPE 3: Ajouter les variantes ============
+    // ============ ÉTAPE 3: Ajouter les variantes (Avec Retry de base de données) ============
     if (variants.length > 0) {
-      try {
-        const variantRecords = variants.map(v => ({
-          product_id: product.id,
-          variant_type: v.type,
-          variant_value: v.value,
-          stock_quantity: parseInt(v.stock) || 1
-        }));
-        await supabase.from('product_variants').insert(variantRecords);
-        console.log('[AddProduct] Variantes ajoutées:', variantRecords.length);
-      } catch (e) {
-        console.warn("[AddProduct] Erreur variantes:", e);
+      let variantSuccess = false;
+      let varAttempts = 0;
+      const maxVarAttempts = 3;
+
+      while (varAttempts < maxVarAttempts && !variantSuccess) {
+        varAttempts++;
+        try {
+          console.log(`[AddProduct] Insertion variantes (Tentative ${varAttempts}/${maxVarAttempts})...`);
+          const variantRecords = variants.map(v => ({
+            product_id: product.id,
+            variant_type: v.type,
+            variant_value: v.value,
+            stock_quantity: parseInt(v.stock) || 1
+          }));
+          const { error: varError } = await supabase.from('product_variants').insert(variantRecords);
+          if (varError) throw varError;
+          
+          variantSuccess = true;
+          console.log('[AddProduct] Variantes ajoutées ✅:', variantRecords.length);
+        } catch (e) {
+          console.warn(`[AddProduct] Échec écriture variantes (tentative ${varAttempts}):`, e.message);
+          if (varAttempts < maxVarAttempts) {
+            await delay(1000 * varAttempts);
+          }
+        }
       }
     }
 
