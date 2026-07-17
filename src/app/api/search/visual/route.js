@@ -23,6 +23,7 @@ export async function POST(req) {
 
   try {
     let imageBuffer, mimeType;
+    let categoryFilter = null;
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
@@ -30,6 +31,7 @@ export async function POST(req) {
       const body = await req.json();
       const imageUrlInput = body.image_url;
       const base64Data = body.image_base64;
+      categoryFilter = body.category_id;
 
       if (!base64Data && !imageUrlInput) {
         return NextResponse.json({ error: "Une image est requise." }, { status: 400 });
@@ -55,6 +57,7 @@ export async function POST(req) {
       const formData = await req.formData();
       const imageFile = formData.get('image');
       const imageUrlInput = formData.get('image_url');
+      categoryFilter = formData.get('category_id');
 
       if (!imageFile && !imageUrlInput) {
         return NextResponse.json({ error: 'Une image ou une URL est requise.' }, { status: 400 });
