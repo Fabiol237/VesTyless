@@ -185,7 +185,7 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
       }
     } catch (err) {
       console.error('[VisualSearch]', err);
-      setError('Oups, l\'analyse a échoué. Essayez de prendre une photo sous un autre angle.');
+      setError(`L'analyse a échoué : ${err.message || 'Erreur inconnue'}`);
       setPhase('error');
     }
   };
