@@ -98,6 +98,9 @@ function ParticleBackground() {
       color: Math.random() > 0.6 ? '#25D366' : Math.random() > 0.5 ? '#128C7E' : '#ffffff',
     }));
 
+    const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 0;
+    if (isMobile) return; // Désactiver complètement sur mobile pour économiser la RAM et le CPU
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((p) => {
@@ -134,7 +137,7 @@ function ParticleBackground() {
     draw();
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
   }, []);
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
 }
 
 // ── Stats flottants ───────────────────────────────────────────────────────────

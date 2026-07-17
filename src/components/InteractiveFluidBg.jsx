@@ -18,9 +18,17 @@ export default function InteractiveFluidBg() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // Éviter le rendu lourd sur mobile/tablette pour éviter les lags et crashs Chrome
+    const isMobileDevice = window.innerWidth < 768 || navigator.maxTouchPoints > 0;
+    if (isMobileDevice) {
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+      };
+    }
+
     // Particles system for fluid simulation
     const particles = [];
-    const maxParticles = 120;
+    const maxParticles = 60; // Divisé par 2 pour soulager même les PC modestes
     const mouse = { x: null, y: null, px: null, py: null, active: false };
 
     class FluidParticle {
