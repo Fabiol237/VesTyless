@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import VoiceSearchButton from '@/components/VoiceSearchButton';
@@ -111,6 +112,8 @@ export default function ClientDiscovery({
   const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [locationJustActivated, setLocationJustActivated] = useState(false);
+  const [selectedStoreForMap, setSelectedStoreForMap] = useState(null); // modal carte boutique
   const [visibleCount, setVisibleCount] = useState(12);
 
   // Suggestions pour l'autocomplétion de la recherche principale
@@ -148,28 +151,28 @@ export default function ClientDiscovery({
     if (!userLocation) requestLocation();
   }, [userLocation, requestLocation]);
 
-  // --- STRATÉGIE OFFLINE-FIRST POUR LE FLUX PRINCIPAL ---
-  const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed_v4', async () => {
-    // On regroupe les appels pour un cache cohérent
-    const [prodRes, storeIdsRes, catRes] = await Promise.all([
-      supabase.from('products').select('id, name, price, image_url, created_at, global_category_id, is_active, is_boosted, is_promo, daily_views, stores(id, name, slug, logo_url, latitude, longitude), global_categories(name, icon)').eq('is_active', true).order('is_boosted', { ascending: false }).order('is_promo', { ascending: false }).order('daily_views', { ascending: false }).order('created_at', { ascending: false }).limit(100),
-      supabase.from('products').select('store_id').eq('is_active', true).limit(100),
-      supabase.from('global_categories').select('*').is('parent_id', null).order('name')
-    ]);
+  // ── Détecte quand la localisation vient d'être activée → flash 7x ──────────
+  const prevUserLocationRef = React.useRef(null);
+  useEffect(() => {
+    if (userLocation && !prevUserLocationRef.current) {
+      // Localisation vient d'être obtenue pour la première fois → flash 7×
+      setLocationJustActivated(true);
 
-    const activeStoreIds = [...new Set((storeIdsRes.data || []).map(p => p.store_id))];
-    let stores = [];
-    if (activeStoreIds.length > 0) {
-      const { data: sd } = await supabase.from('stores').select('id, name, slug, logo_url, city, is_boosted, daily_views, latitude, longitude').in('id', activeStoreIds).order('is_boosted', { ascending: false }).order('daily_views', { ascending: false });
-      stores = sd || [];
+      // Reset après 4.5s (7 blinks × 600ms + marge)
+      const t = setTimeout(() => setLocationJustActivated(false), 4500);
+      prevUserLocationRef.current = userLocation;
+      return () => clearTimeout(t);
     }
+    if (userLocation) prevUserLocationRef.current = userLocation;
+  }, [userLocation]);
 
-    const normalizedProds = (prodRes.data || []).map(p => ({
-      ...p,
-      category: p.global_categories?.name || 'Autre',
-    }));
-
-    return { data: { products: normalizedProds, stores, categories: catRes.data || [] } };
+  // --- STRATÉGIE OFFLINE-FIRST POUR LE FLUX PRINCIPAL ---
+  const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed_v5', async () => {
+    // Appel de notre API Next.js avec cache CDN (évite d'interroger Supabase à chaque fois)
+    const res = await fetch('/api/products/feed');
+    if (!res.ok) throw new Error('Impossible de charger le flux');
+    const data = await res.json();
+    return { data };
   });
 
   useEffect(() => {
@@ -328,6 +331,53 @@ export default function ClientDiscovery({
 
   return (
     <div className="space-y-12 pb-20" id="discovery-section">
+
+      {/* ══ MODAL CARTE BOUTIQUE ══════════════════════════════════════════════ */}
+      {selectedStoreForMap && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
+          onClick={() => setSelectedStoreForMap(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          {/* Panel */}
+          <div
+            className="relative z-10 w-full sm:w-[520px] max-h-[85vh] bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header boutique */}
+            <div className="flex items-center justify-between p-5 border-b border-neutral-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl overflow-hidden border border-neutral-100 bg-neutral-50">
+                  <img src={selectedStoreForMap.logo_url || '/placeholder-store.png'} alt={selectedStoreForMap.name} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-neutral-400 uppercase tracking-widest">Localisation</p>
+                  <p className="text-base font-black text-slate-900 leading-tight">{selectedStoreForMap.name}</p>
+                  {selectedStoreForMap.city && <p className="text-xs text-neutral-400">{selectedStoreForMap.city}</p>}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedStoreForMap(null)}
+                className="w-10 h-10 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors"
+              >
+                <XIcon size={18} />
+              </button>
+            </div>
+            {/* Carte */}
+            <div className="h-[50vh]">
+              <InteractiveMap
+                mode="view"
+                initialPos={[Number(selectedStoreForMap.latitude), Number(selectedStoreForMap.longitude)]}
+                userPos={userLocation ? [userLocation.latitude, userLocation.longitude] : null}
+                userAccuracy={userLocation?.accuracy}
+                stores={[selectedStoreForMap]}
+                initialSelectedStore={selectedStoreForMap}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════
           1. WHATSAPP STYLE SEARCH BAR - Hide if external search is handled by parent (e.g. Home Page)
@@ -528,7 +578,15 @@ export default function ClientDiscovery({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((item, idx) => (
-                <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} formatDistance={formatDistance} />
+                <ProductCard
+                  key={item.id}
+                  item={item}
+                  idx={idx}
+                  trackProductView={trackProductView}
+                  formatDistance={formatDistance}
+                  locationFlash={locationJustActivated}
+                  onLocationClick={setSelectedStoreForMap}
+                />
               ))}
             </div>
           </section>
@@ -662,9 +720,17 @@ export default function ClientDiscovery({
                   </>
                 )}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div id="products-grid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {displayedProducts.map((item, idx) => (
-                  <ProductCard key={item.id} item={item} idx={idx} trackProductView={trackProductView} formatDistance={formatDistance} />
+                  <ProductCard
+                    key={item.id}
+                    item={item}
+                    idx={idx}
+                    trackProductView={trackProductView}
+                    formatDistance={formatDistance}
+                    locationFlash={locationJustActivated}
+                    onLocationClick={setSelectedStoreForMap}
+                  />
                 ))}
               </div>
 

@@ -13,6 +13,7 @@ import { motion, useReducedMotion, AnimatePresence, useMotionValue, useTransform
 import { useDistance } from '@/hooks/useDistance';
 import { useOfflineData } from '@/hooks/useOfflineData';
 import { Outfit } from 'next/font/google';
+import { triggerFeedback } from '@/lib/haptic';
 
 const artFont = Outfit({ subsets: ['latin'], weight: ['900'] });
 
@@ -282,6 +283,21 @@ export default function Home() {
     }
     fetchData();
     setMounted(true);
+
+    // ── SON SIGNATURE VESTYLE AU CHARGEMENT ──
+    import('@/lib/haptic').then(({ sayVestyle }) => {
+      // Tenter une première fois directement
+      sayVestyle();
+      
+      // Déclencheur de secours au tout premier tap si l'audio était bloqué
+      const playOnFirstInteraction = () => {
+        sayVestyle();
+        document.removeEventListener('click', playOnFirstInteraction);
+        document.removeEventListener('touchstart', playOnFirstInteraction);
+      };
+      document.addEventListener('click', playOnFirstInteraction);
+      document.addEventListener('touchstart', playOnFirstInteraction);
+    });
   }, []);
 
   // Update Countdown Timer
@@ -522,7 +538,15 @@ export default function Home() {
               {/* Unique Button: GPS Radar (Style iOS Activable) */}
               <motion.button
                 type="button"
-                onClick={requestLocation}
+                onClick={() => {
+                  triggerFeedback('radar');
+                  requestLocation();
+                  // Scroll vers les produits pour voir les badges distance clignoter
+                  setTimeout(() => {
+                    const section = document.getElementById('discovery-section');
+                    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 300);
+                }}
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center gap-3 px-6 py-3.5 rounded-full border-2 transition-all duration-300 backdrop-blur-md relative ${

@@ -58,8 +58,8 @@ function MapController({ userPos, selectedStore, ready }) {
   return null;
 }
 
-export default function InteractiveMap({ initialPos, stores = [], userPos, userAccuracy }) {
-  const [selectedStore, setSelectedStore] = useState(null);
+export default function InteractiveMap({ initialPos, stores = [], userPos, userAccuracy, initialSelectedStore = null }) {
+  const [selectedStore, setSelectedStore] = useState(initialSelectedStore);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isSatellite, setIsSatellite] = useState(true);
   const [ready, setReady] = useState(false);
