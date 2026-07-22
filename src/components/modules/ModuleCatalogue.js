@@ -98,15 +98,15 @@ export default function ModuleCatalogue({
     >
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         
-        {/* En-tête */}
+        {/* En-tête Unifiée */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 700, color: p, marginBottom: 16 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 800, color: p, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             <ShoppingBag size={13} /> Boutique en ligne
           </div>
-          <h2 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 900, color: fg, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: isMobile ? 28 : 40, fontWeight: 900, color: fg, margin: '0 0 12px', letterSpacing: '-0.03em', fontFamily: 'var(--font, inherit)' }}>
             {config.headline || 'Découvrez notre collection'}
           </h2>
-          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto' }}>
+          <p style={{ fontSize: 16, color: fg2, maxWidth: 540, margin: '0 auto', lineHeight: 1.6, fontFamily: 'var(--font, inherit)' }}>
             {config.subheadline || 'Des produits soigneusement sélectionnés pour répondre à toutes vos envies.'}
           </p>
         </div>
@@ -114,18 +114,18 @@ export default function ModuleCatalogue({
         {/* Barre de recherche et filtres */}
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           {/* Recherche */}
-          <div style={{ position: 'relative', flex: 1, maxWidth: isMobile ? '100%' : 320 }}>
-            <Search size={16} color={fg2} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+          <div style={{ position: 'relative', flex: 1, maxWidth: isMobile ? '100%' : 340 }}>
+            <Search size={16} color={fg2} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
               placeholder="Rechercher un produit..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{
-                width: '100%', padding: '12px 16px 12px 40px', borderRadius: 999,
+                width: '100%', padding: '12px 16px 12px 42px', borderRadius: 'var(--radius, 999px)',
                 border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : border}`,
                 background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
-                color: fg, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none'
+                color: fg, fontSize: 14, fontFamily: 'var(--font, inherit)', boxSizing: 'border-box', outline: 'none'
               }}
             />
           </div>
@@ -150,7 +150,7 @@ export default function ModuleCatalogue({
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: isMobile ? 12 : 24,
+            gap: isMobile ? 16 : 28,
           }}>
             {filtered.map((product, i) => (
               <div
@@ -158,14 +158,16 @@ export default function ModuleCatalogue({
                 style={{
                   background: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
                   border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : border}`,
-                  borderRadius: 16, overflow: 'hidden',
+                  borderRadius: 'var(--radius, 20px)',
+                  boxShadow: 'var(--shadow, 0 4px 20px rgba(0,0,0,0.03))',
+                  overflow: 'hidden',
                   display: 'flex', flexDirection: 'column',
-                  transition: 'all 0.3s',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   animation: `fadeUp 0.5s ease both ${i * 0.05}s`,
                   position: 'relative',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 16px 40px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = `${p}40`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : border; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 20px 40px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = `${p}50`; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow, 0 4px 20px rgba(0,0,0,0.03))'; e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : border; }}
               >
                 {/* Image */}
                 <div style={{ aspectRatio: '1', background: isDark ? '#1a1a2e' : `${p}08`, position: 'relative', overflow: 'hidden' }}>

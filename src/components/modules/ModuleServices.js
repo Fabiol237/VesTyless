@@ -65,35 +65,35 @@ export default function ModuleServices({
     >
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         
-        {/* En-tête */}
+        {/* En-tête Unifiée */}
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 700, color: p, marginBottom: 16 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 800, color: p, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             <Zap size={13} /> Nos Prestations
           </div>
-          <h2 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 900, color: fg, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: isMobile ? 28 : 40, fontWeight: 900, color: fg, margin: '0 0 12px', letterSpacing: '-0.03em', fontFamily: 'var(--font, inherit)' }}>
             {config.headline || 'Ce que nous proposons'}
           </h2>
-          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: fg2, maxWidth: 540, margin: '0 auto', lineHeight: 1.6, fontFamily: 'var(--font, inherit)' }}>
             {config.subheadline || 'Découvrez nos solutions adaptées à vos besoins avec une expertise reconnue.'}
           </p>
         </div>
 
-        {/* Grille de services */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'stretch' }}>
+        {/* Grille de services unifiée */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, alignItems: 'stretch' }}>
           {services.map((service, i) => (
             <div
               key={service.id}
               style={{
                 background: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
                 border: `1.5px solid ${service.featured ? p : (isDark ? 'rgba(255,255,255,0.08)' : border)}`,
-                borderRadius: 20,
+                borderRadius: 'var(--radius, 20px)',
                 padding: '32px 24px',
                 display: 'flex', flexDirection: 'column',
-                transition: 'all 0.3s',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 animation: `fadeUp 0.5s ease both ${i * 0.1}s`,
                 position: 'relative',
                 overflow: 'hidden',
-                boxShadow: service.featured ? (isDark ? `0 20px 40px ${p}30` : `0 20px 40px ${p}20`) : '0 4px 20px rgba(0,0,0,0.03)',
+                boxShadow: service.featured ? (isDark ? `0 20px 40px ${p}30` : `0 20px 40px ${p}20`) : 'var(--shadow, 0 4px 20px rgba(0,0,0,0.03))',
               }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; if(!service.featured) e.currentTarget.style.borderColor = `${p}40`; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; if(!service.featured) e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : border; }}

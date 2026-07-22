@@ -296,9 +296,19 @@ export default function StorefrontClient({ params }) {
   const currentModuleById = !activePageGroup ? modules.find(m => m.id === activePage) : null;
   const modulesToRender = activePageGroup?.modules || (currentModuleById ? [currentModuleById] : []);
 
-  // ─── Résolution du Thème Visuel ───
+  // ─── Résolution du Thème Visuel Pro Max ───
   const themeId = store.shop_theme || store.theme || 'theme_00';
   const themeConfig = getThemeById(themeId);
+  
+  // Utiliser notre résolveur de thèmes global
+  let resolvedVars = {};
+  try {
+    const { resolveThemeVariables } = require('@/lib/themeResolver');
+    resolvedVars = resolveThemeVariables(store);
+  } catch (e) {
+    console.warn("ThemeResolver non chargé:", e);
+  }
+
   const THEME_COMPONENTS = {
     theme_00: require('./themes/Theme00_Classic').default,
     theme_01: require('./themes/Theme01_Luxury').default,
@@ -326,6 +336,8 @@ export default function StorefrontClient({ params }) {
   const ThemeComponent = THEME_COMPONENTS[themeId] || THEME_COMPONENTS['theme_00'];
 
   const isDark = themeConfig.bgColor === '#0A0A0A' || themeConfig.bgColor === '#120A00' || themeConfig.bgColor === '#18181b';
+  
+  // Fusionner les configurations de thèmes existantes avec nos nouveaux tokens pro max
   const themeVars = {
     primaryColor:   themeConfig.primaryColor   || '#6366f1',
     secondaryColor: themeConfig.bgColor        || '#ffffff',
@@ -339,6 +351,7 @@ export default function StorefrontClient({ params }) {
     '--fg':      isDark ? '#ffffff' : '#111827',
     '--fg2':     isDark ? 'rgba(255,255,255,0.55)' : '#6b7280',
     '--border':  isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
+    ...resolvedVars // Injecte les tokens unifiés (--radius, --shadow, --border-style)
   };
 
   return (
@@ -353,6 +366,18 @@ export default function StorefrontClient({ params }) {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${themeConfig.primaryColor}40; border-radius: 4px; }
         .page-transition { animation: fadeIn 0.3s ease; }
+        
+        /* Charte Graphique Invisible : Application des variables du Thème Master */
+        .premium-module-wrapper {
+          font-family: var(--font, 'Inter', sans-serif);
+          color: var(--fg, #0f172a);
+          background-color: var(--bg, #ffffff);
+          border-radius: var(--radius, 16px);
+          box-shadow: var(--shadow, none);
+          margin-bottom: 24px;
+          transition: all 0.3s ease;
+        }
+        
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
       `}</style>
       
@@ -372,31 +397,35 @@ export default function StorefrontClient({ params }) {
           currency="FCFA"
         >
           {/* Rendu de TOUS les modules de la page active (jamais vide) */}
-          {modulesToRender.length > 0 ? modulesToRender.map(mod => {
-            const Renderer = MODULE_RENDERERS[mod.type];
-            if (!Renderer) return null;
-            return (
-              <div key={mod.id} className="page-transition">
-                <Renderer
-                  config={mod.config}
-                  store={store}
-                  theme={themeVars}
-                  isMobile={isMobile}
-                  storeId={store.id}
-                  preview={false}
-                  onNavigate={setActivePage}
-                  modules={modules}
-                  globalCart={cart}
-                />
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-12">
+            {modulesToRender.length > 0 ? modulesToRender.map((mod, index) => {
+              const Renderer = MODULE_RENDERERS[mod.type];
+              if (!Renderer) return null;
+              return (
+                <div key={mod.id} className="page-transition premium-module-wrapper">
+                  {/* Séparateur ultra-fin et élégant entre les modules */}
+                  {index > 0 && <div className="w-full h-px bg-neutral-100 dark:bg-neutral-800/40 mb-12" />}
+                  <Renderer
+                    config={mod.config}
+                    store={store}
+                    theme={themeVars}
+                    isMobile={isMobile}
+                    storeId={store.id}
+                    preview={false}
+                    onNavigate={setActivePage}
+                    modules={modules}
+                    globalCart={cart}
+                  />
+                </div>
+              );
+            }) : (
+              <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔧</div>
+                <p style={{ fontWeight: '700', fontSize: '15px', margin: 0 }}>Cette section n'a pas encore de contenu.</p>
+                <p style={{ fontSize: '13px', marginTop: '8px', opacity: 0.7 }}>Ajoutez des blocs depuis votre espace Vendeur.</p>
               </div>
-            );
-          }) : (
-            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔧</div>
-              <p style={{ fontWeight: '700', fontSize: '15px', margin: 0 }}>Cette section n'a pas encore de contenu.</p>
-              <p style={{ fontSize: '13px', marginTop: '8px', opacity: 0.7 }}>Ajoutez des blocs depuis votre espace Vendeur.</p>
-            </div>
-          )}
+            )}
+          </div>
         </ThemeComponent>
       </Suspense>
 

@@ -138,7 +138,7 @@ export default function ModuleVitrine({
                 alt={store.name}
                 style={{
                   width: isMobile ? 72 : 88, height: isMobile ? 72 : 88,
-                  borderRadius: 22, objectFit: 'cover',
+                  borderRadius: 'var(--radius, 22px)', objectFit: 'cover',
                   boxShadow: `0 16px 48px ${p}35, 0 0 0 3px ${p}20`,
                 }}
               />
@@ -153,7 +153,7 @@ export default function ModuleVitrine({
           ) : (
             <div style={{
               width: isMobile ? 72 : 88, height: isMobile ? 72 : 88,
-              borderRadius: 22,
+              borderRadius: 'var(--radius, 22px)',
               background: `linear-gradient(135deg, ${p}, ${acc})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 36, fontWeight: 900,
@@ -170,11 +170,12 @@ export default function ModuleVitrine({
           <div className="anim-1" style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 28 }}>
             {badges.map((badge, i) => (
               <span key={i} style={{
-                padding: '5px 14px', borderRadius: 999,
+                padding: '5px 14px', borderRadius: 'var(--radius, 999px)',
                 background: isDark ? `${p}18` : `${p}10`,
                 border: `1px solid ${p}30`,
                 fontSize: 12, fontWeight: 700, color: p,
                 letterSpacing: '0.04em',
+                fontFamily: 'var(--font, inherit)',
               }}>
                 ✦ {badge}
               </span>
@@ -184,7 +185,7 @@ export default function ModuleVitrine({
 
         {/* Note / Avis */}
         {config.showRating && config.ratingValue && (
-          <div className="anim-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 999, background: isDark ? 'rgba(254,240,138,0.08)' : '#fef9c3', border: `1px solid ${isDark ? 'rgba(254,240,138,0.15)' : '#fde68a'}`, marginBottom: 24, fontSize: 13, fontWeight: 800, color: isDark ? '#fef08a' : '#92400e' }}>
+          <div className="anim-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 'var(--radius, 999px)', background: isDark ? 'rgba(254,240,138,0.08)' : '#fef9c3', border: `1px solid ${isDark ? 'rgba(254,240,138,0.15)' : '#fde68a'}`, marginBottom: 24, fontSize: 13, fontWeight: 800, color: isDark ? '#fef08a' : '#92400e', fontFamily: 'var(--font, inherit)' }}>
             ⭐ {config.ratingValue} / 5 &nbsp;·&nbsp; {config.ratingCount || '100'}+ avis
           </div>
         )}
@@ -193,12 +194,12 @@ export default function ModuleVitrine({
         {(config.season || config.cuisine || config.hotelTagline) && (
           <div className="anim-1" style={{ marginBottom: 20 }}>
             {config.season && (
-              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 999, background: `${p}15`, color: p, fontWeight: 800, fontSize: 13 }}>
+              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 'var(--radius, 999px)', background: `${p}15`, color: p, fontWeight: 800, fontSize: 13, fontFamily: 'var(--font, inherit)' }}>
                 ✨ {config.season}
               </span>
             )}
             {config.cuisine && (
-              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 999, background: `${p}15`, color: p, fontWeight: 800, fontSize: 13 }}>
+              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 'var(--radius, 999px)', background: `${p}15`, color: p, fontWeight: 800, fontSize: 13, fontFamily: 'var(--font, inherit)' }}>
                 🍽️ {config.cuisine}
               </span>
             )}
