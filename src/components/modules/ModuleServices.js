@@ -52,6 +52,9 @@ export default function ModuleServices({
     if (target) onNavigate(target.id);
   };
 
+  const sectionTitle = config.headline || 'Ce que nous proposons';
+  const sectionSubtitle = config.subheadline || 'Découvrez nos solutions adaptées à vos besoins avec une expertise reconnue.';
+
   return (
     <section
       ref={sectionRef}
@@ -71,10 +74,10 @@ export default function ModuleServices({
             <Zap size={13} /> Nos Prestations
           </div>
           <h2 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 900, color: fg, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
-            {config.headline || 'Ce que nous proposons'}
+            {sectionTitle}
           </h2>
-          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>
-            {config.subheadline || 'Découvrez nos solutions adaptées à vos besoins avec une expertise reconnue.'}
+          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
+            {sectionSubtitle}
           </p>
         </div>
 

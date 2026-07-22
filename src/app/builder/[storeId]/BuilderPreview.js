@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useBuilder } from '@/context/BuilderContext';
 import { supabase } from '@/lib/supabase';
+import { resolveThemeConfig } from '@/lib/themeResolver.mjs';
 
 // ── Blocs dynamiques ─────────────────────────────────────────────────────────
 import HeroBlock          from '@/components/blocks/HeroBlock';
@@ -75,18 +76,19 @@ const DEFAULT_TAB_LABELS = {
 
 // ── Normalisation du thème ───────────────────────────────────────────────────
 function buildTheme(raw = {}) {
-  const primary   = raw.primaryColor   || raw.theme_color      || '#6366f1';
-  const accent    = raw.accentColor    || raw.accent_color     || primary;
-  const secondary = raw.secondaryColor || raw.secondary_color  || '#ffffff';
-  const font      = raw.fontFamily     || raw.font_family      || 'Inter';
-  const dark      = raw.mode === 'dark' || raw.theme_mode === 'dark';
+  const resolvedTheme = resolveThemeConfig({ rawTheme: raw, fallback: { primaryColor: '#6366f1', secondaryColor: '#ffffff', accentColor: '#a855f7', fontFamily: 'Inter', mode: 'light' } });
+  const dark = resolvedTheme.mode === 'dark';
   return {
-    primaryColor: primary, accentColor: accent,
-    secondaryColor: secondary, fontFamily: font,
-    mode: dark ? 'dark' : 'light',
-    '--prim': primary, '--acc': accent, '--bg': secondary,
-    '--fg':   dark ? '#f8fafc' : '#111827',
-    '--fg2':  dark ? '#94a3b8' : '#6b7280',
+    primaryColor: resolvedTheme.primaryColor,
+    accentColor: resolvedTheme.accentColor,
+    secondaryColor: resolvedTheme.secondaryColor,
+    fontFamily: resolvedTheme.fontFamily,
+    mode: resolvedTheme.mode,
+    '--prim': resolvedTheme.primaryColor,
+    '--acc': resolvedTheme.accentColor,
+    '--bg': resolvedTheme.secondaryColor,
+    '--fg': dark ? '#f8fafc' : '#111827',
+    '--fg2': dark ? '#94a3b8' : '#6b7280',
     '--border': dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
   };
 }
@@ -125,7 +127,12 @@ export default function BuilderPreview({ externalModules, externalTheme }) {
   }, [isMobile]);
 
   // ── Résolution du ThemeComponent ────────────────────────────────────────────
-  const themeId = themeConfig?._themeId || store?.shop_theme || 'theme_00';
+  const resolvedTheme = resolveThemeConfig({
+    rawTheme: themeConfig,
+    store,
+    fallback: { primaryColor: '#6366f1', secondaryColor: '#ffffff', accentColor: '#a855f7', fontFamily: 'Inter', mode: 'light' },
+  });
+  const themeId = resolvedTheme._themeId || 'theme_00';
   const ThemeComponent = THEME_COMPONENTS[themeId] || THEME_COMPONENTS['theme_00'];
 
   // ── Rendu du module actif ────────────────────────────────────────────────────

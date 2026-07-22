@@ -69,6 +69,7 @@ const MODULE_RENDERERS = {
 import { getThemeById } from './themes';
 import StoreAIChat from '@/components/StoreAIChat';
 import { normalizeStoreModules } from '@/lib/storeModuleUtils.mjs';
+import { resolveThemeConfig } from '@/lib/themeResolver.mjs';
 
 // ─── Correspondance Type de module → Groupe de page ─────────────────────────
 // Chaque onglet (accueil, produits, promotions, profil) regroupe plusieurs types de modules.
@@ -297,8 +298,13 @@ export default function StorefrontClient({ params }) {
   const modulesToRender = activePageGroup?.modules || (currentModuleById ? [currentModuleById] : []);
 
   // ─── Résolution du Thème Visuel ───
-  const themeId = store.shop_theme || store.theme || 'theme_00';
-  const themeConfig = getThemeById(themeId);
+  const themePreset = getThemeById(store.shop_theme || store.theme || 'theme_00');
+  const themeConfig = resolveThemeConfig({
+    themeId: store.shop_theme || store.theme || 'theme_00',
+    preset: themePreset,
+    store,
+    fallback: { primaryColor: '#6366f1', secondaryColor: '#ffffff', accentColor: '#a855f7', fontFamily: 'Inter', mode: 'light' },
+  });
   const THEME_COMPONENTS = {
     theme_00: require('./themes/Theme00_Classic').default,
     theme_01: require('./themes/Theme01_Luxury').default,
@@ -325,20 +331,20 @@ export default function StorefrontClient({ params }) {
   };
   const ThemeComponent = THEME_COMPONENTS[themeId] || THEME_COMPONENTS['theme_00'];
 
-  const isDark = themeConfig.bgColor === '#0A0A0A' || themeConfig.bgColor === '#120A00' || themeConfig.bgColor === '#18181b';
+  const isDark = themeConfig.mode === 'dark';
   const themeVars = {
-    primaryColor:   themeConfig.primaryColor   || '#6366f1',
-    secondaryColor: themeConfig.bgColor        || '#ffffff',
-    accentColor:    themeConfig.accentColor    || '#a855f7',
-    fontFamily:     themeConfig.font           || 'Inter',
-    '--prim':    themeConfig.primaryColor   || '#6366f1',
-    '--sec':     themeConfig.bgColor        || '#f0f0ff',
-    '--acc':     themeConfig.accentColor    || '#a855f7',
-    '--font':    themeConfig.font           || 'Inter',
-    '--bg':      themeConfig.bgColor,
-    '--fg':      isDark ? '#ffffff' : '#111827',
-    '--fg2':     isDark ? 'rgba(255,255,255,0.55)' : '#6b7280',
-    '--border':  isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
+    primaryColor: themeConfig.primaryColor || '#6366f1',
+    secondaryColor: themeConfig.secondaryColor || '#ffffff',
+    accentColor: themeConfig.accentColor || '#a855f7',
+    fontFamily: themeConfig.fontFamily || 'Inter',
+    '--prim': themeConfig.primaryColor || '#6366f1',
+    '--sec': themeConfig.secondaryColor || '#f0f0ff',
+    '--acc': themeConfig.accentColor || '#a855f7',
+    '--font': themeConfig.fontFamily || 'Inter',
+    '--bg': themeConfig.secondaryColor || '#ffffff',
+    '--fg': isDark ? '#ffffff' : '#111827',
+    '--fg2': isDark ? 'rgba(255,255,255,0.55)' : '#6b7280',
+    '--border': isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
   };
 
   return (
@@ -347,7 +353,7 @@ export default function StorefrontClient({ params }) {
       {refreshing && <RefreshBar />}
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=${(themeConfig.font || 'Inter').replace(/ /g,'+')}:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=${(themeConfig.fontFamily || 'Inter').replace(/ /g,'+')}:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }

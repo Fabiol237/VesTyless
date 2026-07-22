@@ -42,6 +42,8 @@ export default function ModuleVitrine({
 
   // ── Données depuis config ─────────────────────────────────────────────────
   const badges = [config.badge1, config.badge2, config.badge3].filter(Boolean);
+  const heroTitle = config.headline || `Bienvenue chez ${store?.name || 'notre boutique'}`;
+  const heroSubtitle = config.subheadline || 'Découvrez notre sélection exclusive, pensée pour vous.';
 
   const socials = [
     config.whatsapp  && { icon: '📲', label: 'WhatsApp', href: `https://wa.me/${config.whatsapp.replace(/\D/g,'')}` },
@@ -216,8 +218,9 @@ export default function ModuleVitrine({
           margin: '0 0 18px',
           letterSpacing: '-0.03em',
           lineHeight: 1.12,
+          textShadow: isDark ? '0 2px 18px rgba(0,0,0,0.2)' : 'none',
         }}>
-          {config.headline || `Bienvenue chez ${store?.name || 'notre boutique'}`}
+          {heroTitle}
         </h1>
 
         {/* ── Sous-titre ── */}
@@ -227,8 +230,9 @@ export default function ModuleVitrine({
           lineHeight: 1.75,
           maxWidth: 580,
           margin: '0 auto 40px',
+          fontWeight: 500,
         }}>
-          {config.subheadline || 'Découvrez notre sélection exclusive, pensée pour vous.'}
+          {heroSubtitle}
         </p>
 
         {/* ── Bouton CTA ── */}
