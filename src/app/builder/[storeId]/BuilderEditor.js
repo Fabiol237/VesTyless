@@ -134,10 +134,7 @@ function ConfigVitrine({ cfg, update, businessType, onAI, aiLoading }) {
       <Field label="Sous-titre" value={cfg.subheadline} onChange={v=>update('subheadline',v)} placeholder="Découvrez ce que nous proposons" />
       <AIButton onClick={()=>onAI('subheadline',cfg.subheadline)} loading={aiLoading} />
 
-      <SectionTitle>⚡ Réglages rapides</SectionTitle>
-      <Toggle label="Afficher la section de confiance" value={cfg.showBadges !== false} onChange={v=>update('showBadges',v)} />
-      <Toggle label="Afficher les réseaux sociaux" value={cfg.showSocials !== false} onChange={v=>update('showSocials',v)} />
-      <Toggle label="Afficher la note / avis" value={cfg.showRating !== false} onChange={v=>update('showRating',v)} />
+      <SectionTitle>Bouton d'action</SectionTitle>
       <Field label="Texte du bouton" value={cfg.ctaText} onChange={v=>update('ctaText',v)} placeholder="Découvrir" />
       <Select label="Destination du bouton" value={cfg.ctaLink} onChange={v=>update('ctaLink',v)}
         options={[
@@ -197,13 +194,12 @@ function ConfigCatalogue({ cfg, update, businessType, storeId }) {
 
   return (
     <div style={s.wrap}>
-      <SectionTitle>⚡ Réglages rapides</SectionTitle>
       <Select label="Disposition" value={String(cfg.gridCols||3)} onChange={v=>update('gridCols',Number(v))}
         options={[{value:'2',label:'2 colonnes'},{value:'3',label:'3 colonnes'},{value:'4',label:'4 colonnes'}]} />
-      <Toggle label="Afficher les filtres" value={cfg.showFilters !== false} onChange={v=>update('showFilters',v)} />
-      <Toggle label="Afficher le stock" value={cfg.showStock !== false} onChange={v=>update('showStock',v)} />
-      <Toggle label="Activer le panier" value={cfg.allowCart !== false} onChange={v=>update('allowCart',v)} />
-      <Toggle label="Liste de souhaits" value={cfg.allowWishlist !== false} onChange={v=>update('allowWishlist',v)} />
+      <Toggle label="Afficher les filtres" value={cfg.showFilters} onChange={v=>update('showFilters',v)} />
+      <Toggle label="Afficher le stock" value={cfg.showStock} onChange={v=>update('showStock',v)} />
+      <Toggle label="Activer le panier" value={cfg.allowCart} onChange={v=>update('allowCart',v)} />
+      <Toggle label="Liste de souhaits" value={cfg.allowWishlist} onChange={v=>update('allowWishlist',v)} />
       <Field label="Devise" value={cfg.currency} onChange={v=>update('currency',v)} placeholder="XOF" />
 
       {isFashion && <>
@@ -365,10 +361,9 @@ function ConfigServices({ cfg, update, businessType, storeId }) {
 
   return (
     <div style={s.wrap}>
-      <SectionTitle>⚡ Réglages rapides</SectionTitle>
       <Select label="Disposition" value={cfg.layout||'cards'} onChange={v=>update('layout',v)}
         options={[{value:'cards',label:'Cartes'},{value:'list',label:'Liste'},{value:'grid',label:'Grille'}]} />
-      <Toggle label="Afficher les tarifs" value={cfg.showPricing !== false} onChange={v=>update('showPricing',v)} />
+      <Toggle label="Afficher les tarifs" value={cfg.showPricing} onChange={v=>update('showPricing',v)} />
       {cfg.showPricing && <Field label="Devise" value={cfg.currency} onChange={v=>update('currency',v)} />}
       <Toggle label="Afficher la durée" value={cfg.showDuration} onChange={v=>update('showDuration',v)} />
       <Toggle label="Afficher les images" value={cfg.showImages} onChange={v=>update('showImages',v)} />
@@ -710,7 +705,7 @@ export default function BuilderEditor({ storeId, onModulesUpdate, onThemeUpdate 
           onClick={() => setActiveTab('design')}
           style={{
             display:'flex', alignItems:'center', gap:'5px', padding:'10px 11px',
-            borderWidth:'0px', borderStyle:'none', borderColor:'transparent', background:'transparent', cursor:'pointer',
+            border:'none', background:'transparent', cursor:'pointer',
             fontFamily:'inherit', fontSize:'11px', fontWeight:'700',
             color: activeTab === 'design' ? p : '#8696a0',
             borderBottom: activeTab === 'design' ? `2px solid ${p}` : '2px solid transparent',
@@ -722,7 +717,7 @@ export default function BuilderEditor({ storeId, onModulesUpdate, onThemeUpdate 
           onClick={() => setActiveTab('ai')}
           style={{
             display:'flex', alignItems:'center', gap:'5px', padding:'10px 11px',
-            borderWidth:'0px', borderStyle:'none', borderColor:'transparent', background:'transparent', cursor:'pointer',
+            border:'none', background:'transparent', cursor:'pointer',
             fontFamily:'inherit', fontSize:'11px', fontWeight:'700',
             color: activeTab === 'ai' ? '#7c3aed' : '#8696a0',
             borderBottom: activeTab === 'ai' ? '2px solid #7c3aed' : '2px solid transparent',
@@ -734,7 +729,7 @@ export default function BuilderEditor({ storeId, onModulesUpdate, onThemeUpdate 
           onClick={() => setActiveTab('advisor')}
           style={{
             display:'flex', alignItems:'center', gap:'5px', padding:'10px 11px',
-            borderWidth:'0px', borderStyle:'none', borderColor:'transparent', background:'transparent', cursor:'pointer',
+            border:'none', background:'transparent', cursor:'pointer',
             fontFamily:'inherit', fontSize:'11px', fontWeight:'700',
             color: activeTab === 'advisor' ? '#059669' : '#8696a0',
             borderBottom: activeTab === 'advisor' ? '2px solid #059669' : '2px solid transparent',
@@ -746,7 +741,7 @@ export default function BuilderEditor({ storeId, onModulesUpdate, onThemeUpdate 
           onClick={() => setActiveTab('templates')}
           style={{
             display:'flex', alignItems:'center', gap:'5px', padding:'10px 11px',
-            borderWidth:'0px', borderStyle:'none', borderColor:'transparent', background:'transparent', cursor:'pointer',
+            border:'none', background:'transparent', cursor:'pointer',
             fontFamily:'inherit', fontSize:'11px', fontWeight:'700',
             color: activeTab === 'templates' ? '#7c3aed' : '#8696a0',
             borderBottom: activeTab === 'templates' ? '2px solid #7c3aed' : '2px solid transparent',
@@ -758,7 +753,7 @@ export default function BuilderEditor({ storeId, onModulesUpdate, onThemeUpdate 
           onClick={() => setActiveTab('versions')}
           style={{
             display:'flex', alignItems:'center', gap:'5px', padding:'10px 11px',
-            borderWidth:'0px', borderStyle:'none', borderColor:'transparent', background:'transparent', cursor:'pointer',
+            border:'none', background:'transparent', cursor:'pointer',
             fontFamily:'inherit', fontSize:'11px', fontWeight:'700',
             color: activeTab === 'versions' ? '#1e293b' : '#8696a0',
             borderBottom: activeTab === 'versions' ? '2px solid #1e293b' : '2px solid transparent',

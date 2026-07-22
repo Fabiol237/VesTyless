@@ -82,8 +82,6 @@ export default function ModuleCatalogue({
     fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
     transition: 'all 0.25s', whiteSpace: 'nowrap'
   };
-  const sectionTitle = config.headline || 'Découvrez notre collection';
-  const sectionSubtitle = config.subheadline || 'Des produits soigneusement sélectionnés pour répondre à toutes vos envies.';
 
   const activeBtnStyle = { ...btnStyle, background: p, border: `1.5px solid ${p}`, color: '#fff', boxShadow: `0 4px 12px ${p}30` };
 
@@ -106,10 +104,10 @@ export default function ModuleCatalogue({
             <ShoppingBag size={13} /> Boutique en ligne
           </div>
           <h2 style={{ fontSize: isMobile ? 26 : 36, fontWeight: 900, color: fg, margin: '0 0 10px', letterSpacing: '-0.02em' }}>
-            {sectionTitle}
+            {config.headline || 'Découvrez notre collection'}
           </h2>
-          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
-            {sectionSubtitle}
+          <p style={{ fontSize: 15, color: fg2, maxWidth: 520, margin: '0 auto' }}>
+            {config.subheadline || 'Des produits soigneusement sélectionnés pour répondre à toutes vos envies.'}
           </p>
         </div>
 
