@@ -1,30 +1,47 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { triggerSuccessPop } from '@/lib/confetti';
 
 export default function ProductVideoModal({ product, isOpen, onClose }) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const videoRef = useRef(null);
   const { addToCart } = useCart();
 
+  useEffect(() => {
+    if (isOpen) {
+      setHasError(false);
+      setIsPlaying(true);
+    }
+  }, [isOpen, product]);
+
   if (!isOpen || !product) return null;
 
-  // URL vidéo de fallback (démo vêtements/mode HD) si aucune vidéo personnalisée
-  const videoSrc = product.video_url || 'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-in-a-green-dress-41484-large.mp4';
+  // URL vidéo fiable (ou image du produit si la vidéo ne charge pas)
+  const videoSrc = product.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+  const imageUrl = product.image_url || product.images?.[0] || '/placeholder-product.png';
 
   const togglePlay = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !hasError) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        videoRef.current.play();
+        const promise = videoRef.current.play();
+        if (promise !== undefined) {
+          promise
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              setIsPlaying(false);
+              setHasError(true);
+            });
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -50,13 +67,15 @@ export default function ProductVideoModal({ product, isOpen, onClose }) {
         
         {/* En-tête / Bouton Fermer */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-          <button
-            onClick={toggleMute}
-            className="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-all backdrop-blur-sm"
-            title={isMuted ? 'Activer le son' : 'Couper le son'}
-          >
-            {isMuted ? '🔇' : '🔊'}
-          </button>
+          {!hasError && (
+            <button
+              onClick={toggleMute}
+              className="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-all backdrop-blur-sm"
+              title={isMuted ? 'Activer le son' : 'Couper le son'}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center text-xl font-bold hover:bg-black/80 transition-all backdrop-blur-sm"
@@ -71,19 +90,38 @@ export default function ProductVideoModal({ product, isOpen, onClose }) {
           🎥 Démo Direct 15s
         </div>
 
-        {/* Reader Vidéo */}
-        <div className="relative w-full h-[380px] bg-black cursor-pointer" onClick={togglePlay}>
-          <video
-            ref={videoRef}
-            src={videoSrc}
-            autoPlay
-            loop
-            muted={isMuted}
-            playsInline
-            className="w-full h-full object-cover"
-          />
+        {/* Reader Vidéo / Fallback Image HD */}
+        <div className="relative w-full h-[380px] bg-black cursor-pointer overflow-hidden flex items-center justify-center" onClick={togglePlay}>
+          {!hasError ? (
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+              preload="metadata"
+              onError={() => setHasError(true)}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="relative w-full h-full">
+              <img
+                src={imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center p-4 text-center">
+                <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 max-w-[80%]">
+                  <span className="text-2xl mb-1 block">🖼️</span>
+                  <p className="text-xs font-bold text-slate-200">Aperçu HD du Magasin</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Démonstration vidéo bientôt disponible</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {!isPlaying && (
+          {!isPlaying && !hasError && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <div className="w-16 h-16 rounded-full bg-blue-600/90 text-white text-3xl flex items-center justify-center pl-1 shadow-2xl animate-pulse">
                 ▶
@@ -110,14 +148,14 @@ export default function ProductVideoModal({ product, isOpen, onClose }) {
           <div className="flex items-center gap-3">
             <div className="flex items-center bg-slate-800 border border-slate-700 rounded-xl">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
                 className="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white font-bold text-lg"
               >
                 -
               </button>
               <span className="w-8 text-center text-sm font-semibold">{quantity}</span>
               <button
-                onClick={() => setQuantity(quantity + 1)}
+                onClick={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
                 className="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white font-bold text-lg"
               >
                 +
@@ -125,7 +163,7 @@ export default function ProductVideoModal({ product, isOpen, onClose }) {
             </div>
 
             <button
-              onClick={handleAddToCart}
+              onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
               className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 ${
                 added
                   ? 'bg-emerald-600 text-white'
