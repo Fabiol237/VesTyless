@@ -82,6 +82,20 @@ export default function StorefrontClient({ params }) {
     }
   }, [slug]);
 
+  // ── Sync Couleur Bannière / Theme-Color Barre de Statut Mobile ───────
+  useEffect(() => {
+    if (store) {
+      const primaryColor = store.theme_color || '#1e3a8a';
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      meta.content = primaryColor;
+    }
+  }, [store]);
+
   // ── Chargement / rafraîchissement Supabase ────────────────────────────
   useEffect(() => {
     const load = async () => {
@@ -220,13 +234,15 @@ export default function StorefrontClient({ params }) {
     <>
       {refreshing && <RefreshBar />}
 
-      {/* Injection de la font du thème */}
+      {/* Injection de la font du thème et couvrance totale tout en haut */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=${(themeConfig.font || 'Inter').replace(/ /g,'+')}:wght@300;400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { background-color: ${themeVars['--bg'] || '#1e3a8a'}; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${themeVars['--prim']}40; border-radius: 4px; }
+        .store-header-fullbleed { padding-top: max(env(safe-area-inset-top), 16px); }
       `}</style>
 
       {/* ── TEMPLATE PRINCIPAL ── */}
