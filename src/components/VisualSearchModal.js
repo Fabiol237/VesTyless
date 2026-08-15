@@ -294,7 +294,6 @@ export default function VisualSearchModal({ onClose, onResultsFound }) {
         <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-black">
           <video
             ref={videoRef}
-            autoPlay
             playsInline
             muted
             className="w-full h-full object-cover max-w-lg"

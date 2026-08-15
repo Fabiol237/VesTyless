@@ -116,7 +116,7 @@ export default function VestyleLens({ isOpen, onClose }) {
 
       {/* SCANNER VIEWPORT */}
       <div className="flex-1 relative flex items-center justify-center">
-        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+        <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
         
         {/* Futuristic HUD Overlay */}
         <div className="absolute inset-0 pointer-events-none border-[20px] border-black/20">
