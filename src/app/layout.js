@@ -33,11 +33,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body className="antialiased system-fonts">
+        {/* Honeypot Trap pour capturer et bannir automatiquement les robots scrapers */}
+        <a href="/api/honeypot" style={{ display: 'none', position: 'absolute', left: '-9999px' }} tabIndex={-1} aria-hidden="true" rel="nofollow">
+          System Admin Link
+        </a>
         <ClientProviders>
           {children}
           <LiveSalesPopup />
         </ClientProviders>
       </body>
+
     </html>
   );
 }

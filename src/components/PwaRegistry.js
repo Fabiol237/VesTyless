@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import dynamic from 'next/dynamic';
+
+const OfflineStatusBanner = dynamic(() => import('@/components/OfflineStatusBanner'), { ssr: false });
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY; 
 
@@ -143,27 +146,21 @@ export default function PwaRegistry() {
 
   return (
     <>
-      {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-600 text-white text-[10px] font-black uppercase tracking-widest py-1 text-center animate-pulse">
-          Mode Hors-Ligne Actif • Navigation Locale Uniquement
-        </div>
-      )}
-      
-      {/* Petit indicateur discret pour activer les notifications si nécessaire */}
-      {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
-        <div className="fixed bottom-4 right-4 z-[9999] animate-bounce">
+      {/* Bandeau offline premium (remplace l'ancienne barre rouge) */}
+      <OfflineStatusBanner />
+
+      {/* Bouton discret pour activer les notifications Push */}
+      {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && isOnline && (
+        <div className="fixed bottom-4 right-4 z-[9998]">
           <button 
             onClick={async () => {
               try {
-                console.log('[Vestyle PWA] Demande de permission manuelle...');
                 const permission = await Notification.requestPermission();
-                console.log('[Vestyle PWA] Permission accordée ?', permission);
-                
                 if (permission === 'granted') {
                   const reg = await navigator.serviceWorker.getRegistration();
                   const { data: { user } } = await supabase.auth.getUser();
                   
-                  if (reg && user) {
+                  if (reg && user && VAPID_PUBLIC_KEY) {
                     const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
                     const sub = await reg.pushManager.subscribe({
                       userVisibleOnly: true,
@@ -175,16 +172,10 @@ export default function PwaRegistry() {
                       email: user.email,
                       subscription: sub
                     });
-                    alert('Notifications activées !');
-                  } else {
-                    alert('Erreur : Session ou Service Worker introuvable.');
                   }
-                } else {
-                  alert('Vous avez refusé les notifications.');
                 }
               } catch (err) {
-                console.error('[Vestyle PWA] Erreur manuelle:', err);
-                alert('Erreur lors de l\'activation : ' + err.message);
+                console.error('[Vestyle PWA] Erreur activation notifs:', err);
               }
             }}
             className="bg-wa-teal text-white p-3 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group"

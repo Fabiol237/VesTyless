@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
 import dynamic from 'next/dynamic';
-import ThemePicker from '@/components/ThemePicker';
+import TemplateConfigurator from '@/components/TemplateConfigurator';
 
 const InteractiveMap = dynamic(() => import('@/components/InteractiveMap'), { 
   ssr: false,
@@ -53,7 +53,9 @@ export default function StoreSettingsPage() {
     supplier_level: 'Fournisseur Or',
     positive_rating: 100,
     response_time: '< 1h',
-    shop_theme: 'theme_01',
+    shop_theme: 'boutique_pro',
+    store_template: 'boutique_pro',
+    layout_config: {},
     shop_tabs: { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
   });
 
@@ -149,7 +151,9 @@ export default function StoreSettingsPage() {
           supplier_level: data.supplier_level || 'Nouveau Vendeur',
           positive_rating: data.positive_rating !== undefined ? data.positive_rating : 100,
           response_time: data.response_time || '< 2h',
-          shop_theme: data.shop_theme || 'theme_00',
+          shop_theme: data.shop_theme || 'boutique_pro',
+          store_template: data.store_template || data.shop_theme || 'boutique_pro',
+          layout_config: data.layout_config || {},
           shop_tabs: data.shop_tabs || { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
         });
       }
@@ -537,37 +541,24 @@ export default function StoreSettingsPage() {
             </div>
           </section>
 
-          {/* SECTION 5: Choix du Thème de Boutique */}
-          <section className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/40 text-left transition-all hover:shadow-2xl hover:shadow-gray-100/50">
-            <ThemePicker
-              value={formData.shop_theme}
-              onChange={(themeId) => {
-                setFormData(prev => ({ ...prev, shop_theme: themeId }));
-                updateStore({ shop_theme: themeId });
+          {/* SECTION 5: Template, Secteur & Configuration Dynamique */}
+          <section className="text-left">
+            <TemplateConfigurator
+              store={{
+                ...formData,
+                id: storeId,
+                store_template: formData.store_template || formData.shop_theme || 'boutique_pro'
+              }}
+              onUpdateStore={(fields) => {
+                setFormData(prev => ({ ...prev, ...fields }));
+                updateStore(fields);
+              }}
+              activeTemplateId={formData.store_template || formData.shop_theme || 'boutique_pro'}
+              onTemplateChange={(tmplId) => {
+                setFormData(prev => ({ ...prev, store_template: tmplId, shop_theme: tmplId }));
+                updateStore({ store_template: tmplId, shop_theme: tmplId });
               }}
             />
-            
-            {/* Configuration des Titres d'Onglets */}
-            <div className="mt-8 pt-8 border-t border-gray-100 space-y-4">
-              <div>
-                <h3 className="text-lg font-black text-gray-900 tracking-tight">Libellé des Pages (Navigation)</h3>
-                <p className="text-xs text-gray-500 font-medium">Attribuez des noms sur-mesure aux onglets du menu principal.</p>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { key: 'accueil', label: 'Onglet Accueil' },
-                  { key: 'produits', label: 'Onglet Produits' },
-                  { key: 'promotions', label: 'Onglet Offres' },
-                  { key: 'profil', label: 'Onglet Profil' }
-                ].map((item) => (
-                  <div key={item.key} className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{item.label}</label>
-                    <input type="text" name={`tab_${item.key}`} value={formData.shop_tabs?.[item.key] || ''} onChange={handleChange} className="w-full bg-gray-50/70 border border-gray-100 focus:border-[#059669] focus:bg-white rounded-xl px-4 py-3 text-xs font-bold outline-none transition-all" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </section>
 
           {/* SECTION 6: Confiance & Performance */}

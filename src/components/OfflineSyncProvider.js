@@ -1,46 +1,54 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { offlineStore } from '@/lib/offlineStore';
+/**
+ * VesTyle — OfflineSyncProvider (mis à jour pour Dexie.js)
+ * Context provider global qui gère la synchronisation des opérations offline
+ * (produits, commandes) dès que la connexion revient.
+ * Remplace l'ancien offlineStore par Dexie.js.
+ */
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
-const OfflineSyncContext = createContext();
+const OfflineSyncContext = createContext({
+  isOnline: true,
+  isSyncing: false,
+  processQueue: async () => {},
+});
 
 const OfflineSyncProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncedCount, setSyncedCount] = useState(0);
 
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      processQueue();
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Initial check
-    if (navigator.onLine) processQueue();
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const processQueue = async () => {
+  // ─── Synchronisation de la queue de produits (ancien offlineStore) ─────────
+  const processQueue = useCallback(async () => {
     if (isSyncing) return;
-    const queue = await offlineStore.getQueue();
-    if (queue.length === 0) return;
+
+    // Import dynamique pour éviter les erreurs SSR
+    let db;
+    try {
+      const { default: dbInstance } = await import('@/lib/db');
+      db = dbInstance;
+    } catch {
+      return; // Dexie non dispo (SSR)
+    }
+
+    const pendingProducts = await db.table('pendingOrders')
+      .where('status').equals('pending')
+      .toArray()
+      .catch(() => []);
+
+    if (pendingProducts.length === 0) return;
 
     setIsSyncing(true);
-    console.log(`[Offline Sync] Processing ${queue.length} operations...`);
+    let synced = 0;
+    console.log(`[Offline Sync] Processing ${pendingProducts.length} pending operations...`);
 
-    for (const op of queue) {
+    for (const op of pendingProducts) {
       try {
-        let productData = { ...op.data };
+        const payload = op.payload || op;
+        let productData = { ...(payload.productData || payload) };
 
-        // Generate embeddings if they don't exist
+        // Générer les embeddings si absents
         if (!productData.text_embedding_1024 && productData.name) {
           try {
             const embedRes = await fetch('/api/products/generate-embeddings', {
@@ -64,28 +72,122 @@ const OfflineSyncProvider = ({ children }) => {
           }
         }
 
-        if (op.type === 'create_product') {
+        let success = false;
+        if (payload.type === 'create_product' || op.storeId) {
           const { error } = await supabase.from('products').insert([productData]);
-          if (!error) await offlineStore.removeFromQueue(op.id);
-        } else if (op.type === 'update_product') {
-          const { error } = await supabase.from('products').update(productData).eq('id', op.productId);
-          if (!error) await offlineStore.removeFromQueue(op.id);
+          success = !error;
+        } else if (payload.type === 'update_product') {
+          const { error } = await supabase.from('products').update(productData).eq('id', payload.productId);
+          success = !error;
+        } else {
+          // Commande générique — POST vers /api/orders
+          const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          success = res.ok;
+        }
+
+        if (success) {
+          await db.table('pendingOrders').update(op.id, { status: 'synced' });
+          synced++;
+        } else {
+          const newRetries = (op.retries || 0) + 1;
+          await db.table('pendingOrders').update(op.id, {
+            retries: newRetries,
+            status: newRetries >= 3 ? 'failed' : 'pending',
+          });
         }
       } catch (err) {
-        console.error('[Offline Sync] Sync failed for op:', op, err);
+        console.error('[Offline Sync] Sync failed for op:', op.id, err);
       }
     }
 
+    if (synced > 0) {
+      setSyncedCount(prev => prev + synced);
+      console.log(`[Offline Sync] ✅ ${synced} opération(s) synchronisée(s)`);
+    }
+
     setIsSyncing(false);
-  };
+  }, [isSyncing]);
+
+  // ─── Écouter les changements réseau ─────────────────────────────────────
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Délai pour laisser le réseau s'établir
+      setTimeout(processQueue, 1500);
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Synchroniser au démarrage si online
+    if (navigator.onLine) {
+      setTimeout(processQueue, 2000);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [processQueue]);
+
+  // ─── Écouter les messages du Service Worker ────────────────────────────
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleMessage = (event) => {
+      const { type } = event.data || {};
+      if (type === 'SYNC_COMPLETE') {
+        console.log('[OfflineSyncProvider] SW Sync complete:', event.data);
+        processQueue();
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+  }, [processQueue]);
 
   return (
-    <OfflineSyncContext.Provider value={{ isOnline, isSyncing, processQueue }}>
+    <OfflineSyncContext.Provider value={{ isOnline, isSyncing, processQueue, syncedCount }}>
       {children}
+      {/* Petit toast de synchro discret (non-intrusif, en bas à droite) */}
       {isSyncing && (
-        <div className="fixed bottom-4 right-4 z-[100] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce">
-          <div className="w-2 h-2 bg-wa-teal rounded-full animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Synchronisation en cours...</span>
+        <div style={{
+          position: 'fixed',
+          bottom: 90,
+          right: 16,
+          zIndex: 9997,
+          background: 'rgba(18,140,126,0.95)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: 12,
+          padding: '8px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          boxShadow: '0 4px 20px rgba(18,140,126,0.4)',
+          color: 'white',
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: 'Inter, system-ui, sans-serif',
+          letterSpacing: '-0.01em',
+          animation: 'fadeInRight 0.3s ease',
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#25D366',
+            animation: 'pulse 1s ease-in-out infinite',
+          }} />
+          Synchronisation en cours...
+          <style>{`
+            @keyframes fadeInRight {
+              from { transform: translateX(20px); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
     </OfflineSyncContext.Provider>
@@ -94,4 +196,4 @@ const OfflineSyncProvider = ({ children }) => {
 
 export default OfflineSyncProvider;
 
-export const useOfflineSync = () => useContext(OfflineSyncContext);
+export const useOfflineSyncContext = () => useContext(OfflineSyncContext);

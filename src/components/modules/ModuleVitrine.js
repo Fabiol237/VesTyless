@@ -1,30 +1,24 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Star, Users, Shield, Zap, Trophy, Globe } from 'lucide-react';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MODULE VITRINE — Page d'accueil configurable selon le secteur d'activité
-// Adapte automatiquement son visuel au thème injecté par le parent
-// ─────────────────────────────────────────────────────────────────────────────
+import { ArrowRight, Star, Users, Shield, Zap, ShoppingBag, Sparkles, MapPin } from 'lucide-react';
 
 export default function ModuleVitrine({
   config = {}, store = {}, theme = {},
   isMobile, storeId, preview, onNavigate, modules = []
 }) {
-  const [hovered, setHovered] = useState(false);
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef(null);
 
-  // ── Extraction des variables de thème ──────────────────────────────────────
-  const p      = theme['--prim']   || '#6366f1';
-  const acc    = theme['--acc']    || p;
-  const bg     = theme['--bg']     || '#ffffff';
-  const fg     = theme['--fg']     || '#111827';
-  const fg2    = theme['--fg2']    || '#6b7280';
-  const border = theme['--border'] || 'rgba(0,0,0,0.08)';
-  const isDark = bg === '#0f0f1a' || bg === '#120A00' || bg === '#0D0600' || bg === '#18181b' || bg === '#111827';
+  const p      = theme['--prim']        || '#128C7E';
+  const bg     = theme['--bg']          || '#ffffff';
+  const fg     = theme['--fg']          || '#0f172a';
+  const fg2    = theme['--fg2']         || '#64748b';
+  const border = theme['--border']      || 'rgba(0,0,0,0.06)';
+  const radius = theme['--radius']      || '16px';
+  const fontHeading = theme['--font-heading'] || 'inherit';
 
-  // ── Intersection Observer pour animation d'entrée ─────────────────────────
+  const heroLayout = theme.heroLayout || config.heroLayout || 'centered-clean';
+
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) setVisible(true);
@@ -33,282 +27,187 @@ export default function ModuleVitrine({
     return () => observer.disconnect();
   }, []);
 
-  // ── Navigation CTA vers un module ────────────────────────────────────────
   const handleCTA = () => {
-    if (!onNavigate || !config.ctaLink) return;
-    const target = modules.find(m => m.type === config.ctaLink || m.id === config.ctaLink);
-    if (target) onNavigate(target.id);
+    if (!onNavigate) return;
+    const catalogueMod = modules.find(m => m.type === 'catalogue' || m.type === 'services');
+    if (catalogueMod) onNavigate(catalogueMod.id);
+    else onNavigate('produits');
   };
 
-  // ── Données depuis config ─────────────────────────────────────────────────
-  const badges = [config.badge1, config.badge2, config.badge3].filter(Boolean);
+  const coverUrl = store.cover_url || config.coverUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=80';
+  const logoUrl = store.logo_url || config.logoUrl;
+  const storeName = store.name || config.headline || 'Ma Boutique';
+  const headline = config.headline || `Bienvenue chez ${storeName}`;
+  const subheadline = config.subheadline || store.description || 'Découvrez nos collections exclusives et nos nouveautés.';
 
-  const socials = [
-    config.whatsapp  && { icon: '📲', label: 'WhatsApp', href: `https://wa.me/${config.whatsapp.replace(/\D/g,'')}` },
-    config.instagram && { icon: '📸', label: 'Instagram', href: config.instagram },
-    config.facebook  && { icon: '👤', label: 'Facebook', href: config.facebook },
-    config.tiktok    && { icon: '🎵', label: 'TikTok', href: config.tiktok },
-  ].filter(Boolean);
-
-  // ── Stats contextuelles (badges de confiance) ─────────────────────────────
-  const trustStats = [
-    config.ratingValue && { icon: <Star size={14} fill={p} color={p} />, value: `${config.ratingValue}/5`, label: `${config.ratingCount || '100'}+ avis` },
-    store?.followers_count && { icon: <Users size={14} color={p} />, value: store.followers_count, label: 'Abonnés' },
-    { icon: <Shield size={14} color={p} />, value: 'Vérifié', label: 'VesTyle' },
-  ].filter(Boolean);
-
-  // ── Palette de particules décoratives ────────────────────────────────────
-  const particles = Array.from({ length: 6 }, (_, i) => ({
-    x: [15, 80, 45, 70, 25, 90][i],
-    y: [20, 15, 75, 60, 85, 40][i],
-    size: [120, 200, 80, 150, 100, 180][i],
-    opacity: [0.07, 0.05, 0.09, 0.06, 0.08, 0.04][i],
-    delay: i * 0.5,
-  }));
-
-  return (
-    <section
-      ref={sectionRef}
-      style={{
-        minHeight: isMobile ? '88vh' : '92vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: bg,
-        padding: isMobile ? '60px 20px' : '100px 60px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* ── Fond décoratif — orbes colorées animées ─────────────────────── */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        {particles.map((pt, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            left: `${pt.x}%`,
-            top: `${pt.y}%`,
-            width: pt.size,
-            height: pt.size,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${i % 2 === 0 ? p : acc}${Math.round(pt.opacity * 255).toString(16).padStart(2,'0')} 0%, transparent 70%)`,
-            transform: 'translate(-50%, -50%)',
-            animation: `floatOrb ${6 + i}s ease-in-out infinite alternate`,
-            animationDelay: `${pt.delay}s`,
-          }} />
-        ))}
-        {/* Grille subtile */}
-        {!isDark && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `linear-gradient(${border} 1px, transparent 1px), linear-gradient(90deg, ${border} 1px, transparent 1px)`,
-            backgroundSize: '48px 48px',
-            opacity: 0.5,
-          }} />
-        )}
-      </div>
-
-      <style>{`
-        @keyframes floatOrb {
-          from { transform: translate(-50%, -50%) scale(1); }
-          to   { transform: translate(-50%, -50%) scale(1.15) rotate(5deg); }
-        }
-        @keyframes fadeUpIn {
-          from { opacity: 0; transform: translateY(28px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .vitrine-visible .anim-0 { animation: fadeUpIn 0.6s ease both 0.0s; }
-        .vitrine-visible .anim-1 { animation: fadeUpIn 0.6s ease both 0.12s; }
-        .vitrine-visible .anim-2 { animation: fadeUpIn 0.6s ease both 0.24s; }
-        .vitrine-visible .anim-3 { animation: fadeUpIn 0.6s ease both 0.36s; }
-        .vitrine-visible .anim-4 { animation: fadeUpIn 0.6s ease both 0.48s; }
-        .vitrine-visible .anim-5 { animation: fadeUpIn 0.6s ease both 0.60s; }
-      `}</style>
-
-      {/* ── Contenu central ─────────────────────────────────────────────── */}
-      <div
-        className={visible ? 'vitrine-visible' : ''}
-        style={{ maxWidth: 820, textAlign: 'center', position: 'relative', zIndex: 1, width: '100%' }}
-      >
-        {/* Logo / Avatar boutique */}
-        <div className="anim-0" style={{ marginBottom: 28, display: 'flex', justifyContent: 'center' }}>
-          {store?.logo_url ? (
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <img
-                src={store.logo_url}
-                alt={store.name}
-                style={{
-                  width: isMobile ? 72 : 88, height: isMobile ? 72 : 88,
-                  borderRadius: 'var(--radius, 22px)', objectFit: 'cover',
-                  boxShadow: `0 16px 48px ${p}35, 0 0 0 3px ${p}20`,
-                }}
-              />
-              <div style={{
-                position: 'absolute', bottom: -4, right: -4,
-                width: 22, height: 22, borderRadius: '50%',
-                background: '#22c55e',
-                border: `3px solid ${bg}`,
-                boxShadow: '0 0 0 2px rgba(34,197,94,0.3)',
-              }} />
-            </div>
-          ) : (
-            <div style={{
-              width: isMobile ? 72 : 88, height: isMobile ? 72 : 88,
-              borderRadius: 'var(--radius, 22px)',
-              background: `linear-gradient(135deg, ${p}, ${acc})`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 36, fontWeight: 900,
-              color: '#fff',
-              boxShadow: `0 16px 48px ${p}40`,
-            }}>
-              {store?.name ? store.name.charAt(0).toUpperCase() : '🏪'}
-            </div>
-          )}
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STYLE 1 : IMMERSIVE LUXE (Vogue / Haute Couture Style)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (heroLayout === 'immersive-full') {
+    return (
+      <section ref={sectionRef} className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-black text-white">
+        <div className="absolute inset-0">
+          <img src={coverUrl} alt={storeName} className="w-full h-full object-cover opacity-50 scale-105 transition-transform duration-1000" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
         </div>
 
-        {/* Badges de confiance */}
-        {config.showBadges && badges.length > 0 && (
-          <div className="anim-1" style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 28 }}>
-            {badges.map((badge, i) => (
-              <span key={i} style={{
-                padding: '5px 14px', borderRadius: 'var(--radius, 999px)',
-                background: isDark ? `${p}18` : `${p}10`,
-                border: `1px solid ${p}30`,
-                fontSize: 12, fontWeight: 700, color: p,
-                letterSpacing: '0.04em',
-                fontFamily: 'var(--font, inherit)',
-              }}>
-                ✦ {badge}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center flex flex-col items-center">
+          {logoUrl && (
+            <img src={logoUrl} alt={storeName} className="w-24 h-24 rounded-full object-cover border-2 border-amber-500/40 shadow-2xl mb-8" />
+          )}
 
-        {/* Note / Avis */}
-        {config.showRating && config.ratingValue && (
-          <div className="anim-1" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 'var(--radius, 999px)', background: isDark ? 'rgba(254,240,138,0.08)' : '#fef9c3', border: `1px solid ${isDark ? 'rgba(254,240,138,0.15)' : '#fde68a'}`, marginBottom: 24, fontSize: 13, fontWeight: 800, color: isDark ? '#fef08a' : '#92400e', fontFamily: 'var(--font, inherit)' }}>
-            ⭐ {config.ratingValue} / 5 &nbsp;·&nbsp; {config.ratingCount || '100'}+ avis
-          </div>
-        )}
+          <span className="text-amber-400 text-xs font-mono font-black uppercase tracking-[0.4em] mb-4">
+            ✦ Haute Couture & Collections Exclusives ✦
+          </span>
 
-        {/* ── Tag secteur spécifique ── */}
-        {(config.season || config.cuisine || config.hotelTagline) && (
-          <div className="anim-1" style={{ marginBottom: 20 }}>
-            {config.season && (
-              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 'var(--radius, 999px)', background: `${p}15`, color: p, fontWeight: 800, fontSize: 13, fontFamily: 'var(--font, inherit)' }}>
-                ✨ {config.season}
-              </span>
-            )}
-            {config.cuisine && (
-              <span style={{ display: 'inline-block', padding: '6px 18px', borderRadius: 'var(--radius, 999px)', background: `${p}15`, color: p, fontWeight: 800, fontSize: 13, fontFamily: 'var(--font, inherit)' }}>
-                🍽️ {config.cuisine}
-              </span>
-            )}
-            {config.hotelTagline && (
-              <p style={{ color: fg2, fontSize: 14, fontStyle: 'italic' }}>"{config.hotelTagline}"</p>
-            )}
-          </div>
-        )}
+          <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none mb-6 text-amber-100" style={{ fontFamily: fontHeading }}>
+            {storeName}
+          </h1>
 
-        {/* ── Headline principal ── */}
-        <h1 className="anim-2" style={{
-          fontSize: isMobile ? 'clamp(28px,8vw,40px)' : 'clamp(36px,5vw,60px)',
-          fontWeight: 900,
-          color: fg,
-          margin: '0 0 18px',
-          letterSpacing: '-0.03em',
-          lineHeight: 1.12,
-        }}>
-          {config.headline || `Bienvenue chez ${store?.name || 'notre boutique'}`}
-        </h1>
+          <p className="text-base sm:text-xl text-stone-300 max-w-2xl font-light leading-relaxed mb-10">
+            {subheadline}
+          </p>
 
-        {/* ── Sous-titre ── */}
-        <p className="anim-3" style={{
-          fontSize: isMobile ? 15 : 18,
-          color: fg2,
-          lineHeight: 1.75,
-          maxWidth: 580,
-          margin: '0 auto 40px',
-        }}>
-          {config.subheadline || 'Découvrez notre sélection exclusive, pensée pour vous.'}
-        </p>
-
-        {/* ── Bouton CTA ── */}
-        <div className="anim-4" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: socials.length > 0 ? 40 : 0 }}>
           <button
             onClick={handleCTA}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: isMobile ? '14px 32px' : '16px 44px',
-              borderRadius: 999,
-              background: `linear-gradient(135deg, ${p}, ${acc})`,
-              color: '#fff',
-              border: 'none',
-              fontWeight: 900,
-              fontSize: isMobile ? 15 : 17,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              boxShadow: hovered ? `0 20px 50px ${p}55, 0 0 0 4px ${p}18` : `0 10px 36px ${p}40`,
-              transform: hovered ? 'translateY(-3px) scale(1.03)' : 'none',
-              transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-              letterSpacing: '0.02em',
-            }}
+            className="px-10 py-5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-xs uppercase tracking-[0.25em] rounded-full hover:scale-105 transition-all shadow-2xl shadow-amber-500/30 flex items-center gap-3"
           >
-            {config.ctaText || 'Découvrir'}
-            <ArrowRight size={18} style={{ transform: hovered ? 'translateX(3px)' : 'none', transition: 'transform 0.3s' }} />
+            Exploration Privée <ArrowRight size={16} />
           </button>
         </div>
+      </section>
+    );
+  }
 
-        {/* ── Stats de confiance ── */}
-        {trustStats.length > 0 && (
-          <div className="anim-4" style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', marginBottom: socials.length > 0 ? 32 : 0, marginTop: 16 }}>
-            {trustStats.map((stat, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 900, color: fg }}>
-                  {stat.icon} {stat.value}
-                </div>
-                <span style={{ fontSize: 11, color: fg2, fontWeight: 600 }}>{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STYLE 2 : ASYMMETRIC BOLD (Streetwear / Urban Tech)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (heroLayout === 'asymmetric-bold') {
+    return (
+      <section ref={sectionRef} className="relative py-16 sm:py-28 px-6 bg-[#050505] text-white overflow-hidden">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-7 space-y-6 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#CCFF00]/10 border border-[#CCFF00]/30 text-[#CCFF00] font-mono text-xs font-black uppercase tracking-widest">
+              <Zap size={14} /> Official Store
+            </div>
+            
+            <h1 className="text-4xl sm:text-7xl font-black leading-none uppercase tracking-tighter" style={{ fontFamily: fontHeading }}>
+              {headline}
+            </h1>
 
-        {/* ── Réseaux sociaux ── */}
-        {config.showSocials && socials.length > 0 && (
-          <div className="anim-5" style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 12 }}>
-            {socials.map((s, i) => (
-              <a
-                key={i}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '9px 18px', borderRadius: 999,
-                  border: `1.5px solid ${border}`,
-                  background: isDark ? 'rgba(255,255,255,0.04)' : '#f9fafb',
-                  color: fg2, fontSize: 13, fontWeight: 700, textDecoration: 'none',
-                  transition: 'all 0.25s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = p;
-                  e.currentTarget.style.color = p;
-                  e.currentTarget.style.background = `${p}10`;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = border;
-                  e.currentTarget.style.color = fg2;
-                  e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : '#f9fafb';
-                  e.currentTarget.style.transform = 'none';
-                }}
+            <p className="text-slate-400 text-base sm:text-lg font-medium leading-relaxed max-w-xl">
+              {subheadline}
+            </p>
+
+            <div className="pt-4 flex flex-wrap items-center gap-4">
+              <button
+                onClick={handleCTA}
+                className="px-8 py-4 bg-[#CCFF00] text-black font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-lg flex items-center gap-2"
               >
-                {s.icon} {s.label}
-              </a>
-            ))}
+                Drop Actuel <ArrowRight size={16} />
+              </button>
+              {store.city && (
+                <span className="flex items-center gap-1.5 text-xs font-mono text-slate-400 px-4 py-3 bg-white/5 border border-white/10">
+                  <MapPin size={14} className="text-[#CCFF00]" /> {store.city}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 relative">
+            <div className="relative aspect-[4/5] w-full border-2 border-[#CCFF00]/40 overflow-hidden group">
+              <img src={coverUrl} alt={storeName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              {logoUrl && (
+                <div className="absolute top-4 left-4 p-2 bg-black border border-white/20">
+                  <img src={logoUrl} alt="" className="w-12 h-12 object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STYLE 3 : SOFT ORGANIC (Artisanat / Éco & Beauté)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (heroLayout === 'soft-split') {
+    return (
+      <section ref={sectionRef} className="py-16 sm:py-24 px-6" style={{ background: bg }}>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6 text-left">
+            <span className="inline-block px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: `${p}15`, color: p }}>
+              🌿 Créations Fait-Main & Authentiques
+            </span>
+
+            <h1 className="text-3xl sm:text-5xl font-black leading-tight" style={{ color: fg, fontFamily: fontHeading }}>
+              {headline}
+            </h1>
+
+            <p className="text-base sm:text-lg leading-relaxed" style={{ color: fg2 }}>
+              {subheadline}
+            </p>
+
+            <div className="pt-2">
+              <button
+                onClick={handleCTA}
+                className="px-8 py-4 text-white font-bold text-sm rounded-full shadow-lg hover:opacity-90 transition-all flex items-center gap-2"
+                style={{ background: p, borderRadius: radius }}
+              >
+                Découvrir l&apos;Atelier <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="aspect-[4/3] w-full overflow-hidden shadow-2xl" style={{ borderRadius: radius }}>
+              <img src={coverUrl} alt={storeName} className="w-full h-full object-cover" />
+            </div>
+            {logoUrl && (
+              <div className="absolute -bottom-6 -left-6 p-3 bg-white shadow-xl rounded-2xl border border-neutral-100 hidden sm:block">
+                <img src={logoUrl} alt="" className="w-16 h-16 rounded-xl object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STYLE 4 : CENTERED CLEAN (Style Minimaliste & Pro par défaut)
+  // ═══════════════════════════════════════════════════════════════════════════
+  return (
+    <section ref={sectionRef} className="py-16 sm:py-28 px-6 text-center" style={{ background: bg }}>
+      <div className="max-w-4xl mx-auto flex flex-col items-center">
+        {logoUrl ? (
+          <img src={logoUrl} alt={storeName} className="w-24 h-24 rounded-3xl object-cover shadow-xl border border-neutral-100 mb-8" />
+        ) : (
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-xl mb-8" style={{ background: p }}>
+            {storeName.charAt(0)}
           </div>
         )}
+
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6" style={{ background: `${p}12`, color: p }}>
+          <Sparkles size={14} /> Boutique Certifiée
+        </div>
+
+        <h1 className="text-3xl sm:text-6xl font-black tracking-tight leading-tight mb-6" style={{ color: fg, fontFamily: fontHeading }}>
+          {headline}
+        </h1>
+
+        <p className="text-base sm:text-xl leading-relaxed max-w-2xl mb-10" style={{ color: fg2 }}>
+          {subheadline}
+        </p>
+
+        <button
+          onClick={handleCTA}
+          className="px-9 py-4 text-white font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center gap-3"
+          style={{ background: p, borderRadius: radius }}
+        >
+          Voir le Catalogue <ShoppingBag size={16} />
+        </button>
       </div>
     </section>
   );

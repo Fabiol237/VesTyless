@@ -1,7 +1,7 @@
 export function normalizeStoreModules(modules = []) {
   const sortedModules = [...modules]
     .filter(Boolean)
-    .filter((module) => module && module.type)
+    .filter((modItem) => modItem && modItem.type)
     .sort((a, b) => {
       const aPosition = typeof a.position === 'number' ? a.position : Number.MAX_SAFE_INTEGER;
       const bPosition = typeof b.position === 'number' ? b.position : Number.MAX_SAFE_INTEGER;
@@ -10,29 +10,26 @@ export function normalizeStoreModules(modules = []) {
 
   const deduped = [];
 
-  for (const module of sortedModules) {
-    const existingIndex = deduped.findIndex((entry) => entry.type === module.type);
+  for (const modItem of sortedModules) {
+    const existingIndex = deduped.findIndex((entry) => entry.type === modItem.type);
     if (existingIndex !== -1) {
       const existing = deduped[existingIndex];
-      if (existing.is_active === false && module.is_active !== false) {
+      if (existing.is_active === false && modItem.is_active !== false) {
         deduped[existingIndex] = {
-          ...module,
+          ...modItem,
           position: existing.position,
-          is_active: module.is_active !== false,
+          is_active: modItem.is_active !== false,
         };
       }
       continue;
     }
 
     deduped.push({
-      ...module,
+      ...modItem,
       position: deduped.length,
-      is_active: module.is_active !== false,
+      is_active: modItem.is_active !== false,
     });
   }
 
-  return deduped.map((module, index) => ({
-    ...module,
-    position: index,
-  }));
+  return deduped;
 }

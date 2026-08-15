@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getTemplate } from '@/lib/storeTemplates';
+import { getTemplateById } from '@/lib/storeTemplates';
+
+/** Compatibilité : getTemplate → getTemplateById */
+function getTemplate(id) { return getTemplateById(id); }
 
 // Types de blocs uniques qui ne doivent pas exister en double (Garde-fous)
 const SINGLETON_BLOCK_TYPES = [
@@ -15,6 +18,8 @@ export async function POST(request) {
 
     const template = getTemplate(templateId);
     if (!template) return NextResponse.json({ error: 'Template introuvable' }, { status: 404 });
+
+    const blocks = template.blocks || (template.modules || []).map(type => ({ type, config: {} }));
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -55,7 +60,7 @@ export async function POST(request) {
         existingByType[m.type] = m;
       });
 
-      template.blocks.forEach((tplBlock, index) => {
+      blocks.forEach((tplBlock, index) => {
         const isSingleton = SINGLETON_BLOCK_TYPES.includes(tplBlock.type);
         const existing = existingByType[tplBlock.type];
 
@@ -112,7 +117,7 @@ export async function POST(request) {
       const existingTypes = new Set((currentModules || []).map(m => m.type));
       let nextPos = (currentModules || []).reduce((m, mod) => Math.max(m, mod.position), -1) + 1;
 
-      template.blocks.forEach((tplBlock) => {
+      blocks.forEach((tplBlock) => {
         const isSingleton = SINGLETON_BLOCK_TYPES.includes(tplBlock.type);
         const alreadyExists = existingTypes.has(tplBlock.type);
 
@@ -156,12 +161,15 @@ export async function POST(request) {
 
     // Appliquer le thème du template
     await supabase.from('stores').update({
-      theme_color:     template.theme.primaryColor,
-      secondary_color: template.theme.secondaryColor,
-      accent_color:    template.theme.accentColor,
-      font_family:     template.theme.fontFamily,
-      theme_mode:      template.theme.mode,
-      updated_at:      new Date().toISOString(),
+      theme_color:          template.theme.primaryColor,
+      secondary_color:      template.theme.secondaryColor,
+      accent_color:         template.theme.accentColor,
+      font_family:          template.theme.fontFamily,
+      theme_mode:           template.theme.mode,
+      store_template:       template.id,
+      sector:               template.sector || null,
+      template_applied_at:  new Date().toISOString(),
+      updated_at:           new Date().toISOString(),
     }).eq('id', storeId);
 
     // Récupérer la liste finale ordonnée

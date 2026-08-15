@@ -73,11 +73,11 @@ export function validateUpdateBlockProps(args, registry, existingModules) {
   if (!isString(args.blockId))  errors.push('blockId doit être une string');
   if (!isObject(args.props))    errors.push('props doit être un objet');
 
-  const module = existingModules?.find(m => m.id === args.blockId);
-  if (!module) errors.push(`blockId "${args.blockId}" non trouvé dans les modules`);
+  const targetMod = existingModules?.find(m => m.id === args.blockId);
+  if (!targetMod) errors.push(`blockId "${args.blockId}" non trouvé dans les modules`);
 
-  if (module && registry[module.type]) {
-    const propDefs = registry[module.type].props;
+  if (targetMod && registry[targetMod.type]) {
+    const propDefs = registry[targetMod.type].props;
     for (const [key, value] of Object.entries(args.props || {})) {
       const propDef = propDefs[key];
       if (!propDef) continue;
@@ -93,9 +93,9 @@ export function validateUpdateBlockProps(args, registry, existingModules) {
 export function validateRemoveBlock(args, existingModules) {
   const errors = [];
   if (!isString(args.blockId)) errors.push('blockId doit être une string');
-  const module = existingModules?.find(m => m.id === args.blockId);
-  if (!module) errors.push(`blockId "${args.blockId}" non trouvé`);
-  if (module?.type === 'vitrine' && existingModules?.filter(m => m.is_active).length <= 1) {
+  const targetMod = existingModules?.find(m => m.id === args.blockId);
+  if (!targetMod) errors.push(`blockId "${args.blockId}" non trouvé`);
+  if (targetMod?.type === 'vitrine' && existingModules?.filter(m => m.is_active).length <= 1) {
     errors.push('Impossible de supprimer le seul bloc actif');
   }
   return errors;

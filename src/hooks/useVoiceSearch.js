@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export function useVoiceSearch(onResult, onInterimResult) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const [error, setError] = useState(null);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -15,7 +16,7 @@ export function useVoiceSearch(onResult, onInterimResult) {
         const recog = new SpeechRecognition();
         recog.continuous = false;
         recog.interimResults = true;
-        recog.lang = 'fr-FR'; // Default to French for this app
+        recog.lang = 'fr-FR';
 
         recog.onresult = (event) => {
           let interimTranscript = '';
@@ -36,16 +37,18 @@ export function useVoiceSearch(onResult, onInterimResult) {
           }
         };
 
+        // Gestion silencieuse des erreurs sans polluer la console dev
         recog.onerror = (event) => {
-          console.error('Speech recognition error', event.error);
-          if (event.error === 'not-allowed') {
-            setError('Micro refusé.');
-          } else {
-            setError('Erreur vocale.');
-          }
           setIsListening(false);
-          
-          // Clear error after 3s
+
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            setError('Micro non autorisé.');
+          } else if (event.error === 'no-speech') {
+            setError('Aucune voix détectée.');
+          } else if (event.error !== 'aborted') {
+            setError('Erreur micro.');
+          }
+
           setTimeout(() => setError(null), 3000);
         };
 
@@ -54,26 +57,38 @@ export function useVoiceSearch(onResult, onInterimResult) {
         };
 
         setRecognition(recog);
+        recognitionRef.current = recog;
       }
     }
   }, [onResult, onInterimResult]);
 
-  const toggleListening = useCallback(() => {
-    if (!isSupported || !recognition) return;
+  const toggleListening = useCallback(async () => {
+    if (!isSupported || !recognitionRef.current) return;
 
     if (isListening) {
-      recognition.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
       setIsListening(false);
     } else {
       try {
         setError(null);
-        recognition.start();
+
+        // Demander d'abord la permission microphone au navigateur de manière propre
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {
+            setError('Micro non autorisé.');
+            return null;
+          });
+        }
+
+        recognitionRef.current.start();
         setIsListening(true);
       } catch (e) {
-        console.error("Erreur lors du démarrage de la reconnaissance vocale:", e);
+        setIsListening(false);
       }
     }
-  }, [isListening, isSupported, recognition]);
+  }, [isListening, isSupported]);
 
   return {
     isListening,

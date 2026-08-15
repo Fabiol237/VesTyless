@@ -1,8 +1,81 @@
-User-agent: *
+# VesTyle Anti-Scraper & Search Engine Rules
+User-agent: Googlebot
 Allow: /
+Allow: /boutique/
+Allow: /boutiques
 Disallow: /dashboard/
+Disallow: /builder/
 Disallow: /api/
 Disallow: /login
 Disallow: /signup
+Disallow: /admin/
+
+User-agent: Bingbot
+Allow: /
+Allow: /boutique/
+Allow: /boutiques
+Disallow: /dashboard/
+Disallow: /builder/
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /admin/
+
+# 🛑 BLOCK ALL AI SCRAPERS, CODE BOT & CONTENT THIEVES
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: AnthropicAI
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
+User-agent: HTTrack
+Disallow: /
+
+User-agent: Wget
+Disallow: /
+
+User-agent: curl
+Disallow: /
+
+# General rules
+User-agent: *
+Allow: /
+Allow: /boutiques
+Allow: /boutique/
+Disallow: /dashboard/
+Disallow: /builder/
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /*.env$
 
 Sitemap: https://vestyle.cm/sitemap.xml

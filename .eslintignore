@@ -1,0 +1,4 @@
+versions/**
+.next/**
+node_modules/**
+scratch/**

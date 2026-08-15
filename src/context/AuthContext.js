@@ -15,9 +15,9 @@ export function AuthProvider({ children }) {
   const initializedRef = useRef(false);
   const mountedRef = useRef(false);
 
-  const withTimeout = async (promiseFactory, ms = 12000) => {
+  // Timeout ultra-court (2s) pour ne pas bloquer hors-ligne
+  const withTimeout = async (promiseFactory, ms = 2000) => {
     let timeoutId;
-
     try {
       return await Promise.race([
         promiseFactory(),
@@ -25,9 +25,30 @@ export function AuthProvider({ children }) {
           timeoutId = setTimeout(() => reject(new Error('AUTH_TIMEOUT')), ms);
         }),
       ]);
+    } catch (err) {
+      return null;
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
     }
+  };
+
+  // ── Chargement rapide depuis le cache local (localStorage / Dexie) ───────────
+  const loadFromLocalCache = (userId) => {
+    try {
+      const cachedProfile = localStorage.getItem(`vestyle_profile_${userId}`);
+      const cachedStore = localStorage.getItem(`vestyle_store_${userId}`);
+      if (cachedProfile) setProfile(JSON.parse(cachedProfile));
+      if (cachedStore) setStore(JSON.parse(cachedStore));
+    } catch (e) {
+      console.warn('[AuthContext] Erreur lecture cache local:', e);
+    }
+  };
+
+  const saveToLocalCache = (userId, profileData, storeData) => {
+    try {
+      if (profileData) localStorage.setItem(`vestyle_profile_${userId}`, JSON.stringify(profileData));
+      if (storeData) localStorage.setItem(`vestyle_store_${userId}`, JSON.stringify(storeData));
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -49,35 +70,21 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
           if (session?.user) {
-            /* 
-            // Trigger Security Notification on Sign In (Disabled because it fires too often)
-            if (event === 'SIGNED_IN') {
-              fetch('/api/emails/notify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  to: session.user.email,
-                  subject: 'Alerte Connexion',
-                  type: 'SECURITY',
-                  data: {
-                    message: `Une nouvelle connexion a été détectée sur votre compte Vestyle Pro à ${new Date().toLocaleTimeString('fr-FR')}. Si ce n'était pas vous, sécurisez votre compte immédiatement.`
-                  }
-                })
-              }).catch(e => console.error('Security notify failed:', e));
-            }
-            */
-
             setUser(session.user);
-            await withTimeout(() => fetchUserData(session.user.id));
+            // 1. Charger d'abord le cache local TOUT DE SUITE (0ms)
+            loadFromLocalCache(session.user.id);
+
+            // 2. Si l'appareil est en ligne, rafraîchir en arrière-plan avec un timeout de 2s max
+            if (typeof navigator === 'undefined' || navigator.onLine) {
+              await withTimeout(() => fetchUserData(session.user.id), 2500);
+            }
           } else {
             setUser(null);
             setProfile(null);
             setStore(null);
           }
         } catch (err) {
-          if (err?.message !== 'AUTH_TIMEOUT') {
-            console.error('Erreur onAuthStateChange:', err);
-          }
+          console.warn('[AuthContext] Sync auth fallback:', err?.message);
         } finally {
           if (mountedRef.current) {
             setLoading(false);
@@ -97,58 +104,56 @@ export function AuthProvider({ children }) {
   const fetchUserData = async (userId) => {
     try {
       // 1. Fetch Profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (!profileError && profileData) {
-        setProfile(profileData);
+      let fetchedProfile = null;
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        if (data) {
+          fetchedProfile = data;
+          setProfile(data);
+        }
+      } catch (err) {
+        console.warn('[AuthContext] Profil réseau non dispo');
       }
 
       // 2. Fetch Store
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('owner_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-        
+      let storeData = null;
+      let storeError = null;
+
+      try {
+        const res = await supabase
+          .from('stores')
+          .select('*')
+          .eq('owner_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        storeData = res.data;
+        storeError = res.error;
+      } catch (e) {
+        storeError = e;
+      }
+
       if (!storeError && storeData) {
         setStore(storeData);
+        saveToLocalCache(userId, fetchedProfile, storeData);
       } else if (storeError) {
-        console.error("❌ Erreur réseau ou Supabase lors de la vérification de la boutique:", storeError.message);
-        setStore(null);
-      } else if (!storeError && !storeData) {
-        // No store found for this user AND no network error occurred
-        
-        // 1. Prevent concurrent creations using memory lock
-        if (isCreatingStoreForUser === userId) {
-          console.log('Store creation already in progress, skipping.');
-          return;
-        }
+        console.warn("⚠️ Réseau instable/offline lors de la vérification de la boutique. Utilisation du cache.");
+        // NE PAS mettre store à null en cas d'erreur réseau ! Conserver le cache local.
+      } else if (!storeError && !storeData && (typeof navigator === 'undefined' || navigator.onLine)) {
+        // Aucune boutique trouvée et VRAIMENT en ligne → Création automatique
+        if (isCreatingStoreForUser === userId) return;
         isCreatingStoreForUser = userId;
 
         try {
           const { data: { user } } = await supabase.auth.getUser();
           const storeNameFromMeta = user?.user_metadata?.store_name;
-          
-          // 2. Double check the DB just in case another tab created it
-          const { data: existingCheck } = await supabase
-            .from('stores')
-            .select('id')
-            .eq('owner_id', userId)
-            .limit(1);
-
-          if (existingCheck && existingCheck.length > 0) {
-            console.log('Store was just created by another process, fetching instead.');
-            return fetchUserData(userId);
-          }
 
           const randomString = Math.random().toString(36).substring(2, 8);
-          const defaultName = storeNameFromMeta || `Boutique de ${profileData?.full_name?.split(' ')[0] || 'Utilisateur'}`;
+          const defaultName = storeNameFromMeta || `Boutique de ${fetchedProfile?.full_name?.split(' ')[0] || 'Utilisateur'}`;
           const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
 
           const { data: newStore, error: insertError } = await supabase
@@ -164,13 +169,10 @@ export function AuthProvider({ children }) {
 
           if (!insertError && newStore) {
             setStore(newStore);
-            console.log('✅ Boutique créée (nouvelle)', newStore.id);
-          } else {
-            console.error("❌ Erreur store creation:", insertError?.message);
-            setStore(null);
+            saveToLocalCache(userId, fetchedProfile, newStore);
+            console.log('✅ Boutique créée', newStore.id);
           }
         } finally {
-          // Release lock
           isCreatingStoreForUser = null;
         }
       }
@@ -180,6 +182,12 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    if (user) {
+      try {
+        localStorage.removeItem(`vestyle_profile_${user.id}`);
+        localStorage.removeItem(`vestyle_store_${user.id}`);
+      } catch (e) {}
+    }
     await supabase.auth.signOut();
     window.location.href = '/login';
   };

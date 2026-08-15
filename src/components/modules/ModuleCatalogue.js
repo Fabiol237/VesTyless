@@ -9,6 +9,8 @@ import { ArrowRight, CheckCircle2, Search, Filter, ShoppingBag, Plus, Star, Tag,
 
 // Pas de produits de démonstration — uniquement les vraies données de la BD
 
+import SectionHeader from '@/components/SectionHeader';
+
 export default function ModuleCatalogue({
   config = {}, store = {}, theme = {},
   isMobile, storeId, preview, onAddToCart, currency = 'XOF'
@@ -99,17 +101,13 @@ export default function ModuleCatalogue({
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         
         {/* En-tête Unifiée */}
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 800, color: p, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <ShoppingBag size={13} /> Boutique en ligne
-          </div>
-          <h2 style={{ fontSize: isMobile ? 28 : 40, fontWeight: 900, color: fg, margin: '0 0 12px', letterSpacing: '-0.03em', fontFamily: 'var(--font, inherit)' }}>
-            {config.headline || 'Découvrez notre collection'}
-          </h2>
-          <p style={{ fontSize: 16, color: fg2, maxWidth: 540, margin: '0 auto', lineHeight: 1.6, fontFamily: 'var(--font, inherit)' }}>
-            {config.subheadline || 'Des produits soigneusement sélectionnés pour répondre à toutes vos envies.'}
-          </p>
-        </div>
+        <SectionHeader
+          badge="Boutique en ligne"
+          icon={ShoppingBag}
+          title={config.headline || 'Découvrez notre collection'}
+          subtitle={config.subheadline || 'Des produits soigneusement sélectionnés pour répondre à toutes vos envies.'}
+          theme={theme}
+        />
 
         {/* Barre de recherche et filtres */}
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: 32 }}>

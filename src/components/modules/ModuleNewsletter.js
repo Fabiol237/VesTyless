@@ -225,7 +225,7 @@ export default function ModuleNewsletter({
               </div>
               {status === 'error' && (
                 <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8, fontWeight: 600 }}>
-                  Une erreur s'est produite. Veuillez réessayer.
+                  Une erreur s&apos;est produite. Veuillez réessayer.
                 </p>
               )}
               <p style={{ fontSize: 11, color: fg2, marginTop: 12, opacity: 0.6 }}>

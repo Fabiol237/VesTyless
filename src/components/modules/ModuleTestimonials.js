@@ -63,7 +63,7 @@ function ReviewCard({ review, config, theme, style = {} }) {
 
       {/* Texte */}
       <p style={{ fontSize: 14, color: fg, lineHeight: 1.75, margin: 0, fontStyle: 'italic', flex: 1 }}>
-        "{review.text}"
+        &ldquo;{review.text}&rdquo;
       </p>
 
       {/* Auteur */}

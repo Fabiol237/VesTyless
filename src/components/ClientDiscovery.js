@@ -168,11 +168,17 @@ export default function ClientDiscovery({
 
   // --- STRATÉGIE OFFLINE-FIRST POUR LE FLUX PRINCIPAL ---
   const { data: offlineDiscovery, loading: offlineLoading } = useOfflineData('discovery_feed_v5', async () => {
-    // Appel de notre API Next.js avec cache CDN (évite d'interroger Supabase à chaque fois)
-    const res = await fetch('/api/products/feed');
-    if (!res.ok) throw new Error('Impossible de charger le flux');
-    const data = await res.json();
-    return { data };
+    try {
+      const res = await fetch('/api/products/feed');
+      if (!res.ok) {
+        return { data: { products: [], stores: [], categories: [] } };
+      }
+      const data = await res.json();
+      return { data };
+    } catch (err) {
+      console.warn('[ClientDiscovery] Échec du fetch API, mode hors-ligne actif:', err?.message);
+      return { data: { products: [], stores: [], categories: [] } };
+    }
   });
 
   useEffect(() => {
@@ -532,7 +538,7 @@ export default function ClientDiscovery({
                     </div>
                   </div>
                   <span className={`relative z-10 text-[10px] font-mono uppercase tracking-widest transition-colors ${isActive ? 'text-white font-black' : 'text-slate-400 font-medium'}`}>
-                    {displayName.split(' ')[0]}
+                    {displayName}
                   </span>
                   {isActive && (
                     <motion.div 
@@ -720,7 +726,7 @@ export default function ClientDiscovery({
                   </>
                 )}
               </div>
-              <div id="products-grid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div id="products-grid" className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {displayedProducts.map((item, idx) => (
                   <ProductCard
                     key={item.id}

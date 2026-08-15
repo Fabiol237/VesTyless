@@ -10,6 +10,15 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: [
+      "versions/**",
+      ".next/**",
+      "node_modules/**",
+      "scratch/**",
+      "public/sw.js",
+    ],
+  },
   ...compat.extends("next/core-web-vitals"),
 ];
 

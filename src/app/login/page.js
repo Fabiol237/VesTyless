@@ -39,22 +39,53 @@ export default function Login() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
-      });
+      // Stratégie de relance transparente
+      let result = null;
+      let lastErr = null;
 
-      if (error) throw error;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          result = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password.trim(),
+          });
 
+          // Si Supabase retourne une AuthRetryableFetchError dans result.error
+          if (result?.error?.name === 'AuthRetryableFetchError' || result?.error?.message?.includes('Failed to fetch')) {
+            lastErr = result.error;
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+
+          // Succès ou erreur métier classique (ex: mauvais mot de passe)
+          break;
+        } catch (fetchErr) {
+          lastErr = fetchErr;
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+      }
+
+      const finalError = result?.error || lastErr;
+
+      if (finalError) {
+        const msg = finalError.message || String(finalError);
+        if (msg.includes('Email not confirmed')) {
+          setError("Veuillez vérifier votre email avant de vous connecter.");
+        } else if (msg.includes('Invalid login credentials')) {
+          setError("Email ou mot de passe incorrect.");
+        } else if (finalError.name === 'AuthRetryableFetchError' || msg.includes('Failed to fetch') || finalError.name === 'TypeError') {
+          setError("Problème de connexion au serveur. Veuillez vérifier votre connexion internet et rééditer.");
+        } else {
+          setError(msg);
+        }
+        return;
+      }
+
+      // Connexion réussie
       router.push('/dashboard');
     } catch (err) {
-      if (err.message.includes('Email not confirmed')) {
-        setError("Veuillez vérifier votre email avant de vous connecter.");
-      } else if (err.message.includes('Invalid login credentials')) {
-        setError("Email ou mot de passe incorrect.");
-      } else {
-        setError(err.message);
-      }
+      console.error('[Login Error]:', err);
+      setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }

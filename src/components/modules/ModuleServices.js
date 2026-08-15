@@ -13,6 +13,8 @@ const DEMO_SERVICES = [
   { id: 3, title: 'Audit Complet', description: 'Une analyse approfondie de votre situation avec remise d\'un rapport détaillé et de recommandations.', price: 'Sur devis', icon: '🔍', featured: false },
 ];
 
+import SectionHeader from '@/components/SectionHeader';
+
 export default function ModuleServices({
   config = {}, store = {}, theme = {},
   isMobile, storeId, preview, onNavigate, modules = []
@@ -66,17 +68,13 @@ export default function ModuleServices({
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         
         {/* En-tête Unifiée */}
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 999, background: `${p}12`, border: `1px solid ${p}25`, fontSize: 12, fontWeight: 800, color: p, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <Zap size={13} /> Nos Prestations
-          </div>
-          <h2 style={{ fontSize: isMobile ? 28 : 40, fontWeight: 900, color: fg, margin: '0 0 12px', letterSpacing: '-0.03em', fontFamily: 'var(--font, inherit)' }}>
-            {config.headline || 'Ce que nous proposons'}
-          </h2>
-          <p style={{ fontSize: 16, color: fg2, maxWidth: 540, margin: '0 auto', lineHeight: 1.6, fontFamily: 'var(--font, inherit)' }}>
-            {config.subheadline || 'Découvrez nos solutions adaptées à vos besoins avec une expertise reconnue.'}
-          </p>
-        </div>
+        <SectionHeader
+          badge="Nos Prestations"
+          icon={Zap}
+          title={config.headline || 'Ce que nous proposons'}
+          subtitle={config.subheadline || 'Découvrez nos solutions adaptées à vos besoins avec une expertise reconnue.'}
+          theme={theme}
+        />
 
         {/* Grille de services unifiée */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, alignItems: 'stretch' }}>

@@ -1,238 +1,266 @@
 /**
- * VeStyle — Templates de boutiques complètes
- * Chaque template est une config JSON complète
- * prête à être appliquée en 1 clic.
+ * VeStyle — Templates Sectoriels (Boutique / Artisan & Restaurant / Prestataire)
+ * Chaque secteur a ses templates visuels complets conformes à son activité.
+ * Architecture : secteur → templates → pages configurables & fonctionnalités supportées
  */
-import { createBlock } from './blockPatcher';
 
-export const STORE_TEMPLATES = [
-  // ══ MODE / FASHION ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTEUR 1 : BOUTIQUE 🛍️ (E-Commerce, Mode, Électronique, Alimentation)
+// ═══════════════════════════════════════════════════════════════════════════
+const BOUTIQUE_TEMPLATES = [
   {
-    id: 'fashion_luxe',
-    name: 'Mode Luxe',
-    emoji: '👗',
-    description: 'Boutique de prêt-à-porter haut de gamme avec hero élégant et galerie lookbook',
-    sector: 'fashion',
-    preview: 'linear-gradient(135deg,#1a1a2e,#c9a96e)',
-    tags: ['mode', 'luxe', 'fashion', 'vêtements'],
+    id: 'boutique_pro',
+    sector: 'boutique',
+    name: 'Grand Magasin Pro',
+    tagline: 'Vêtements, Électronique, Cosmétiques, Multi-rayons',
+    emoji: '🏢',
+    badge: 'Populaire',
+    badgeColor: '#E60000',
+    preview: 'linear-gradient(135deg, #111111 0%, #333333 40%, #E60000 100%)',
+    accentHex: '#E60000',
+    description: 'Design inspiré des grands distributeurs (Mega-menu, Hero Slider, Grille Produits). Panier WhatsApp rapide et navigation fluide.',
+    pages: ['Accueil', 'Catalogue', 'Promotions', 'À Propos', 'Panier'],
+    features: ['Mega-Menu Catégories', 'Hero Slider Animé', 'Grille de Catalogue', 'Panier WhatsApp'],
+    configurablePages: ['accueil', 'catalogue'],
+    heroVariant: 'slider',
+    supports: ['opening_hours', 'catalogue_grid', 'promo_banner'],
+    tags: ['E-Commerce', 'Vêtements', 'High-Tech', 'Alimentation'],
     theme: {
-      primaryColor: '#c9a96e',
-      secondaryColor: '#1a1a2e',
-      accentColor: '#e8d5b7',
-      fontFamily: 'Cormorant Garamond',
-      mode: 'dark',
-    },
-    blocks: [
-      {
-        type: 'hero',
-        config: {
-          title: 'L\'Art du Vêtement',
-          subtitle: 'Collection exclusive — Pièces uniques pour femmes et hommes d\'exception',
-          backgroundGradient: '135deg,#1a1a2e 0%,#2d2d44 100%',
-          titleGradient: '90deg,#c9a96e 0%,#e8d5b7 100%',
-          ctaText: 'Voir la collection',
-          ctaStyle: 'outline',
-          ctaColor: '#c9a96e',
-          height: 'screen',
-          titleSize: '6xl',
-          showScrollIndicator: true,
-        },
-      },
-      { type: 'statsBar', config: { stats: [{ value: '500+', label: 'Pièces exclusives', icon: '👗' }, { value: '4.9★', label: 'Note clients', icon: '⭐' }, { value: '10+', label: 'Années d\'expérience', icon: '🏆' }, { value: '100%', label: 'Satisfaction', icon: '✅' }], bgColor: '#c9a96e', textColor: '#1a1a2e', valueColor: '#1a1a2e', showDivider: true } },
-      { type: 'offeringGrid', config: { title: 'Nouvelle Collection', columns: '3', cardStyle: 'shadow', hoverEffect: 'lift', bgColor: '#f9f7f4' } },
-      { type: 'imageGallery', config: { title: 'Lookbook', layout: 'masonry', columns: '3', hoverEffect: 'zoom', openLightbox: true } },
-      { type: 'testimonialSlider', config: { title: 'Elles en parlent', layout: 'slider', cardStyle: 'glass', bgColor: '#1a1a2e', textColor: '#e8d5b7', starColor: '#c9a96e' } },
-      { type: 'socialLinks', config: { title: 'Suivez notre univers', style: 'rounded', size: 'lg', bgColor: '#1a1a2e' } },
-      { type: 'newsletterSignup', config: { title: 'Accès privilège', subtitle: 'Ventes privées, nouvelles collections en avant-première', incentive: '-15% sur votre première commande', bgColor: '#c9a96e', textColor: '#1a1a2e', buttonBg: '#1a1a2e', layout: 'centered' } },
-    ],
-  },
-
-  // ══ RESTAURANT ════════════════════════════════════════════════════════════
-  {
-    id: 'restaurant_chic',
-    name: 'Restaurant Chic',
-    emoji: '🍽️',
-    description: 'Restaurant gastronomique avec ambiance chaleureuse et menu en vedette',
-    sector: 'restaurant',
-    preview: 'linear-gradient(135deg,#7b2d00,#f4a261)',
-    tags: ['restaurant', 'food', 'gastronomie', 'café'],
-    theme: {
-      primaryColor: '#e76f51',
-      secondaryColor: '#fefae0',
-      accentColor: '#f4a261',
-      fontFamily: 'Playfair Display',
-      mode: 'light',
-    },
-    blocks: [
-      {
-        type: 'hero',
-        config: {
-          title: 'Une Expérience Culinaire Unique',
-          subtitle: 'Cuisine africaine & internationale — Fait maison, avec passion',
-          backgroundGradient: '135deg,#7b2d00 0%,#e76f51 100%',
-          titleColor: '#fefae0',
-          ctaText: 'Réserver une table',
-          ctaStyle: 'solid',
-          ctaBg: '#fefae0',
-          ctaColor: '#7b2d00',
-          height: 'screen',
-          badges: ['✅ Livraison disponible', '⭐ 4.9/5 sur Google', '🕐 Ouvert 7j/7'],
-          showBadges: true,
-        },
-      },
-      { type: 'richText', config: { title: 'Notre Histoire', content: '<p>Fondé avec passion, notre restaurant vous propose une immersion dans les saveurs authentiques d\'Afrique de l\'Ouest, revisitées avec une touche moderne. Chaque plat est préparé avec des ingrédients frais et locaux.</p>', bgColor: '#fefae0', titleColor: '#7b2d00', showDivider: true, dividerColor: '#e76f51' } },
-      { type: 'statsBar', config: { stats: [{ value: '50+', label: 'Plats au menu', icon: '🍲' }, { value: '1 200+', label: 'Clients satisfaits', icon: '😊' }, { value: '4.9★', label: 'Note Google', icon: '⭐' }, { value: '7j/7', label: 'Ouvert', icon: '🕐' }], bgColor: '#e76f51', textColor: '#fff' } },
-      { type: 'offeringGrid', config: { title: 'Notre Menu', columns: '3', cardStyle: 'shadow', bgColor: '#fefae0', imageRatio: 'landscape' } },
-      { type: 'imageGallery', config: { title: 'Notre Cuisine', layout: 'grid', columns: '3', hoverEffect: 'zoom' } },
-      { type: 'testimonialSlider', config: { title: 'Nos clients en parlent', layout: 'grid', cardStyle: 'card' } },
-      { type: 'faqAccordion', config: { title: 'Informations pratiques', items: [{ question: 'Quels sont vos horaires ?', answer: 'Nous sommes ouverts tous les jours de 11h à 23h.' }, { question: 'Faites-vous la livraison ?', answer: 'Oui, nous livrons dans un rayon de 10 km. Minimum de commande : 5 000 FCFA.' }, { question: 'Peut-on réserver ?', answer: 'Oui, via WhatsApp ou par téléphone.' }] } },
-      { type: 'contactForm', config: { title: 'Réservation & Contact', showWhatsApp: true, showPhone: true, showMap: false } },
-    ],
-  },
-
-  // ══ E-COMMERCE GÉNÉRAL ════════════════════════════════════════════════════
-  {
-    id: 'ecommerce_moderne',
-    name: 'E-Commerce Moderne',
-    emoji: '🛒',
-    description: 'Boutique en ligne moderne et complète avec toutes les sections essentielles',
-    sector: 'ecommerce',
-    preview: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-    tags: ['ecommerce', 'boutique', 'vente', 'produits'],
-    theme: {
-      primaryColor: '#6366f1',
-      secondaryColor: '#fafafa',
-      accentColor: '#8b5cf6',
+      primaryColor: '#E60000',
+      secondaryColor: '#111111',
+      accentColor: '#FFFFFF',
       fontFamily: 'Inter',
       mode: 'light',
     },
-    blocks: [
-      {
-        type: 'hero',
-        config: {
-          title: 'Bienvenue dans notre boutique',
-          subtitle: 'Découvrez notre sélection soigneusement choisie pour vous',
-          backgroundGradient: '135deg,#6366f1 0%,#8b5cf6 100%',
-          titleColor: '#ffffff',
-          ctaText: 'Découvrir nos produits',
-          height: 'tall',
-          animation: 'fade-up',
-        },
-      },
-      { type: 'statsBar', config: { stats: [{ value: '100+', label: 'Produits', icon: '📦' }, { value: '4.8★', label: 'Satisfaction', icon: '⭐' }, { value: '48h', label: 'Livraison', icon: '🚚' }, { value: '24/7', label: 'Support', icon: '💬' }] } },
-      { type: 'offeringGrid', config: { title: 'Nos Produits', columns: '4', showFilters: true, hoverEffect: 'lift' } },
-      { type: 'countdown', config: { title: '⚡ Offre Flash — Temps restant :', bgColor: '#6366f1' } },
-      { type: 'testimonialSlider', config: { title: 'Ce que disent nos clients', layout: 'grid', cardStyle: 'card' } },
-      { type: 'faqAccordion', config: { title: 'Questions fréquentes' } },
-      { type: 'newsletterSignup', config: { title: 'Offres exclusives', incentive: '-10% dès maintenant', bgColor: '#1e1b4b' } },
-      { type: 'socialLinks', config: { title: 'Suivez-nous', bgColor: '#f9fafb' } },
-      { type: 'contactForm', config: { title: 'Nous contacter', showWhatsApp: true } },
-    ],
+    modules: ['vitrine', 'catalogue', 'contact'],
   },
-
-  // ══ SERVICES / COACH ══════════════════════════════════════════════════════
   {
-    id: 'services_pro',
-    name: 'Services Pro',
+    id: 'boutique_luxe',
+    sector: 'boutique',
+    name: 'Maison Luxe & Minimal',
+    tagline: 'Parfumerie, Bijouterie, Haute Couture, Créations',
+    emoji: '✨',
+    badge: 'Luxe',
+    badgeColor: '#8C5E3C',
+    preview: 'linear-gradient(135deg, #FAF8F3 0%, #D4A574 50%, #1A1814 100%)',
+    accentHex: '#8C5E3C',
+    description: 'Esthétique épurée inspirée des grandes maisons de luxe. Typographie travaillée, volet produit immersif et expérience sensorielle.',
+    pages: ['Manifeste', 'Philosophie', 'Collection', 'Panier'],
+    features: ['Typographie Garamond', 'Fiche Produit Immersive', 'Manifeste de Marque', 'Panier Reçu Minimal'],
+    configurablePages: ['accueil', 'catalogue'],
+    heroVariant: 'minimal',
+    supports: ['opening_hours', 'catalogue_grid', 'promo_banner'],
+    tags: ['Luxe', 'Bijoux', 'Parfums', 'Artisanat d\'art'],
+    theme: {
+      primaryColor: '#8C5E3C',
+      secondaryColor: '#FAF8F3',
+      accentColor: '#1A1814',
+      fontFamily: 'Playfair Display',
+      mode: 'light',
+    },
+    modules: ['vitrine', 'catalogue', 'contact'],
+  },
+  {
+    id: 'boutique_market',
+    sector: 'boutique',
+    name: 'Flash Market & Alimentation',
+    tagline: 'Supermarché, Épicerie, Produits frais, Vente Flash',
+    emoji: '🍎',
+    badge: 'Express',
+    badgeColor: '#25D366',
+    preview: 'linear-gradient(135deg, #059669 0%, #10B981 50%, #064E3B 100%)',
+    accentHex: '#059669',
+    description: 'Optimisé pour les ventes rapides et achats impulsifs. Navigation par onglets rapides, badges de promo et commande instantanée.',
+    pages: ['Accueil', 'Rayons', 'Offres Flash', 'Panier'],
+    features: ['Rayons Filtrables', 'Badges Promo & Compte à rebours', 'Commande express WhatsApp'],
+    configurablePages: ['accueil', 'catalogue'],
+    heroVariant: 'search_hero',
+    supports: ['opening_hours', 'catalogue_grid', 'promo_banner'],
+    tags: ['Épicerie', 'Supermarché', 'Express', 'Vente Flash'],
+    theme: {
+      primaryColor: '#059669',
+      secondaryColor: '#FFFFFF',
+      accentColor: '#F59E0B',
+      fontFamily: 'Inter',
+      mode: 'light',
+    },
+    modules: ['vitrine', 'catalogue', 'contact'],
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTEUR 2 : ARTISAN & RESTAURANT 🏺 (Restauration, Fast-Food, Atelier, Beauté)
+// ═══════════════════════════════════════════════════════════════════════════
+const ARTISAN_TEMPLATES = [
+  {
+    id: 'artisan_resto_gourmet',
+    sector: 'artisan',
+    name: 'Bistro & Restaurant Gourmet',
+    tagline: 'Restaurant, Café, Bar, Boulangerie, Traiteur',
+    emoji: '🍷',
+    badge: 'Gastronomie',
+    badgeColor: '#C87D55',
+    preview: 'linear-gradient(135deg, #1C0A00 0%, #C87D55 50%, #FF6B35 100%)',
+    accentHex: '#C87D55',
+    description: 'Template complet pour métiers de la table. Présentation de la carte / menu, module de réservation de table en direct et horaires d\'ouverture.',
+    pages: ['Accueil', 'Carte & Menus', 'Réservation', 'Spécialités', 'Horaires & Accès'],
+    features: ['Carte du Chef par Catégorie', 'Réservation de Table WhatsApp', 'Statut Ouvert/Fermé Live', 'Spécialités du Jour'],
+    configurablePages: ['accueil', 'carte', 'reservation'],
+    heroVariant: 'banner_fixed',
+    supports: ['opening_hours', 'reservations', 'menu_card', 'promo_banner'],
+    tags: ['Restaurant', 'Bistro', 'Café', 'Gourmet'],
+    theme: {
+      primaryColor: '#C87D55',
+      secondaryColor: '#1C0A00',
+      accentColor: '#FF6B35',
+      fontFamily: 'Outfit',
+      mode: 'dark',
+    },
+    modules: ['vitrine', 'restaurant', 'contact'],
+  },
+  {
+    id: 'artisan_atelier_beaute',
+    sector: 'artisan',
+    name: 'Atelier & Salon de Beauté',
+    tagline: 'Salon de coiffure, Spa, Couturier, Artisanat d\'art',
+    emoji: '✂️',
+    badge: 'Savoir-Faire',
+    badgeColor: '#EC4899',
+    preview: 'linear-gradient(135deg, #831843 0%, #EC4899 50%, #FDF2F8 100%)',
+    accentHex: '#EC4899',
+    description: 'Sublime le savoir-faire artisanal et les soins sur-mesure. Prise de rendez-vous horodatée, galerie de créations et grille tarifaire.',
+    pages: ['Accueil', 'Soins & Prestations', 'Prise de RDV', 'Galerie Créations', 'Horaires'],
+    features: ['Prise de Rendez-vous Horodatée', 'Galerie Photos Réalisations', 'Forfaits & Tarifs', 'Accès & Contact'],
+    configurablePages: ['accueil', 'services', 'reservation'],
+    heroVariant: 'profile_hero',
+    supports: ['opening_hours', 'reservations', 'services', 'promo_banner'],
+    tags: ['Beauté', 'Coiffure', 'Atelier', 'Artisanat'],
+    theme: {
+      primaryColor: '#EC4899',
+      secondaryColor: '#FDF2F8',
+      accentColor: '#831843',
+      fontFamily: 'Inter',
+      mode: 'light',
+    },
+    modules: ['vitrine', 'services', 'contact'],
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTEUR 3 : PRESTATAIRE 💼 (Services Pro, Agence, Consulting, Freelance)
+// ═══════════════════════════════════════════════════════════════════════════
+const PRESTATAIRE_TEMPLATES = [
+  {
+    id: 'presta_agence_corporate',
+    sector: 'prestataire',
+    name: 'Agence & Services Pro',
+    tagline: 'Cabinet conseil, Agence web, Immobilière, Services B2B',
+    emoji: '🏢',
+    badge: 'Business Pro',
+    badgeColor: '#6366F1',
+    preview: 'linear-gradient(135deg, #0F0C29 0%, #302B63 50%, #24243E 100%)',
+    accentHex: '#6366F1',
+    description: 'Présentation institutionnelle haut de gamme. Formules de services, générateur de devis gratuit, prise de RDV et témoignages clients.',
+    pages: ['Accueil', 'Nos Services', 'Demander un Devis', 'Réalisations', 'Contact & Horaires'],
+    features: ['Formules Tarifaires & Packs', 'Formulaire Devis Express', 'Prise de RDV en Ligne', 'Plages Horaires d\'Intervention'],
+    configurablePages: ['accueil', 'services', 'devis'],
+    heroVariant: 'banner_fixed',
+    supports: ['opening_hours', 'services', 'devis', 'reservations', 'promo_banner'],
+    tags: ['Agence', 'Consulting', 'B2B', 'Immobilier'],
+    theme: {
+      primaryColor: '#6366F1',
+      secondaryColor: '#0F0C29',
+      accentColor: '#A855F7',
+      fontFamily: 'Inter',
+      mode: 'dark',
+    },
+    modules: ['vitrine', 'services', 'devis', 'contact'],
+  },
+  {
+    id: 'presta_freelance_portfolio',
+    sector: 'prestataire',
+    name: 'Freelance & Consultant',
+    tagline: 'Designer, Développeur, Coach, Photographe, Indépendant',
+    emoji: '🚀',
+    badge: 'Portfolio',
+    badgeColor: '#0052CC',
+    preview: 'linear-gradient(135deg, #003087 0%, #0052CC 50%, #F4F6F9 100%)',
+    accentHex: '#0052CC',
+    description: 'Mettez en valeur vos projets personnels et votre expertise. Formulaire de devis WhatsApp direct et réservation de consultation.',
+    pages: ['Accueil', 'Compétences & Services', 'Devis Rapide', 'Portfolio', 'Disponibilités'],
+    features: ['En-tête Profil Immersif', 'Demande de Devis Directe', 'Portfolio Projets', 'Horaires de Disponibilité'],
+    configurablePages: ['accueil', 'services', 'devis'],
+    heroVariant: 'profile_hero',
+    supports: ['opening_hours', 'services', 'devis', 'promo_banner'],
+    tags: ['Freelance', 'Design', 'Coach', 'Portfolio'],
+    theme: {
+      primaryColor: '#0052CC',
+      secondaryColor: '#F4F6F9',
+      accentColor: '#FF6B00',
+      fontFamily: 'Inter',
+      mode: 'light',
+    },
+    modules: ['vitrine', 'services', 'devis', 'contact'],
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTS & HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+export const STORE_TEMPLATES = [
+  ...BOUTIQUE_TEMPLATES,
+  ...ARTISAN_TEMPLATES,
+  ...PRESTATAIRE_TEMPLATES,
+];
+
+export const SECTOR_TEMPLATES = {
+  boutique:    BOUTIQUE_TEMPLATES,
+  artisan:     ARTISAN_TEMPLATES,
+  prestataire: PRESTATAIRE_TEMPLATES,
+};
+
+export const SECTORS = [
+  {
+    id: 'boutique',
+    label: 'Boutique (E-Commerce)',
+    emoji: '🛍️',
+    description: 'Vente de produits physiques, mode, électroménager ou alimentaire',
+    gradient: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+    color: '#25D366',
+    count: BOUTIQUE_TEMPLATES.length,
+  },
+  {
+    id: 'artisan',
+    label: 'Artisan & Restaurant',
+    emoji: '🏺',
+    description: 'Restaurants, cafés, salons de beauté, ateliers et savoir-faire',
+    gradient: 'linear-gradient(135deg, #C87D55 0%, #1C0A00 100%)',
+    color: '#C87D55',
+    count: ARTISAN_TEMPLATES.length,
+  },
+  {
+    id: 'prestataire',
+    label: 'Prestataire & Services',
     emoji: '💼',
-    description: 'Prestataire de services, coach ou consultant avec mise en valeur de l\'expertise',
-    sector: 'services',
-    preview: 'linear-gradient(135deg,#0ea5e9,#06b6d4)',
-    tags: ['services', 'coach', 'consultant', 'freelance'],
-    theme: {
-      primaryColor: '#0ea5e9',
-      secondaryColor: '#f0f9ff',
-      accentColor: '#06b6d4',
-      fontFamily: 'Space Grotesk',
-      mode: 'light',
-    },
-    blocks: [
-      {
-        type: 'hero',
-        config: {
-          title: 'Votre Expert à Votre Service',
-          subtitle: 'Solutions sur-mesure pour accompagner votre croissance professionnelle et personnelle',
-          backgroundGradient: '135deg,#0f172a 0%,#0ea5e9 100%',
-          titleGradient: '90deg,#38bdf8 0%,#e0f2fe 100%',
-          ctaText: 'Prendre rendez-vous',
-          height: 'screen',
-          animation: 'fade-up',
-        },
-      },
-      { type: 'statsBar', config: { stats: [{ value: '200+', label: 'Clients accompagnés', icon: '👥' }, { value: '5★', label: 'Note moyenne', icon: '⭐' }, { value: '8 ans', label: 'D\'expérience', icon: '🏆' }, { value: '98%', label: 'Satisfaction', icon: '✅' }], layout: 'cards', bgColor: '#f0f9ff' } },
-      { type: 'richText', config: { title: 'Mon Approche', content: '<p>Forte de plusieurs années d\'expérience, j\'accompagne mes clients avec une méthode éprouvée, centrée sur leurs besoins réels et leurs objectifs concrets. Ensemble, nous construisons le chemin vers votre succès.</p>', bgColor: '#fff', showDivider: true, dividerColor: '#0ea5e9' } },
-      { type: 'offeringGrid', config: { title: 'Mes Offres de Services', columns: '3', offerTypes: 'services', cardStyle: 'shadow' } },
-      { type: 'videoEmbed', config: { title: 'Découvrez ma méthode', bgColor: '#0f172a' } },
-      { type: 'testimonialSlider', config: { title: 'Ils m\'ont fait confiance', layout: 'slider', cardStyle: 'quote' } },
-      { type: 'faqAccordion', config: { title: 'Questions fréquentes' } },
-      { type: 'contactForm', config: { title: 'Prendre Rendez-Vous', subtitle: 'Première consultation offerte', showWhatsApp: true, showEmail: true } },
-    ],
-  },
-
-  // ══ BEAUTÉ / BIEN-ÊTRE ════════════════════════════════════════════════════
-  {
-    id: 'beaute_feminine',
-    name: 'Beauté & Bien-être',
-    emoji: '💄',
-    description: 'Institut de beauté, salon ou cosmétiques avec esthétique rose et élégante',
-    sector: 'beauty',
-    preview: 'linear-gradient(135deg,#ec4899,#f9a8d4)',
-    tags: ['beauté', 'cosmétique', 'salon', 'bien-être'],
-    theme: {
-      primaryColor: '#ec4899',
-      secondaryColor: '#fdf2f8',
-      accentColor: '#f472b6',
-      fontFamily: 'Raleway',
-      mode: 'light',
-    },
-    blocks: [
-      {
-        type: 'hero',
-        config: {
-          title: 'Révélez Votre Beauté Naturelle',
-          subtitle: 'Soins professionnels, produits cosmétiques premium et conseils personnalisés',
-          backgroundGradient: '135deg,#be185d 0%,#ec4899 50%,#f9a8d4 100%',
-          titleColor: '#fff',
-          ctaText: 'Prendre soin de moi',
-          ctaStyle: 'solid',
-          ctaBg: '#fff',
-          ctaColor: '#be185d',
-          height: 'screen',
-          badges: ['🌿 Produits naturels', '✨ Résultats garantis', '💆 Experts certifiés'],
-          showBadges: true,
-        },
-      },
-      { type: 'offeringGrid', config: { title: 'Nos Soins & Produits', columns: '3', hoverEffect: 'lift', bgColor: '#fdf2f8' } },
-      { type: 'imageGallery', config: { title: 'Nos Réalisations', layout: 'masonry', columns: '3' } },
-      { type: 'statsBar', config: { stats: [{ value: '500+', label: 'Clientes satisfaites', icon: '💄' }, { value: '100%', label: 'Produits naturels', icon: '🌿' }, { value: '4.9★', label: 'Note moyenne', icon: '⭐' }], bgColor: '#ec4899', textColor: '#fff' } },
-      { type: 'testimonialSlider', config: { title: 'Elles adorent !', bgColor: '#fdf2f8', cardStyle: 'card', starColor: '#ec4899' } },
-      { type: 'newsletterSignup', config: { title: '✨ Conseils beauté exclusifs', subtitle: 'Recevez nos astuces et offres réservées', buttonBg: '#ec4899', bgColor: '#be185d' } },
-      { type: 'socialLinks', config: { title: 'Inspirations beauté', bgColor: '#fdf2f8' } },
-      { type: 'contactForm', config: { title: 'Prendre Rendez-Vous', showWhatsApp: true } },
-    ],
+    description: 'Services professionnels, agences, conseil, devis et rendez-vous',
+    gradient: 'linear-gradient(135deg, #6366F1 0%, #0F0C29 100%)',
+    color: '#6366F1',
+    count: PRESTATAIRE_TEMPLATES.length,
   },
 ];
 
-// ─── Récupérer un template par ID ─────────────────────────────────────────────
-export function getTemplate(id) {
-  return STORE_TEMPLATES.find(t => t.id === id) || null;
+export function getTemplateById(id) {
+  return STORE_TEMPLATES.find(t => t.id === id) || STORE_TEMPLATES[0];
 }
 
-// ─── Convertir un template en modules Supabase ────────────────────────────────
-export function templateToModules(template, storeId) {
-  return template.blocks.map((block, index) => {
-    const id = `block_${block.type}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}_${index}`;
-    return {
-      id,
-      store_id:  storeId,
-      type:      block.type,
-      label:     block.type,
-      position:  index,
-      is_active: true,
-      config:    block.config || {},
-      block_version: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  });
+/** Retourne les templates d'un secteur */
+export function getTemplatesBySector(sectorId) {
+  return SECTOR_TEMPLATES[sectorId] || [];
 }
+
+/** Compatibilité legacy (apply-template route) */
+export function getTemplate(templateId) {
+  return getTemplateById(templateId);
+}
+
+export default STORE_TEMPLATES;
