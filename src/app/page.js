@@ -208,9 +208,16 @@ export default function Home() {
     loadHomeData();
   }, []);
 
-  // ── Audio signature Vestyle ──
+  // ── Audio signature Vestyle & Theme-Color Barre de Statut Mobile ──
   useEffect(() => {
     import('@/lib/haptic').then(({ sayVestyle }) => sayVestyle?.());
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = '#1e3a8a';
   }, []);
 
   const handleCodeSearch = async (e) => {
@@ -275,7 +282,7 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════════════════
             HERO BANNER BLEU COSMIQUE (COUVRANCE TOTALE SOUS LE NAVBAR)
         ════════════════════════════════════════════════════════════════════ */}
-        <section className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-16 sm:-mt-24 rounded-b-[32px] sm:rounded-b-[44px] relative overflow-hidden p-6 sm:p-12 pt-28 sm:pt-36 pb-8 sm:pb-12 text-white shadow-2xl shadow-blue-600/25"
+        <section className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-20 sm:-mt-28 rounded-b-[36px] sm:rounded-b-[52px] relative overflow-hidden p-6 sm:p-12 pt-32 sm:pt-40 pb-10 sm:pb-14 text-white shadow-2xl shadow-blue-900/30 border-b border-blue-400/20"
           style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #4f46e5 100%)' }}>
 
 
