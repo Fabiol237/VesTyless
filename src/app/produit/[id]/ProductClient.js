@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackNavigation from '@/components/BackNavigation';
+import MoqProgressGauge from '@/components/MoqProgressGauge';
 import Link from 'next/link';
 import { ShoppingCart, ArrowLeft, Store, MapPin, CheckCircle2, Package, Loader2, Zap, Shield, ChevronRight } from 'lucide-react';
 
@@ -192,12 +193,17 @@ export default function ProductClient({ productId, initialProduct, initialVarian
               </div>
             )}
 
-            {product.description && (
-              <div className="bg-white/70 rounded-2xl p-4 border border-neutral-100 mb-6 shadow-sm">
-                <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">À propos</p>
-                <p className="text-xs text-neutral-700 leading-relaxed line-clamp-3">{product.description}</p>
-              </div>
-            )}
+            {/* Jauge Tarif Grossiste MOQ Made-in-China */}
+            <div className="mb-6">
+              <MoqProgressGauge
+                currentQty={qty}
+                moqTier1={5}
+                moqTier2={20}
+                discountTier1={15}
+                discountTier2={30}
+                basePrice={Number(product.price)}
+              />
+            </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">

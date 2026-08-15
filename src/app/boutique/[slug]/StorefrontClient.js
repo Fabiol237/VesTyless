@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import StoreChatWidget from '@/components/StoreChatWidget';
+import DownloadCatalogButton from '@/components/DownloadCatalogButton';
 
 // ─── Système de Templates (nouveau) ─────────────────────────────────────────
 import { getTemplate, detectTemplate } from '../../../templates';
@@ -230,6 +231,11 @@ export default function StorefrontClient({ params }) {
 
       {/* ── TEMPLATE PRINCIPAL ── */}
       <TemplateComponent {...templateProps} />
+
+      {/* ── BOUTON EXPORT CATALOGUE PDF MARCHE ── */}
+      <div className="fixed bottom-6 left-6 z-[9999]">
+        <DownloadCatalogButton store={store} products={products} variant="compact" />
+      </div>
 
       {/* ── BOUTON PANIER FLOTTANT ── */}
       {cartCount > 0 && (

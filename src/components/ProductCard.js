@@ -5,11 +5,13 @@ import { ShoppingBag, Check, MapPin, Star, Zap } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { triggerFeedback } from '@/lib/haptic';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import ProductVideoModal from '@/components/ProductVideoModal';
 
 const ProductCard = memo(({ item, idx, trackProductView, formatDistance, locationFlash = false, onLocationClick }) => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [added, setAdded] = useState(false);
   const [badgeVisible, setBadgeVisible] = useState(true);
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const { addToCart } = useCart();
   const { prefetchProduct, prefetchStore } = usePrefetch();
 
@@ -141,9 +143,30 @@ const ProductCard = memo(({ item, idx, trackProductView, formatDistance, locatio
           )}
         </div>
 
+        {/* Badge 🎥 Vidéo 15s */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowVideoModal(true);
+          }}
+          className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-1 bg-slate-900/80 hover:bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-lg transition-all active:scale-95 group/vid border border-white/20"
+          title="Voir la démo en vidéo 15s"
+        >
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          🎥 15s
+        </button>
+
         {/* Dynamic gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </Link>
+
+      {/* Modal Vidéo Shorts 15s */}
+      <ProductVideoModal
+        product={item}
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+      />
 
       {/* ── INFOS & CTA PRODUIT ────────────────────────────────────────────────── */}
       <div className="p-3.5 sm:p-4 flex flex-col flex-1 bg-white justify-between space-y-3">
