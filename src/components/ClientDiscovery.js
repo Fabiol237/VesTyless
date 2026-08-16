@@ -96,7 +96,10 @@ export default function ClientDiscovery({
   externalSearchQuery = null,
   onExternalSearchChange = null,
   overrideProducts = null,
-  onClearVisualSearch = null
+  onClearVisualSearch = null,
+  hideSearchBar = false,
+  externalCategory = null,
+  onExternalCategoryChange = null,
 }) {
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
@@ -108,7 +111,14 @@ export default function ClientDiscovery({
   const [internalSearchQuery, setInternalSearchQuery] = useState(initialSearchQuery);
   const searchQuery = externalSearchQuery !== null ? externalSearchQuery : internalSearchQuery;
   const setSearchQuery = onExternalSearchChange || setInternalSearchQuery;
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [internalActiveCategory, setInternalActiveCategory] = useState('all');
+  const activeCategory = externalCategory !== null ? externalCategory : internalActiveCategory;
+  const setActiveCategory = useCallback((catName) => {
+    setInternalActiveCategory(catName);
+    if (onExternalCategoryChange) {
+      onExternalCategoryChange(catName);
+    }
+  }, [onExternalCategoryChange]);
   const [sortBy, setSortBy] = useState(initialProximity ? 'distance' : 'boost'); // 'boost', 'distance', 'newest', 'price_asc', 'price_desc'
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -126,6 +136,69 @@ export default function ClientDiscovery({
     return [...new Map(items.map(i => [normalizeStr(i.label), i])).values()];
   }, [products, stores, categories]);
   
+  const CATEGORY_EMOJIS = {
+    'all': '✨',
+    'mode': '👗',
+    'beauté': '💄',
+    'vetement': '👔',
+    'chaussure': '👟',
+    'alimentation': '🛒',
+    'supermarché': '🛒',
+    'électronique': '📱',
+    'high-tech': '📱',
+    'maison': '🏠',
+    'électroménager': '🔌',
+    'santé': '💖',
+    'bien-être': '🌿',
+    'service': '⭐',
+    'loisir': '🎮',
+    'divers': '📦',
+  };
+
+  const getEmojiForCategory = (catName) => {
+    if (!catName || catName === 'all') return '✨';
+    const lower = String(catName).toLowerCase();
+    for (const [key, emoji] of Object.entries(CATEGORY_EMOJIS)) {
+      if (lower.includes(key)) return emoji;
+    }
+    return '🏷️';
+  };
+
+  // Liste dynamique des VRAIES catégories présentes en base de données et dans les produits
+  const realCategoriesList = useMemo(() => {
+    const map = new Map();
+    map.set('all', { name: 'all', label: 'Toutes les catégories', emoji: '✨' });
+
+    // 1. Catégories réelles provenant de la BD Supabase
+    (categories || []).forEach(c => {
+      if (c && c.name) {
+        const trimmed = c.name.trim();
+        map.set(trimmed.toLowerCase(), {
+          name: trimmed,
+          label: trimmed,
+          emoji: c.icon || getEmojiForCategory(trimmed)
+        });
+      }
+    });
+
+    // 2. Catégories réelles rattachées aux produits enregistrés
+    (products || []).forEach(p => {
+      const catName = (p.category || p.global_categories?.name || p.category_name || '').trim();
+      if (catName && catName !== 'Autre') {
+        const key = catName.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            name: catName,
+            label: catName,
+            emoji: getEmojiForCategory(catName)
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [categories, products]);
+
   const { formatDistance, getDistanceKm, requestLocation, userLocation } = useDistance();
   
   // --- SMART RANKING (Simulation: Personalization) ---
@@ -280,8 +353,23 @@ export default function ClientDiscovery({
       result = scoredProducts.map(item => item.product);
     }
 
-    if (activeCategory !== 'all') {
-      result = result.filter(p => p.category === activeCategory);
+    if (activeCategory && activeCategory !== 'all') {
+      const targetCat = String(activeCategory).trim().toLowerCase();
+      const targetNorm = targetCat.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      
+      result = result.filter(p => {
+        const pCat = String(p.category || p.global_categories?.name || p.category_name || '').trim().toLowerCase();
+        const pCatId = String(p.global_category_id || p.category_id || '').trim().toLowerCase();
+        
+        if (!pCat && !pCatId) return false;
+        if (pCat === targetCat || pCatId === targetCat) return true;
+        if (pCat && targetCat && (pCat.includes(targetCat) || targetCat.includes(pCat))) return true;
+        
+        const pNorm = pCat.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (pNorm && targetNorm && (pNorm === targetNorm || pNorm.includes(targetNorm) || targetNorm.includes(pNorm))) return true;
+        
+        return false;
+      });
     }
 
     // Apply sorting
@@ -386,9 +474,9 @@ export default function ClientDiscovery({
       )}
 
       {/* ═══════════════════════════════════════════
-          1. WHATSAPP STYLE SEARCH BAR - Hide if external search is handled by parent (e.g. Home Page)
+          1. WHATSAPP STYLE SEARCH BAR - Masquée si la page parente gère déjà la recherche
       ════════════════════════════════════════════ */}
-      {!externalSearchQuery && (
+      {!hideSearchBar && (
         <section className="sticky top-[70px] z-40 transition-all duration-500 py-4 bg-slate-950/20 backdrop-blur-xl rounded-3xl px-2">
           <div className="relative group">
             {/* Soft pulsing emerald/teal background shadow */}
@@ -513,7 +601,7 @@ export default function ClientDiscovery({
       {/* ═══════════════════════════════════════════
           AIRBNB STYLE CATEGORY RIBBON (MOBILE)
       ════════════════════════════════════════════ */}
-      {!sq && !showMap && categories.length > 0 && !overrideProducts && (
+      {!sq && !showMap && categories.length > 0 && !overrideProducts && externalCategory === null && (
         <div className="lg:hidden -mx-4 px-4 bg-slate-950/90 backdrop-blur-xl sticky top-[70px] z-30 shadow-[0_4px_30px_rgba(0,0,0,0.3)] border-b border-slate-800/80 pt-3 pb-2 animate-fade-in overflow-hidden">
           <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory relative z-10 px-2">
             {[{name: 'all', icon: 'Globe'}, ...categories].map(cat => {
@@ -639,11 +727,39 @@ export default function ClientDiscovery({
             </section>
           )}
 
+          {/* ═══════════════════════════════════════════
+              4. BARRE DE CATÉGORIES (PLACÉE EN BAS DES BOUTIQUES)
+          ════════════════════════════════════════════ */}
+          {!overrideProducts && (
+            <div className="sticky top-[60px] z-30 py-3.5 bg-white/95 backdrop-blur-md border-y border-slate-200/80 -mx-4 px-4 sm:mx-0 sm:px-4 sm:rounded-2xl shadow-sm mb-6">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                {realCategoriesList.map(cat => {
+                  const isActive = activeCategory === cat.name || (activeCategory === 'all' && cat.name === 'all') || (activeCategory?.toLowerCase() === cat.name.toLowerCase());
+                  return (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => { setActiveCategory(cat.name); }}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 shrink-0 border ${
+                        isActive
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/25 scale-105'
+                          : 'bg-slate-50 text-slate-700 border-slate-200/90 hover:bg-slate-100 hover:text-blue-600'
+                      }`}
+                    >
+                      <span className="text-sm">{cat.emoji}</span>
+                      <span className="whitespace-nowrap font-extrabold">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Feed Layout: Sidebar Categories + Product Grid */}
           <section className="animate-fade-in flex flex-col lg:flex-row gap-8">
             
             {/* Desktop Sidebar */}
-            {!overrideProducts && (
+            {!overrideProducts && externalCategory === null && (
               <div className="hidden lg:block w-72 flex-shrink-0">
                 <div className="sticky top-[160px] bg-slate-950/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-800/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                   {/* Decorative ambient background light */}

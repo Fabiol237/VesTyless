@@ -47,8 +47,23 @@ export default function PwaRegistry() {
         return;
       }
 
+      // Désactiver le Service Worker en mode DEV (localhost) pour préserver HMR & Fast Refresh
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) {
+            await r.unregister();
+          }
+          console.log('[Vestyle PWA] Service Worker nettoyé en mode DEV.');
+        } catch { /* silencieux */ }
+        return;
+      }
+
       try {
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        let reg = await navigator.serviceWorker.getRegistration('/');
+        if (!reg) {
+          reg = await navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' });
+        }
         console.log('[Vestyle PWA] Service Worker enregistré:', reg.scope);
 
         // --- FORCE UPDATE LOGIC ---

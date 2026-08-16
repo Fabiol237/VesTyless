@@ -190,18 +190,24 @@ export default function TemplateBoutique({ store, themeVars, storeId, currency =
 
           <div className="ae-hscroll-wrap">
             <h2 className="ae-hscroll-title">Produits phares</h2>
-            <div className="ae-hscroll">
-              {(products.length > 0 ? products : Array.from({length: 4}, (_, i) => ({id: `ph-${i}`}))).map((prod, i) => (
-                <div key={`ae-hcard-${prod.id ?? 'x'}-${i}`} className="ae-hcard" onClick={() => prod.id && setSelectedProduct(prod)}>
-                  <div className="ae-hcard-img">
-                    {prod.image_url ? <img src={prod.image_url} alt={prod.name} /> : <span>Image</span>}
+            {products.length === 0 ? (
+              <div style={{ padding: '40px 40px', color: fg2, fontSize: '0.9rem', fontStyle: 'italic' }}>
+                Aucun produit dans la collection pour le moment.
+              </div>
+            ) : (
+              <div className="ae-hscroll">
+                {products.map((prod, i) => (
+                  <div key={`ae-hcard-${prod.id ?? 'x'}-${i}`} className="ae-hcard" onClick={() => setSelectedProduct(prod)}>
+                    <div className="ae-hcard-img">
+                      {prod.image_url ? <img src={prod.image_url} alt={prod.name} /> : <div style={{ fontSize: '2rem', opacity: 0.3 }}>✦</div>}
+                    </div>
+                    <div className="ae-hcard-cat">{prod.category || 'Collection'}</div>
+                    <h3 className="ae-hcard-name">{prod.name || 'Produit'}</h3>
+                    <div className="ae-hcard-price">{prod.price ? fmt(prod.price) : '—'}</div>
                   </div>
-                  <div className="ae-hcard-cat">{prod.category || 'Catégorie'}</div>
-                  <h3 className="ae-hcard-name">{prod.name || 'Nom du produit'}</h3>
-                  <div className="ae-hcard-price">{prod.price ? fmt(prod.price) : '—'}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}

@@ -45,7 +45,7 @@ export default function TemplateResto({ store, themeVars, storeId, currency = 'F
     };
   }, [config.opening_hours]);
 
-  // Menus / Plats (combine store products or custom layout menu items)
+  // Menus / Plats (utilisent uniquement les vrais produits Supabase)
   const menuItems = useMemo(() => {
     if (productsProp && productsProp.length > 0) {
       return productsProp.map(p => ({
@@ -57,14 +57,7 @@ export default function TemplateResto({ store, themeVars, storeId, currency = 'F
         image_url: p.image_url,
       }));
     }
-    // Plats démonstration par défaut
-    return [
-      { id: '1', name: 'Filet de Capitaine Braisé Sauce Créole', category: 'Plats Principaux', description: 'Servi avec frites de plantain mûr et légumes croquants du marché.', price: 8500 },
-      { id: '2', name: 'Velouté de Potiron & Truffe Fraîche', category: 'Entrées', description: 'Soupe onctueuse parfumée au thym sauvage et éclats de noisettes.', price: 4500 },
-      { id: '3', name: 'Poulet Yassa Traditionnel du Chef', category: 'Plats Principaux', description: 'Mariné au citron vert, oignons confits et piment doux de pays.', price: 6500 },
-      { id: '4', name: 'Tarte Fine aux Mangues Rôties', category: 'Desserts', description: 'Pâte feuilletée croustillante, glace vanille gousse artisanale.', price: 3500 },
-      { id: '5', name: 'Cocktail Signature Hibiscus Mint', category: 'Boissons', description: 'Bissap fraîcheur, menthe pilée, eau pétillante et zeste de lime.', price: 2000 },
-    ];
+    return [];
   }, [productsProp]);
 
   const categories = useMemo(() => {

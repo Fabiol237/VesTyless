@@ -12,12 +12,14 @@ export async function GET(request) {
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const nowIso = new Date().toISOString();
 
-    // 1. Remettre les anciens produits en promo à leur prix normal
+    // Nettoyage uniquement des promos marchands réellement expirées (si flash_sale_end < date actuelle)
     const { data: expired } = await supabase
       .from('products')
       .select('id, original_price')
-      .not('flash_sale_end', 'is', null);
+      .not('flash_sale_end', 'is', null)
+      .lt('flash_sale_end', nowIso);
 
     if (expired && expired.length > 0) {
       for (const p of expired) {
@@ -25,43 +27,14 @@ export async function GET(request) {
           await supabase.from('products').update({ 
             price: p.original_price, 
             original_price: null, 
-            flash_sale_end: null 
+            flash_sale_end: null,
+            is_promo: false
           }).eq('id', p.id);
         }
       }
     }
-
-    // 2. Choisir 3 produits aléatoires pour la promo du jour
-    // On prend des produits actifs, pas encore en promo, et avec un prix > 1000
-    const { data: randomProducts } = await supabase
-      .from('products')
-      .select('id, price')
-      .eq('is_active', true)
-      .is('flash_sale_end', null)
-      .gte('price', 1000)
-      .limit(20);
-
-    if (randomProducts && randomProducts.length > 0) {
-      // Mélanger et prendre 3
-      const shuffled = randomProducts.sort(() => 0.5 - Math.random());
-      const selected = shuffled.slice(0, 3);
-      
-      const tomorrow = new Date();
-      tomorrow.setHours(tomorrow.getHours() + 24);
-
-      for (const p of selected) {
-        const discountedPrice = Math.floor(p.price * 0.85); // -15%
-        await supabase.from('products').update({
-          original_price: p.price,
-          price: discountedPrice,
-          flash_sale_end: tomorrow.toISOString()
-        }).eq('id', p.id);
-      }
-      
-      return NextResponse.json({ success: true, selected: selected.length });
-    }
     
-    return NextResponse.json({ success: true, message: 'No eligible products' });
+    return NextResponse.json({ success: true, expiredCleaned: expired?.length || 0 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -62,14 +62,47 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCart([]);
 
-  const total = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+  // Calcul du prix unitaire selon la quantité et les paliers MOQ
+  const getItemUnitPrice = (item) => {
+    let price = Number(item.price) || 0;
+    const qty = item.quantity || 1;
+
+    const moq1 = Number(item.moq_tier1);
+    const disc1 = Number(item.moq_discount1);
+    const moq2 = Number(item.moq_tier2);
+    const disc2 = Number(item.moq_discount2);
+
+    if (moq2 > 0 && disc2 > 0 && qty >= moq2) {
+      price = Math.round(price * (1 - disc2 / 100));
+    } else if (moq1 > 0 && disc1 > 0 && qty >= moq1) {
+      price = Math.round(price * (1 - disc1 / 100));
+    }
+
+    return price;
+  };
+
+  const total = cart.reduce((sum, item) => sum + (getItemUnitPrice(item) * item.quantity), 0);
   const getCartTotal = () => total;
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, total, updateQuantity, getCartTotal }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, total, updateQuantity, getCartTotal, getItemUnitPrice }}>
       {children}
     </CartContext.Provider>
   );
 }
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+  const ctx = useContext(CartContext);
+  // Fallback safe si le CartProvider n'est pas encore monté (SSR / hydratation)
+  if (!ctx) return {
+    cart: [],
+    addToCart: () => {},
+    removeFromCart: () => {},
+    clearCart: () => {},
+    updateQuantity: () => {},
+    getCartTotal: () => 0,
+    getItemUnitPrice: () => 0,
+    total: 0,
+  };
+  return ctx;
+};

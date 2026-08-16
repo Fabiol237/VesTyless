@@ -32,11 +32,13 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
   const [globalCategoryId, setGlobalCategoryId] = useState(productToEdit?.global_category_id || '');
   const [showCatDropdown, setShowCatDropdown] = useState(false);
   const [imageUrl, setImageUrl] = useState(productToEdit?.image_url || '');
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [statusText, setStatusText] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [originalPrice, setOriginalPrice] = useState(productToEdit?.original_price || '');
+  const [isPromo, setIsPromo] = useState(productToEdit?.is_promo || false);
+  const [videoUrl, setVideoUrl] = useState(productToEdit?.video_url || '');
+  const [moqTier1, setMoqTier1] = useState(productToEdit?.moq_tier1 || '');
+  const [moqDiscount1, setMoqDiscount1] = useState(productToEdit?.moq_discount1 || '');
+  const [moqTier2, setMoqTier2] = useState(productToEdit?.moq_tier2 || '');
+  const [moqDiscount2, setMoqDiscount2] = useState(productToEdit?.moq_discount2 || '');
   const catRef = useRef(null);
 
   const isEdit = !!productToEdit;
@@ -102,14 +104,24 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
       return;
     }
 
+    const parsedOriginalPrice = originalPrice ? parseFloat(originalPrice) : null;
+    const isPromoActive = isPromo || (parsedOriginalPrice && parsedOriginalPrice > parsedPrice);
+
     const productData = {
       store_id: storeId,
       global_category_id: globalCategoryId,
       name: name.trim(),
       description: description?.trim() || '',
       price: parsedPrice,
+      original_price: parsedOriginalPrice,
+      is_promo: !!isPromoActive,
       stock_quantity: parsedStock,
       image_url: imageUrl || null,
+      video_url: videoUrl?.trim() || null,
+      moq_tier1: moqTier1 ? parseInt(moqTier1) : null,
+      moq_discount1: moqDiscount1 ? parseFloat(moqDiscount1) : null,
+      moq_tier2: moqTier2 ? parseInt(moqTier2) : null,
+      moq_discount2: moqDiscount2 ? parseFloat(moqDiscount2) : null,
       is_active: true
     };
 
@@ -256,16 +268,58 @@ export default function AddProductModal({ onClose, categories = [], storeId, onS
               <input type="text" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={name} onChange={e => setName(e.target.value)}/>
            </div>
 
-           <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-black text-gray-700 uppercase">Prix *</label>
-                <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={price} onChange={e => setPrice(e.target.value)}/>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+               <div className="space-y-2">
+                 <label className="text-sm font-black text-gray-700 uppercase">Prix de vente (FCFA) *</label>
+                 <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold text-slate-900" value={price} onChange={e => setPrice(e.target.value)} placeholder="ex: 15000"/>
+               </div>
+               <div className="space-y-2">
+                 <label className="text-sm font-black text-gray-700 uppercase">Prix avant réduction (FCFA)</label>
+                 <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold text-slate-500" value={originalPrice} onChange={e => setOriginalPrice(e.target.value)} placeholder="ex: 20000 (Prix barré)"/>
+               </div>
+               <div className="space-y-2">
+                 <label className="text-sm font-black text-gray-700 uppercase">Stock disponible</label>
+                 <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={stock} onChange={e => setStock(e.target.value)} placeholder="ex: 10"/>
+               </div>
+            </div>
+
+            {/* 🏷️ TOGGLE PROMOTION / VENTE FLASH */}
+            <div className="flex items-center justify-between p-4 bg-orange-50/70 border border-orange-200 rounded-2xl">
+              <div>
+                <p className="font-extrabold text-sm text-slate-900">🏷️ Marquer comme Article en Promotion</p>
+                <p className="text-xs text-slate-500 font-medium">Met en avant cet article dans la section Offres & Prix Réduits de la page d'accueil.</p>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-black text-gray-700 uppercase">Stock</label>
-                <input type="number" className="w-full bg-gray-50 border-2 rounded-2xl px-5 py-4 font-bold" value={stock} onChange={e => setStock(e.target.value)}/>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={isPromo} onChange={e => setIsPromo(e.target.checked)} className="sr-only peer"/>
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+              </label>
+            </div>
+
+            {/* 📦 TARIFS GROSSISTES (MOQ - Minimum Order Quantity) */}
+            <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="font-extrabold text-sm text-blue-900">📦 Tarifs Grossistes Dégressifs (Made-in-China)</p>
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Optionnel</span>
               </div>
-           </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 uppercase">Seuil 1 (Qté)</label>
+                  <input type="number" className="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold" value={moqTier1} onChange={e => setMoqTier1(e.target.value)} placeholder="ex: 5"/>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 uppercase">Remise 1 (%)</label>
+                  <input type="number" className="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold text-emerald-600" value={moqDiscount1} onChange={e => setMoqDiscount1(e.target.value)} placeholder="ex: 10%"/>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 uppercase">Seuil 2 (Qté)</label>
+                  <input type="number" className="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold" value={moqTier2} onChange={e => setMoqTier2(e.target.value)} placeholder="ex: 20"/>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 uppercase">Remise 2 (%)</label>
+                  <input type="number" className="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold text-emerald-600" value={moqDiscount2} onChange={e => setMoqDiscount2(e.target.value)} placeholder="ex: 20%"/>
+                </div>
+              </div>
+            </div>
 
            <div className="space-y-2">
               <label className="text-sm font-black text-gray-700 uppercase">Description</label>

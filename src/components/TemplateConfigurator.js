@@ -207,7 +207,7 @@ export default function TemplateConfigurator({
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{tmpl.description}</p>
 
                 <div className="flex flex-wrap gap-1.5 mt-3">
-                  {tmpl.features.slice(0, 3).map((feat, idx) => (
+                  {(tmpl.features || tmpl.specifications?.configurables?.map(c => c.label) || []).slice(0, 3).map((feat, idx) => (
                     <span key={idx} className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px] font-bold">
                       {feat}
                     </span>

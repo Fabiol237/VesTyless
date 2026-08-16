@@ -22,9 +22,8 @@ export default function TemplateBoutiquePro({ store, themeVars, storeId, currenc
     if (productsProp?.length) setProducts(productsProp);
   }, [productsProp]);
 
-  // Extract unique categories
+  // Extract unique categories from real products
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
-  if (categories.length === 0) categories.push('Nouveautés', 'Électronique', 'Mode', 'Maison');
   
   const getProductsByCategory = (cat) => products.filter(p => p.category === cat).slice(0, 4);
 

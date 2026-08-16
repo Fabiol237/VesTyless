@@ -161,11 +161,18 @@ export function useServiceWorkerRegistration() {
 
     const registerSW = async () => {
       setSwState('registering');
+      if (process.env.NODE_ENV === 'development') {
+        setSwState('active');
+        return;
+      }
       try {
-        const reg = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/',
-          updateViaCache: 'none',
-        });
+        let reg = await navigator.serviceWorker.getRegistration('/');
+        if (!reg) {
+          reg = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/',
+            updateViaCache: 'none',
+          });
+        }
 
         setSwState('active');
 
@@ -182,12 +189,21 @@ export function useServiceWorkerRegistration() {
           });
         });
 
-        // Vérifier les mises à jour toutes les 30 minutes
-        setInterval(() => reg.update(), 30 * 60 * 1000);
+        // Vérifier les mises à jour toutes les 30 minutes (avec interception d'erreurs)
+        setInterval(() => {
+          reg.update().catch(e => {
+            if (e?.name !== 'AbortError') console.warn('[SW] Update failed:', e?.message);
+          });
+        }, 30 * 60 * 1000);
 
       } catch (err) {
-        console.error('[SW] Erreur d\'enregistrement:', err);
-        setSwState('error');
+        if (err?.name === 'AbortError') {
+          console.warn('[SW] Inscription annulée silencieusement par le navigateur (AbortError).');
+          setSwState('active');
+        } else {
+          console.error('[SW] Erreur d\'enregistrement:', err);
+          setSwState('error');
+        }
       }
     };
 

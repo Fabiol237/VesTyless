@@ -52,7 +52,7 @@ function FieldHint({ error, hint }) {
 }
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart, getCartTotal } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, getCartTotal, getItemUnitPrice } = useCart();
   const { session } = useAuth();
   const router = useRouter();
 
@@ -339,7 +339,7 @@ export default function CartPage() {
                   return acc;
                 }, {})
               ).map(([storeId, storeData]) => {
-                const storeTotal = storeData.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+                const storeTotal = storeData.items.reduce((sum, i) => sum + (getItemUnitPrice ? getItemUnitPrice(i) : i.price) * i.quantity, 0);
                 
                 const sendWhatsApp = async () => {
                   setTouched({ name: true, phone: true, address: true });
@@ -356,6 +356,7 @@ export default function CartPage() {
                     let message = `*COMMANDE VESTYLE*\n\n`;
                     message += `Bonjour *${storeInfo?.name || 'Boutique'}*, je souhaite commander :\n\n`;
                     storeData.items.forEach(item => {
+                      const unitP = getItemUnitPrice ? getItemUnitPrice(item) : item.price;
                       let itemText = `• ${item.quantity}x ${item.name}`;
                       if (item.selectedVariants && Object.keys(item.selectedVariants).length > 0) {
                         const variantsStr = Object.entries(item.selectedVariants)
@@ -363,7 +364,7 @@ export default function CartPage() {
                           .join(', ');
                         itemText += ` (${variantsStr})`;
                       }
-                      itemText += ` — ${(item.price * item.quantity).toLocaleString()} F\n`;
+                      itemText += ` — ${(unitP * item.quantity).toLocaleString()} FCFA\n`;
                       message += itemText;
                     });
                     message += `\n*TOTAL : ${storeTotal.toLocaleString()} FCFA*\n\n`;
@@ -428,7 +429,22 @@ export default function CartPage() {
                                 ))}
                               </div>
                             )}
-                            <p className="text-wa-teal font-black text-sm mt-1">{(item.price * item.quantity).toLocaleString()} FCFA</p>
+                            {(() => {
+                              const unitP = getItemUnitPrice ? getItemUnitPrice(item) : item.price;
+                              const isDiscounted = unitP < item.price;
+                              return (
+                                <div className="mt-1">
+                                  <p className="text-wa-teal font-black text-sm">
+                                    {(unitP * item.quantity).toLocaleString()} FCFA
+                                  </p>
+                                  {isDiscounted && (
+                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-black inline-block mt-0.5">
+                                      📦 Tarif Grossiste Appliqué ({unitP.toLocaleString()} F / uté)
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                           <div className="flex flex-col items-end gap-3 flex-shrink-0">
                             <button onClick={() => removeFromCart(item.id)} className="w-7 h-7 flex items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-colors">

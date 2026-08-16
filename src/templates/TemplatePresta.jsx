@@ -21,7 +21,7 @@ export default function TemplatePresta({ store, themeVars, storeId, currency = '
   const wa = phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;
 
-  // Liste des services (depuis productsProp si existant ou services par défaut)
+  // Liste des services (utilisent uniquement les vraies prestations Supabase)
   const servicesList = useMemo(() => {
     if (productsProp && productsProp.length > 0) {
       return productsProp.map(p => ({
@@ -33,32 +33,7 @@ export default function TemplatePresta({ store, themeVars, storeId, currency = '
         features: ['Diagnostic personnalisé', 'Suivi dédié 7j/7', 'Rapport d\'intervention complet']
       }));
     }
-    return [
-      {
-        id: 's1',
-        title: 'Audit & Diagnostic Stratégique',
-        badge: 'Recommandé',
-        description: 'Analyse approfondie de votre structure, identification des opportunités de croissance et recommandations d\'optimisation.',
-        price: '250.000 FCFA',
-        features: ['Cartographie des besoins', 'Rapport de synthèse sous 48h', 'Entretien de restitution avec nos experts']
-      },
-      {
-        id: 's2',
-        title: 'Accompagnement & Déploiement',
-        badge: 'Sur-Mesure',
-        description: 'Mise en œuvre clé en main de vos projets stratégiques, gestion du changement et formation de vos équipes.',
-        price: '500.000 FCFA / mois',
-        features: ['Chef de projet dédié', 'Réunions hebdomadaires', 'Support prioritaire H24']
-      },
-      {
-        id: 's3',
-        title: 'Formation & Mentorat',
-        badge: 'Pack Équipe',
-        description: 'Sessions de formation sur-mesure pour monter en compétences rapidement sur vos outils métiers.',
-        price: '150.000 FCFA / session',
-        features: ['Supports de cours fournis', 'Cas pratiques réels', 'Attestation de réussite']
-      }
-    ];
+    return [];
   }, [productsProp]);
 
   // Handle Form Submission for Quote / Appointment

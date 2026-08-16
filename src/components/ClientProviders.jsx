@@ -12,13 +12,13 @@ export default function ClientProviders({ children }) {
   return (
     <ReactQueryProvider>
       <AuthProvider>
-        <OfflineSyncProvider>
-          <CartProvider>
+        <CartProvider>
+          <OfflineSyncProvider>
             <PwaRegistry />
             <SecurityShield />
             {children}
-          </CartProvider>
-        </OfflineSyncProvider>
+          </OfflineSyncProvider>
+        </CartProvider>
       </AuthProvider>
     </ReactQueryProvider>
   );

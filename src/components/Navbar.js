@@ -75,19 +75,7 @@ function NavLogo() {
       {/* Icône carrée */}
       <div className="relative w-10 h-10 rounded-[14px] bg-gradient-to-tr from-blue-600 via-indigo-500 to-teal-400 p-[2px] shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg">
         <div className="w-full h-full bg-white rounded-[12px] flex items-center justify-center overflow-hidden">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="url(#navLg)" strokeWidth="2.5"/>
-            <path d="M16 16L21 21" stroke="url(#navLg)" strokeWidth="2.5" strokeLinecap="round"/>
-            <circle cx="17" cy="7" r="3" fill="#10B981"/>
-            <path d="M16 7L16.8 7.8L18.2 6.2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <defs>
-              <linearGradient id="navLg" x1="2" y1="2" x2="22" y2="22">
-                <stop offset="0%" stopColor="#2563EB"/>
-                <stop offset="50%" stopColor="#9333EA"/>
-                <stop offset="100%" stopColor="#EA580C"/>
-              </linearGradient>
-            </defs>
-          </svg>
+          <img src="/icon-512.png" className="w-full h-full object-cover rounded-[12px]" alt="VesTyle Logo" />
         </div>
         {/* Lueur hover */}
         <div className="absolute -inset-1 rounded-[16px] bg-gradient-to-tr from-blue-500/30 to-teal-500/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"/>
@@ -247,18 +235,23 @@ export default function Navbar() {
               <UserIcon size={18}/>
             </button>
 
-            {/* Hamburger */}
+            {/* ── HAMBURGER ANIMÉ AVEC HALO LUMINEUX & ROTATION ── */}
             <button
               onClick={() => setIsMobileMenuOpen(v => !v)}
-              className={`p-2 rounded-xl transition-all focus:outline-none ${
+              className={`relative p-2.5 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus:outline-none overflow-hidden group ${
                 isMobileMenuOpen
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40 scale-105 rotate-180 ring-2 ring-blue-400/50'
+                  : 'bg-slate-100 text-slate-900 hover:bg-slate-200 hover:scale-105 active:scale-95'
               }`}
               aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={isMobileMenuOpen}
             >
-              {isMobileMenuOpen ? <XIcon size={20}/> : <MenuIcon size={20}/>}
+              {/* Reflet lumineux animé */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-400 via-indigo-400 to-amber-300 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+              
+              <div className={`relative z-10 transition-transform duration-500 ${isMobileMenuOpen ? 'rotate-180 scale-110' : 'rotate-0'}`}>
+                {isMobileMenuOpen ? <XIcon size={20}/> : <MenuIcon size={20}/>}
+              </div>
             </button>
           </div>
 
@@ -266,78 +259,87 @@ export default function Navbar() {
       </header>
 
       {/* ╔══════════════════════════════════════════════════════════════════╗
-          ║  MENU MOBILE (Plein écran, slide depuis la droite)
+          ║  MENU MOBILE ANIMÉ (Cosmic Glass Drawer + Stagger Items)
           ╚══════════════════════════════════════════════════════════════════╝ */}
       <div
-        className={`md:hidden fixed inset-0 z-40 transition-all duration-300 ease-in-out ${
+        className={`md:hidden fixed inset-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isMobileMenuOpen
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
         }`}
       >
-        {/* Backdrop */}
+        {/* Backdrop sombre ultra flouté */}
         <div
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          className={`absolute inset-0 bg-slate-950/75 backdrop-blur-2xl transition-opacity duration-500 ${
+            isMobileMenuOpen ? 'opacity-100' : 'opacity-0'
+          }`}
           onClick={closeMenu}
         />
 
-        {/* Panel menu */}
+        {/* Panel menu avec bordure lumineuse et glissement 3D */}
         <div
-          className={`absolute top-0 right-0 h-full w-[85vw] max-w-sm bg-slate-950 flex flex-col pt-6 px-5 pb-8 transition-all duration-300 ease-out shadow-2xl ${
-            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          className={`absolute top-0 right-0 h-full w-[88vw] max-w-sm bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-l border-white/10 flex flex-col pt-6 px-6 pb-8 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_0_60px_rgba(37,99,235,0.3)] ${
+            isMobileMenuOpen ? 'translate-x-0 scale-100' : 'translate-x-full scale-95'
           }`}
         >
           {/* En-tête menu mobile */}
           <div className="flex items-center justify-between mb-8 pb-5 border-b border-white/10">
-            <Link href="/" onClick={closeMenu} className={`text-2xl font-extrabold text-white ${artFont.className}`}>
-              Ves<span className="text-orange-500">Tyle</span>
-              <span className="block text-[10px] font-black uppercase tracking-widest text-emerald-400/80 mt-0.5">Live Marketplace</span>
+            <Link href="/" onClick={closeMenu} className={`flex items-center gap-3 ${artFont.className}`}>
+              <img src="/icon-512.png" className="w-9 h-9 rounded-xl shadow-md object-cover border border-white/10" alt="VesTyle" />
+              <div>
+                <span className="text-2xl font-extrabold text-white">Ves<span className="text-orange-500">Tyle</span></span>
+                <span className="block text-[9px] font-black uppercase tracking-widest text-emerald-400/90 leading-tight">Live Marketplace</span>
+              </div>
             </Link>
             <button
               onClick={closeMenu}
-              className="w-10 h-10 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white hover:bg-white/15 transition-colors"
+              className="w-10 h-10 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/15 transition-all active:scale-90"
             >
               <XIcon size={18}/>
             </button>
           </div>
 
-          {/* Liens de navigation */}
-          <nav className="flex flex-col gap-1 flex-1">
+          {/* Liens de navigation avec entrée en cascade (Stagger) */}
+          <nav className="flex flex-col gap-2 flex-1">
             {[
-              { href: '/', label: 'Accueil', icon: <HomeIcon size={18}/>, accent: false },
-              { href: '/boutiques', label: 'Boutiques', icon: <StoreIcon size={18}/>, accent: false },
-              { href: '/mes-commandes', label: 'Mes Commandes', icon: <PackageIcon size={18}/>, accent: false },
-              { href: '/cart', label: `Panier${totalCartItems > 0 ? ` (${totalCartItems})` : ''}`, icon: <ShoppingCartIcon size={18}/>, accent: totalCartItems > 0 },
-              { href: '/profile', label: 'Mon Profil', icon: <UserIcon size={18}/>, accent: false },
+              { href: '/', label: 'Accueil', icon: <HomeIcon size={18}/>, accent: false, delay: 'delay-[50ms]' },
+              { href: '/boutiques', label: 'Boutiques', icon: <StoreIcon size={18}/>, accent: false, delay: 'delay-[100ms]' },
+              { href: '/mes-commandes', label: 'Mes Commandes', icon: <PackageIcon size={18}/>, accent: false, delay: 'delay-[150ms]' },
+              { href: '/cart', label: `Panier${totalCartItems > 0 ? ` (${totalCartItems})` : ''}`, icon: <ShoppingCartIcon size={18}/>, accent: totalCartItems > 0, delay: 'delay-[200ms]' },
+              { href: '/profile', label: 'Mon Profil', icon: <UserIcon size={18}/>, accent: false, delay: 'delay-[250ms]' },
             ].map(item => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={closeMenu}
-                className={`flex items-center gap-4 py-3.5 px-4 rounded-xl font-bold text-sm transition-all ${
+                className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-300 transform ${item.delay} ${
+                  isMobileMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0'
+                } ${
                   item.accent
-                    ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
-                    : 'text-slate-300 hover:text-white hover:bg-white/8'
+                    ? 'text-blue-400 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 shadow-md shadow-blue-500/10'
+                    : 'text-slate-200 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10'
                 }`}
               >
-                <span className={item.accent ? 'text-blue-400' : 'text-slate-500'}>{item.icon}</span>
+                <span className={item.accent ? 'text-blue-400' : 'text-slate-400'}>{item.icon}</span>
                 {item.label}
-                <ArrowRightIcon size={14} className="ml-auto text-slate-600"/>
+                <ArrowRightIcon size={14} className="ml-auto text-slate-500 group-hover:translate-x-1 transition-transform"/>
               </Link>
             ))}
 
             {/* Lite Mode dans le menu mobile */}
             <button
               onClick={toggleDataSaver}
-              className={`flex items-center gap-4 py-3.5 px-4 rounded-xl font-bold text-sm transition-all text-left mt-1 ${
+              className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-300 transform delay-[300ms] text-left mt-1 ${
+                isMobileMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0'
+              } ${
                 dataSaver
-                  ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30'
-                  : 'text-slate-400 hover:text-white hover:bg-white/8'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/35'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10'
               }`}
             >
-              <ZapIcon size={18} className={dataSaver ? 'text-orange-400' : 'text-slate-500'}/>
+              <ZapIcon size={18} className={dataSaver ? 'text-orange-400 animate-pulse' : 'text-slate-400'}/>
               <span>Mode Lite {dataSaver ? '(Actif)' : ''}</span>
-              <span className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${dataSaver ? 'bg-orange-500 text-white' : 'bg-white/8 text-slate-500'}`}>
+              <span className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${dataSaver ? 'bg-orange-500 text-white shadow-sm' : 'bg-white/10 text-slate-400'}`}>
                 {dataSaver ? 'ON' : 'OFF'}
               </span>
             </button>
@@ -347,11 +349,13 @@ export default function Navbar() {
               <Link
                 href="/dashboard"
                 onClick={closeMenu}
-                className="flex items-center gap-4 py-3.5 px-4 rounded-xl font-bold text-sm text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all mt-1"
+                className={`flex items-center gap-4 py-3.5 px-4 rounded-2xl font-bold text-sm text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all duration-300 transform delay-[350ms] mt-1 ${
+                  isMobileMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0'
+                }`}
               >
                 <StoreIcon size={18} className="text-emerald-400"/>
                 Tableau de Bord Vendeur
-                <ArrowRightIcon size={14} className="ml-auto text-emerald-600"/>
+                <ArrowRightIcon size={14} className="ml-auto text-emerald-500"/>
               </Link>
             )}
           </nav>
@@ -361,7 +365,7 @@ export default function Navbar() {
             {session ? (
               <button
                 onClick={() => { signOut(); closeMenu(); }}
-                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm text-rose-400 border border-rose-500/25 hover:bg-rose-500/10 transition-all"
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm text-rose-400 border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 transition-all active:scale-95"
               >
                 <LogOutIcon size={16}/> Déconnexion
               </button>
