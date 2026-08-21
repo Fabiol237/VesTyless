@@ -62,7 +62,7 @@ export async function POST(request) {
           <div class="wrapper">
             <div class="container">
               <div class="header">
-                <img src="${process.env.NEXT_PUBLIC_SITE_URL}/icon-512.png" style="width: 64px; height: 64px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.2);" alt="Vestyle">
+                <img src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyle.vercel.app'}/icon-512.png" style="width: 64px; height: 64px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid rgba(255,255,255,0.2);" alt="Vestyle">
                 <div class="badge">${theme.label}</div>
                 <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.02em;">${theme.icon} ${subject}</h1>
               </div>
@@ -70,7 +70,7 @@ export async function POST(request) {
                 <p style="font-size: 16px; color: #475569;">${data.message || 'Mise à jour Vestyle Pro.'}</p>
                 ${type === 'ORDER' ? `<div class="data-box"><p style="font-size: 24px; font-weight: 900; color: ${theme.color};">${data.amount} F</p><p>Client: ${data.customer}</p></div>` : ''}
                 ${type === 'STOCK' ? `<div class="data-box" style="border-left: 4px solid #ef4444;"><p>Produit: <b>${data.productName}</b></p><p>Reste: ${data.stock} unités</p></div>` : ''}
-                <div style="text-align: center;"><a href="${process.env.NEXT_PUBLIC_SITE_URL}/admin" class="button">Accéder au Hub</a></div>
+                <div style="text-align: center;"><a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyle.vercel.app'}/admin" class="button">Accéder au Hub</a></div>
               </div>
               <div class="footer"><p>&copy; 2026 Vestyle Pro Network. Resend Verified.</p></div>
             </div>
