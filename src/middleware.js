@@ -85,8 +85,8 @@ const BLOCKED_PATH_PATTERNS = [
 
 // ─── IPs définitivement bannies (scrapers connus) ───────────────────────────
 const BANNED_IPS = new Set([
-  // Ajoutez ici les IPs qui ont scrapé votre site
-  // Exemple: '185.220.101.45', '45.155.205.233'
+  // ⛔ Scrapers détectés et bannis définitivement
+  '13.57.148.235', // AWS us-west-1 — Scraper bloqué le 2026-08-21 à 23:35 (2 tentatives GET /)
 ]);
 
 export async function middleware(req) {
