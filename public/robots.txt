@@ -22,6 +22,15 @@ Disallow: /signup
 Disallow: /admin/
 
 # 🛑 BLOCK ALL AI SCRAPERS, CODE BOT & CONTENT THIEVES
+
+# ⛔ Outils détectés comme scrapers de VeStyle
+User-agent: Antigravity-Pro
+Disallow: /
+
+User-agent: NoTrackAI
+Disallow: /
+
+# IA & LLM crawlers
 User-agent: GPTBot
 Disallow: /
 
@@ -52,6 +61,20 @@ Disallow: /
 User-agent: Omgilibot
 Disallow: /
 
+# SEO scrapers (non autorisés)
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Outils de scraping classiques
 User-agent: Scrapy
 Disallow: /
 
