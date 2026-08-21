@@ -20,6 +20,9 @@
     "insert-test-product": "scripts/insert-test-product.js"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@gradio/client": "^2.3.0",
     "@huggingface/inference": "^4.13.15",
     "@mistralai/mistralai": "^2.4.0",
@@ -36,6 +39,8 @@
     "clsx": "^2.1.1",
     "dexie": "^4.4.5",
     "dotenv": "^17.4.2",
+    "firebase": "^12.18.0",
+    "firebase-admin": "^14.3.0",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
