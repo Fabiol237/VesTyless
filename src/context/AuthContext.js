@@ -63,41 +63,50 @@ export function AuthProvider({ children }) {
       };
     }
 
+    // ── Safety Timeout (1.5s max) pour couper tout spinner en attente ─────────
+    const safetyTimer = setTimeout(() => {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }, 1500);
+
+    // 1. Détection immédiate de session
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mountedRef.current) return;
+      const session = data?.session;
+      if (session?.user) {
+        setUser(session.user);
+        loadFromLocalCache(session.user.id);
+        // Débloque l'UI IMMÉDIATEMENT (0ms)
+        setLoading(false);
+        // Rafraîchit les données en arrière-plan
+        fetchUserData(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (mountedRef.current) setLoading(false);
+    });
+
+    // 2. Écouteur d'évènements Auth
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      const syncAuthState = async () => {
-        if (!mountedRef.current) return;
-
-        setLoading(true);
-        try {
-          if (session?.user) {
-            setUser(session.user);
-            // 1. Charger d'abord le cache local TOUT DE SUITE (0ms)
-            loadFromLocalCache(session.user.id);
-
-            // 2. Si l'appareil est en ligne, rafraîchir en arrière-plan avec un timeout de 2s max
-            if (typeof navigator === 'undefined' || navigator.onLine) {
-              await withTimeout(() => fetchUserData(session.user.id), 2500);
-            }
-          } else {
-            setUser(null);
-            setProfile(null);
-            setStore(null);
-          }
-        } catch (err) {
-          console.warn('[AuthContext] Sync auth fallback:', err?.message);
-        } finally {
-          if (mountedRef.current) {
-            setLoading(false);
-          }
-        }
-      };
-
-      syncAuthState();
+      if (!mountedRef.current) return;
+      if (session?.user) {
+        setUser(session.user);
+        loadFromLocalCache(session.user.id);
+        fetchUserData(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setStore(null);
+      }
+      setLoading(false);
     });
 
     return () => {
+      clearTimeout(safetyTimer);
       mountedRef.current = false;
-      authListener.subscription.unsubscribe();
+      authListener?.subscription?.unsubscribe();
     };
   }, []);
 

@@ -1,7 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { getStoreBlocks } from '@/lib/storeBlocks';
 
 export default function TemplatePresta({ store, themeVars, storeId, currency = 'FCFA', productsProp, isMobile }) {
+  const blocks = useMemo(() => getStoreBlocks(store), [store]);
+
   const [activeTab, setActiveTab] = useState('services');
   const [quoteModal, setQuoteModal] = useState(false);
   const [quoteForm, setQuoteForm] = useState({
@@ -15,8 +18,8 @@ export default function TemplatePresta({ store, themeVars, storeId, currency = '
   const [quoteSent, setQuoteSent] = useState(false);
 
   const config = store?.layout_config || {};
-  const name = store?.name || 'Cabinet Advisory & Services';
-  const desc = store?.description || 'Nous accompagnons les entreprises et particuliers dans le développement de leurs projets grâce à des solutions sur-mesure et à forte valeur ajoutée.';
+  const name = store?.name || blocks.hero.title || 'Cabinet Advisory & Services';
+  const desc = store?.description || blocks.hero.subtitle || 'Nous accompagnons les entreprises et particuliers dans le développement de leurs projets grâce à des solutions sur-mesure et à forte valeur ajoutée.';
   const phone = store?.phone || store?.whatsapp_number || '';
   const wa = phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;

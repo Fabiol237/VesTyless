@@ -123,8 +123,8 @@ export default function SellerDashboard() {
   const [livreur,       setLivreur]       = useState(null);
   const [deliveryCount, setDeliveryCount] = useState(0);
 
-  // loading = true seulement si pas de cache
-  const [dashboardLoading, setDashboardLoading] = useState(true);
+  // Affichage fluide non-bloquant
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
@@ -202,7 +202,7 @@ export default function SellerDashboard() {
       setDashboardLoading(false);
       setRefreshing(false);
     }
-  }, [storeId, store?.owner_id, cacheKey, products.length, orders.length, livreur, deliveryCount]);
+  }, [storeId, store?.owner_id, cacheKey]);
 
   useEffect(() => {
     if (!authLoading) {

@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import { getStoreBlocks } from '@/lib/storeBlocks';
 
 export default function TemplateResto({ store, themeVars, storeId, currency = 'FCFA', productsProp, isMobile }) {
+  const blocks = useMemo(() => getStoreBlocks(store), [store]);
+
   const [activeTab, setActiveTab] = useState('menu');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [reservationModal, setReservationModal] = useState(false);
@@ -16,8 +19,8 @@ export default function TemplateResto({ store, themeVars, storeId, currency = 'F
   const [resSuccess, setResSuccess] = useState(false);
 
   const config = store?.layout_config || {};
-  const name = store?.name || 'Le Bistro Gourmand';
-  const desc = store?.description || 'Une cuisine authentique élaborée à partir d\'ingrédients locaux et de saison. Venez vivre une expérience gustative inoubliable.';
+  const name = store?.name || blocks.hero.title || 'Le Bistro Gourmand';
+  const desc = store?.description || blocks.hero.subtitle || 'Une cuisine authentique élaborée à partir d\'ingrédients locaux et de saison. Venez vivre une expérience gustative inoubliable.';
   const phone = store?.phone || store?.whatsapp_number || '';
   const wa = phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;

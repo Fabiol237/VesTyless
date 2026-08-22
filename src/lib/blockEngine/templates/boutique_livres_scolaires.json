@@ -1,0 +1,235 @@
+{
+  "_meta": {
+    "id": "boutique_livres_scolaires",
+    "name": "Sonic Books — Librairie Numérique",
+    "sector": "boutique",
+    "subSector": "boutique_food",
+    "description": "Template librairie numérique PDF avec livraison WhatsApp. Hero centré blanc + barre de recherche, avantages 4 colonnes, catalogue livres featured, catégories badges, bannière CTA verte, footer sombre.",
+    "reference": "VENTE DE LIVRES SCOLAIRES / Sonic Books",
+    "primaryColor": "#25D366",
+    "fontFamily": "Inter"
+  },
+  "blocks": [
+    {
+      "type": "header",
+      "variant": "transparent",
+      "position": 0,
+      "enabled": true,
+      "settings": {
+        "sticky": true,
+        "transparent": true,
+        "height": "md",
+        "logoPosition": "left",
+        "showCart": true,
+        "showSearch": false,
+        "bgColor": "#ffffff",
+        "textColor": "#111827",
+        "borderBottom": false
+      },
+      "content": {
+        "storeName": "Sonic Books",
+        "links": [
+          { "label": "Accueil", "href": "#" },
+          { "label": "Catalogue", "href": "#catalogue" },
+          { "label": "À propos", "href": "#about" }
+        ]
+      }
+    },
+    {
+      "type": "hero",
+      "variant": "minimal",
+      "position": 1,
+      "enabled": true,
+      "settings": {
+        "height": "auto",
+        "backgroundType": "solid",
+        "textAlign": "center",
+        "titleSize": "6xl",
+        "titleColor": "#111827",
+        "titleWeight": "900",
+        "subtitleColor": "#6b7280",
+        "ctaStyle": "solid",
+        "ctaColor": "#ffffff",
+        "ctaBg": "#111827",
+        "ctaRadius": 12,
+        "animation": "fade-up",
+        "showScrollIndicator": false,
+        "paddingTop": 120,
+        "paddingBottom": 80
+      },
+      "content": {
+        "badge": "✅ Livraison instantanée sur WhatsApp · Paiement sécurisé",
+        "title": "Votre Bibliothèque Numérique",
+        "subtitle": "Accédez à des centaines de livres PDF sur l'agriculture, l'élevage et le développement personnel — livrés directement sur WhatsApp.",
+        "ctaText": "Voir le catalogue",
+        "ctaLink": "#catalogue",
+        "ctaSecond": "Comment ça marche",
+        "ctaSecondLink": "#how"
+      }
+    },
+    {
+      "type": "stats",
+      "variant": "row",
+      "position": 2,
+      "enabled": true,
+      "settings": {
+        "bgColor": "#ffffff",
+        "textColor": "#111827",
+        "valueColor": "#111827",
+        "showDivider": true,
+        "paddingTop": 0,
+        "paddingBottom": 48
+      },
+      "content": {
+        "title": "",
+        "items": [
+          { "value": "500+", "label": "Livres PDF", "icon": "📚" },
+          { "value": "24h", "label": "Livraison WhatsApp", "icon": "⚡" },
+          { "value": "100%", "label": "Sécurisé", "icon": "🔒" }
+        ]
+      }
+    },
+    {
+      "type": "feature",
+      "variant": "cards",
+      "position": 3,
+      "enabled": true,
+      "settings": {
+        "columns": "4",
+        "iconStyle": "emoji",
+        "iconColor": "#25D366",
+        "iconBg": "#f0fdf4",
+        "cardStyle": "border",
+        "bgColor": "#ffffff",
+        "titleColor": "#111827",
+        "textColor": "#6b7280",
+        "paddingTop": 60,
+        "paddingBottom": 60
+      },
+      "content": {
+        "title": "La bibliothèque numérique la plus simple",
+        "subtitle": "Pourquoi nous choisir",
+        "items": [
+          {
+            "icon": "⚡",
+            "title": "Livraison instantanée",
+            "desc": "Recevez vos livres PDF directement sur WhatsApp en quelques minutes après validation de votre paiement."
+          },
+          {
+            "icon": "🔒",
+            "title": "Paiement sécurisé",
+            "desc": "Vos transactions sont vérifiées manuellement. Aucun risque de fraude, satisfaction garantie."
+          },
+          {
+            "icon": "📚",
+            "title": "Large catalogue",
+            "desc": "Des centaines de livres sur l'agriculture, l'élevage et le développement personnel."
+          },
+          {
+            "icon": "🎓",
+            "title": "Communauté active",
+            "desc": "Des milliers d'étudiants camerounais font confiance à cette librairie pour leurs études."
+          }
+        ]
+      }
+    },
+    {
+      "type": "collection",
+      "variant": "grid",
+      "position": 4,
+      "enabled": true,
+      "settings": {
+        "columns": "3",
+        "cardStyle": "shadow",
+        "cardRadius": 16,
+        "imageRatio": "portrait",
+        "showPrice": true,
+        "currency": "XOF",
+        "showRating": false,
+        "showBadges": true,
+        "showCart": true,
+        "showFilters": false,
+        "showSearch": false,
+        "limit": 6,
+        "hoverEffect": "lift",
+        "bgColor": "#f9fafb",
+        "paddingTop": 60,
+        "paddingBottom": 60
+      },
+      "content": {
+        "title": "Livres populaires",
+        "subtitle": "⭐ Les plus demandés par nos lecteurs",
+        "dataSource": "products",
+        "filterType": "all"
+      }
+    },
+    {
+      "type": "category",
+      "variant": "pills",
+      "position": 5,
+      "enabled": true,
+      "settings": {
+        "columns": "6",
+        "cardRadius": 20,
+        "showLabel": true,
+        "bgColor": "#ffffff",
+        "paddingTop": 48,
+        "paddingBottom": 48
+      },
+      "content": {
+        "title": "Parcourir par catégorie",
+        "items": []
+      }
+    },
+    {
+      "type": "cta",
+      "variant": "centered",
+      "position": 6,
+      "enabled": true,
+      "settings": {
+        "bgType": "gradient",
+        "bgGradient": "135deg,#064e3b 0%,#065f46 40%,#047857 70%,#059669 100%",
+        "textColor": "#ffffff",
+        "btnBg": "#ffffff",
+        "btnColor": "#065f46",
+        "btnRadius": 16,
+        "paddingTop": 80,
+        "paddingBottom": 80
+      },
+      "content": {
+        "eyebrow": "Rejoignez-nous",
+        "title": "Prêt à apprendre plus vite ? 🚀",
+        "subtitle": "Rejoignez des milliers d'étudiants camerounais qui font confiance à cette librairie pour leurs études et leur réussite.",
+        "ctaText": "Explorer le catalogue →",
+        "ctaLink": "#catalogue"
+      }
+    },
+    {
+      "type": "footer",
+      "variant": "columns",
+      "position": 7,
+      "enabled": true,
+      "settings": {
+        "bgColor": "#080b14",
+        "textColor": "#9ca3af",
+        "accentColor": "#25D366",
+        "showSocials": true,
+        "showLegal": true
+      },
+      "content": {
+        "storeName": "Sonic Books",
+        "description": "Votre librairie numérique préférée. Achetez vos livres PDF en toute sécurité et recevez-les instantanément sur WhatsApp.",
+        "links": [
+          { "label": "Accueil", "href": "#" },
+          { "label": "Catalogue", "href": "#catalogue" },
+          { "label": "Panier", "href": "#panier" },
+          { "label": "À propos", "href": "#about" }
+        ],
+        "socials": {
+          "whatsapp": ""
+        },
+        "copyright": "Fait avec ❤️ pour l'éducation en Afrique"
+      }
+    }
+  ]
+}

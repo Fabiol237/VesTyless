@@ -10,6 +10,7 @@ import DownloadCatalogButton from '@/components/DownloadCatalogButton';
 
 // ─── Système de Templates (nouveau) ─────────────────────────────────────────
 import { getTemplate, detectTemplate } from '../../../templates';
+import { StorefrontRenderer } from '@/lib/blockEngine/renderer';
 
 // ─── Thèmes visuels (réduits au rôle de palette couleurs) ────────────────────
 import { getThemeById } from './themes';
@@ -209,9 +210,13 @@ export default function StorefrontClient({ params }) {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DÉTECTION AUTOMATIQUE DU TEMPLATE
-  // Aucune modification de la BD nécessaire.
+  // DÉTECTION BLOCS VS TEMPLATES
+  // Si store.layout_config.blocks est configuré, utiliser le nouveau BlockEngine
+  // Sinon fallback automatique vers le système de templates existant.
   // ─────────────────────────────────────────────────────────────────────────
+  const storeBlocks = store?.layout_config?.blocks || store?.layout_config?.blocks_config;
+  const hasBlockEngineConfig = Array.isArray(storeBlocks) && storeBlocks.length > 0;
+
   const TemplateComponent = getTemplate(modules, store);
 
   // Props communes à tous les templates
@@ -245,8 +250,19 @@ export default function StorefrontClient({ params }) {
         .store-header-fullbleed { padding-top: max(env(safe-area-inset-top), 16px); }
       `}</style>
 
-      {/* ── TEMPLATE PRINCIPAL ── */}
-      <TemplateComponent {...templateProps} />
+      {/* ── RENDU BLOCS OU TEMPLATE FALLBACK ── */}
+      {hasBlockEngineConfig ? (
+        <StorefrontRenderer
+          blocks={storeBlocks}
+          theme={{ primaryColor: themeVars['--prim'], ...themeConfig }}
+          store={store}
+          products={products}
+          onAddToCart={handleAddToCart}
+          currency={store.currency || 'XOF'}
+        />
+      ) : (
+        <TemplateComponent {...templateProps} />
+      )}
 
       {/* ── BOUTON EXPORT CATALOGUE PDF MARCHE ── */}
       <div className="fixed bottom-6 left-6 z-[9999]">

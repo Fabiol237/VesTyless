@@ -41,8 +41,23 @@ export async function requestFCMToken() {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return null;
 
+    // Register service worker explicitly to get better errors in dev
+    let swRegistration = null;
+    try {
+      if ('serviceWorker' in navigator) {
+        swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/firebase-cloud-messaging-push-scope',
+        });
+        console.log('[Firebase SW] enregistré:', swRegistration.scope);
+      }
+    } catch (swErr) {
+      console.error('[Firebase SW] erreur enregistrement du service worker:', swErr);
+      // continue: getToken will surface a useful error too
+    }
+
     const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: swRegistration || undefined,
     });
 
     return token || null;

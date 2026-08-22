@@ -1,7 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { getStoreBlocks } from '@/lib/storeBlocks';
 
 export default function TemplateBoutiquePro({ store, themeVars, storeId, currency = 'FCFA', productsProp, isMobile, onAddToCart }) {
+  const blocks = useMemo(() => getStoreBlocks(store), [store]);
+
   const [page, setPage] = useState('accueil');
   const [products, setProducts] = useState(productsProp || []);
   const [cart, setCart] = useState([]);
@@ -12,8 +15,8 @@ export default function TemplateBoutiquePro({ store, themeVars, storeId, currenc
   const [isScrolled, setIsScrolled] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const name = store?.name || 'GRAND MAGASIN';
-  const desc = store?.description || "L'excellence à votre portée. Découvrez notre collection exclusive, conçue pour sublimer votre quotidien avec élégance et performance.";
+  const name = store?.name || blocks.hero.title || 'GRAND MAGASIN';
+  const desc = store?.description || blocks.hero.subtitle || "L'excellence à votre portée. Découvrez notre collection exclusive, conçue pour sublimer votre quotidien avec élégance et performance.";
   const phone = store?.phone || '';
   const wa = phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;

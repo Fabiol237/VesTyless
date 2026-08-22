@@ -63,29 +63,41 @@ function BuilderInner({ storeId }) {
   /* Chargement des données boutique */
   useEffect(() => {
     if (!storeId || authLoading) return;
+    let alive = true;
     (async () => {
-      const { data: storeData } = await supabase
-        .from('stores').select('*').eq('id', storeId).single();
-      if (!storeData || storeData.owner_id !== user?.id) {
-        router.push('/dashboard');
-        return;
-      }
-      const { data: modulesData } = await supabase
-        .from('store_modules').select('*')
-        .eq('store_id', storeId).order('position', { ascending: true });
+      try {
+        const { data: storeData } = await supabase
+          .from('stores').select('*').eq('id', storeId).single();
 
-      const themeConfig = {
-        _themeId:       storeData.shop_theme       || 'theme_00',
-        primaryColor:   storeData.theme_color      || '#6366f1',
-        secondaryColor: storeData.secondary_color  || '#ffffff',
-        accentColor:    storeData.accent_color     || '#4f46e5',
-        fontFamily:     storeData.font_family      || 'Inter',
-        mode:           storeData.theme_mode       || 'light',
-      };
-      init(storeData, normalizeStoreModules(modulesData || []), themeConfig, storeData.business_type || null);
-      setLoading(false);
+        if (!storeData || (user?.id && storeData.owner_id !== user.id)) {
+          router.push('/dashboard');
+          return;
+        }
+
+        const { data: modulesData } = await supabase
+          .from('store_modules').select('*')
+          .eq('store_id', storeId).order('position', { ascending: true });
+
+        const themeConfig = {
+          _themeId:       storeData.shop_theme       || 'theme_00',
+          primaryColor:   storeData.theme_color      || '#6366f1',
+          secondaryColor: storeData.secondary_color  || '#ffffff',
+          accentColor:    storeData.accent_color     || '#4f46e5',
+          fontFamily:     storeData.font_family      || 'Inter',
+          mode:           storeData.theme_mode       || 'light',
+        };
+
+        if (alive) {
+          init(storeData, normalizeStoreModules(modulesData || []), themeConfig, storeData.business_type || null);
+        }
+      } catch (err) {
+        console.error('[BuilderInner] load error:', err);
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
-  }, [storeId, user, authLoading, init, router]);
+    return () => { alive = false; };
+  }, [storeId, user?.id, authLoading, init, router]);
 
   const handleModulesUpdate  = useCallback((m) => setLiveModules(m), []);
   const handleThemeUpdate    = useCallback((t) => { setLiveTheme(t); setTheme(t); }, [setTheme]);

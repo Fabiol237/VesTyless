@@ -1,17 +1,8 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-
-/**
- * TemplateTechPro — Boutique Électronique & High-Tech Flagship
- * ─────────────────────────────────────────────────────────────
- * Design : Dark premium · Glassmorphisme · Micro-animations CSS
- * Pages  : Accueil · Catalogue · Offres Flash · Fiche Produit · Garantie · Panier
- * Spécialité : Smartphones · Laptops · TV · Électroménager · Gaming
- */
-
+import { getStoreBlocks } from '@/lib/storeBlocks';
 
 const BADGE_COLORS = { 'Nouveauté': '#2563EB', 'Top Vente': '#059669', 'Pro': '#7C3AED', 'Promo': '#DC2626', 'Bundle': '#D97706', 'Énergie A+++': '#0D9488', 'Promo Flash': '#EA580C' };
-
 
 // ─── Composant Rating ─────────────────────────────────────────────────────────
 function Stars({ n }) {
@@ -24,6 +15,9 @@ function Stars({ n }) {
 
 // ─── Template principal ───────────────────────────────────────────────────────
 export default function TemplateTechPro({ store, themeVars, currency = 'FCFA', productsProp, isMobile, onAddToCart }) {
+  // ── Extraction des blocs JSON standardisés ──
+  const blocks = useMemo(() => getStoreBlocks(store), [store]);
+
   // ── Navigation ──
   const [page, setPage] = useState('accueil');
   const [slideIdx, setSlideIdx] = useState(0);
@@ -50,9 +44,9 @@ export default function TemplateTechPro({ store, themeVars, currency = 'FCFA', p
   const [flash, setFlash] = useState({ h: 11, m: 47, s: 23 });
 
   // ── Config boutique ──
-  const storeName = store?.name || 'TECHPRO HIGH-TECH';
+  const storeName = store?.name || blocks.hero.title || 'TECHPRO HIGH-TECH';
   const storePhone = (store?.phone || store?.whatsapp_number || '').replace(/\D/g, '');
-  const storeDesc = store?.description || 'Vente de smartphones, laptops, TV 4K & électroménager. Garantie 1 an officielle. SAV Douala & Yaoundé.';
+  const storeDesc = store?.description || blocks.hero.subtitle;
   const logoUrl = store?.logo_url || null;
   const wa = storePhone ? `https://wa.me/${storePhone}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;
@@ -64,21 +58,31 @@ export default function TemplateTechPro({ store, themeVars, currency = 'FCFA', p
   const products = useMemo(() => (productsProp || []), [productsProp]);
   const hasProducts = products.length > 0;
 
-  // ── Slides depuis layout_config ou hero sobre avec les vraies données boutique ──
+  // ── Slides depuis le bloc JSON 'hero' standardisé ──
   const heroSlides = useMemo(() => {
-    const configured = store?.layout_config?.hero_slides;
-    if (configured?.length > 0) return configured;
-    // Hero sobre par défaut : juste le banner de la boutique
+    if (blocks.hero.slides?.length > 0) {
+      return blocks.hero.slides.map(s => ({
+        title: s.title || storeName,
+        sub: s.subtitle || s.sub || storeDesc,
+        badge: s.badge || blocks.hero.badge || '⚡ Boutique Officielle',
+        img: s.image || s.img || store?.banner_url || store?.logo_url || null,
+        color: s.color || '#09090B',
+        accent: primary,
+        emoji: s.emoji || '⚡',
+        cta: s.ctaText || blocks.hero.ctaText || 'Voir les produits',
+      }));
+    }
     return [{
-      title: storeName,
-      sub: storeDesc,
-      badge: '⚡ Boutique Officielle',
+      title: blocks.hero.title || storeName,
+      sub: blocks.hero.subtitle || storeDesc,
+      badge: blocks.hero.badge || '⚡ Boutique Officielle',
       img: store?.banner_url || store?.logo_url || null,
       color: '#09090B',
       accent: primary,
       emoji: '⚡',
+      cta: blocks.hero.ctaText || 'Découvrir',
     }];
-  }, [store, storeName, storeDesc, primary]);
+  }, [blocks.hero, storeName, storeDesc, store, primary]);
 
   // ── Slides auto ──
   useEffect(() => {

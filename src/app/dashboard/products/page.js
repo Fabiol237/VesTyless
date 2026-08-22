@@ -292,7 +292,7 @@ export default function ProductsPage() {
     }
     setLoading(false);
     setRefreshing(false);
-  }, [storeId, cacheKey, products.length]);
+  }, [storeId, cacheKey]);
 
   useEffect(() => {
     if (!storeId) return;

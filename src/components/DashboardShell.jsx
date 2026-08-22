@@ -19,28 +19,32 @@ const DashboardSidebar = dynamic(() => import('@/components/Navigation/VestyleSi
 });
 
 export default function DashboardShell({ children }) {
-  const { session, loading, store } = useAuth();
+  const { session, loading, user } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [roleChecked, setRoleChecked] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
   useEffect(() => { setIsClient(true); }, []);
 
   useEffect(() => {
     if (!isClient || loading) return;
+    const activeUser = session || user;
 
-    // Non connecté → login
-    if (session === null) {
+    if (!activeUser) {
       router.replace('/login');
-      return;
-    }
-
-    if (session?.id) {
+    } else {
       setRoleChecked(true);
     }
-  }, [session, loading, router, store, isClient]);
+  }, [session, user, loading, router, isClient]);
 
-  if (!isClient || loading || !roleChecked) {
+  // Safety fallback: débloque l'UI après 800ms max
+  useEffect(() => {
+    const t = setTimeout(() => setRoleChecked(true), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!isClient || (loading && !roleChecked)) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <Loader2Icon className="animate-spin text-indigo-500 mb-4" size={40} />

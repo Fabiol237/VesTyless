@@ -1,15 +1,18 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { getStoreBlocks } from '@/lib/storeBlocks';
 
 export default function TemplateBoutique({ store, themeVars, storeId, currency = 'FCFA', productsProp, isMobile, onAddToCart }) {
+  const blocks = useMemo(() => getStoreBlocks(store), [store]);
+
   const [page, setPage] = useState('accueil');
   const [products, setProducts] = useState(productsProp || []);
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [openIngredient, setOpenIngredient] = useState(null);
 
-  const name = store?.name || 'Maison Luxe';
-  const desc = store?.description || "Une approche rigoureuse et sensorielle du soin. Nos formules sont conçues avec exigence et passion.";
+  const name = store?.name || blocks.hero.title || 'Maison Luxe';
+  const desc = store?.description || blocks.hero.subtitle || "Une approche rigoureuse et sensorielle du soin. Nos formules sont conçues avec exigence et passion.";
   const phone = store?.phone || '';
   const wa = phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '#';
   const fmt = v => new Intl.NumberFormat('fr-FR').format(v || 0) + ' ' + currency;
