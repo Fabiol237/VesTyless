@@ -5,21 +5,28 @@ import { CartProvider } from '@/context/CartContext';
 import PwaRegistry from '@/components/PwaRegistry';
 import SecurityShield from '@/components/SecurityShield';
 import ReactQueryProvider from '@/components/ReactQueryProvider';
+import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
 
 const OfflineSyncProvider = dynamic(() => import('@/components/OfflineSyncProvider'), { ssr: false });
+const DataHydrationProvider = dynamic(() => import('@/components/DataHydrationProvider'), { ssr: false });
 
 export default function ClientProviders({ children }) {
   return (
-    <ReactQueryProvider>
-      <AuthProvider>
-        <CartProvider>
-          <OfflineSyncProvider>
-            <PwaRegistry />
-            <SecurityShield />
-            {children}
-          </OfflineSyncProvider>
-        </CartProvider>
-      </AuthProvider>
-    </ReactQueryProvider>
+    <GlobalErrorBoundary>
+      <ReactQueryProvider>
+        <AuthProvider>
+          <CartProvider>
+            <OfflineSyncProvider>
+              {/* DataHydrationProvider pré-charge boutiques/produits dans Dexie au 1er chargement */}
+              <DataHydrationProvider>
+                <PwaRegistry />
+                <SecurityShield />
+                {children}
+              </DataHydrationProvider>
+            </OfflineSyncProvider>
+          </CartProvider>
+        </AuthProvider>
+      </ReactQueryProvider>
+    </GlobalErrorBoundary>
   );
 }

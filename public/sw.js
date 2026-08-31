@@ -20,12 +20,13 @@
  */
 
 // ─── Versions & Noms des caches ──────────────────────────────────────────────
-const SW_VERSION = 'vestyle-v5.0';
+const SW_VERSION = 'vestyle-v6.0'; // ← incrémenté pour forcer la mise à jour
 const CACHE_STATIC  = `${SW_VERSION}-static`;
 const CACHE_IMAGES  = `${SW_VERSION}-images`;
 const CACHE_PAGES   = `${SW_VERSION}-pages`;
 const CACHE_API     = `${SW_VERSION}-api`;
-const ALL_CACHES    = [CACHE_STATIC, CACHE_IMAGES, CACHE_PAGES, CACHE_API];
+const CACHE_FONTS   = `${SW_VERSION}-fonts`;
+const ALL_CACHES    = [CACHE_STATIC, CACHE_IMAGES, CACHE_PAGES, CACHE_API, CACHE_FONTS];
 
 // ─── App Shell — URLs à précacher impérativement ─────────────────────────────
 const APP_SHELL = [
@@ -33,10 +34,21 @@ const APP_SHELL = [
   '/offline',
   '/boutiques',
   '/login',
+  '/signup',
+  '/search',
+  '/cart',
+  '/wishlist',
+  '/profile',
   '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
   '/icon-512.png',
+  '/hero-bg.png',
+];
+
+// ─── Fonts Google à précacher pour le mode offline ───────────────────────────
+const GOOGLE_FONTS = [
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
 ];
 
 // ─── Durées de cache ──────────────────────────────────────────────────────────
@@ -45,6 +57,7 @@ const TTL = {
   api:       1  * 60 * 60 * 1000,       // 1 heure
   storeApi:  30 * 60 * 1000,            // 30 minutes
   static:    30 * 24 * 60 * 60 * 1000, // 30 jours
+  fonts:     365 * 24 * 60 * 60 * 1000, // 1 an
 };
 
 // ─── Patterns à ne JAMAIS mettre en cache ────────────────────────────────────
@@ -58,6 +71,9 @@ const NETWORK_ONLY_PATTERNS = [
   /\/api\/admin\//,
   /\/_next\/webpack-hmr/,
   /chrome-extension/,
+  /\/api\/honeypot/,
+  /\/api\/push\//,
+  /\/api\/fcm\//,
 ];
 
 // ─── Patterns API à mettre en cache (avec TTL) ────────────────────────────────
@@ -86,6 +102,15 @@ function isImageRequest(request) {
   return (
     request.destination === 'image' ||
     /\.(png|jpg|jpeg|gif|webp|svg|ico|avif)(\?.*)?$/.test(request.url)
+  );
+}
+
+function isFontRequest(request) {
+  return (
+    request.destination === 'font' ||
+    request.url.includes('fonts.googleapis.com') ||
+    request.url.includes('fonts.gstatic.com') ||
+    /\.(woff|woff2|ttf|otf|eot)(\?.*)?$/.test(request.url)
   );
 }
 
@@ -174,21 +199,32 @@ async function staleWhileRevalidate(request, cacheName) {
 self.addEventListener('install', (event) => {
   console.log(`[VeStyle SW] Installation ${SW_VERSION}`);
   event.waitUntil(
-    caches.open(CACHE_STATIC)
-      .then(cache => {
-        // addAll avec gestion individuelle des erreurs pour éviter l'échec total
-        return Promise.allSettled(
+    Promise.all([
+      // App Shell pages
+      caches.open(CACHE_STATIC).then(cache =>
+        Promise.allSettled(
           APP_SHELL.map(url =>
             cache.add(url).catch(err =>
               console.warn(`[SW] Échec précachage ${url}:`, err.message)
             )
           )
-        );
-      })
-      .then(() => {
-        console.log('[VeStyle SW] App Shell précaché ✅');
-        self.skipWaiting();
-      })
+        )
+      ),
+      // Fonts Google (précaché pour mode offline)
+      caches.open(CACHE_FONTS).then(cache =>
+        Promise.allSettled(
+          GOOGLE_FONTS.map(url =>
+            fetch(url, { mode: 'no-cors' })
+              .then(res => cache.put(url, res))
+              .catch(() => {})
+          )
+        )
+      ),
+    ])
+    .then(() => {
+      console.log('[VeStyle SW] App Shell + Fonts précachés ✅');
+      self.skipWaiting();
+    })
   );
 });
 
@@ -238,26 +274,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── 5. Images → Cache First (7 jours) ───────────────────────────────────
+  // ── 5. Fonts Google → Cache First (1 an) ────────────────────────────────
+  if (isFontRequest(request)) {
+    event.respondWith(cacheFirst(request, CACHE_FONTS));
+    return;
+  }
+
+  // ── 6. Images → Cache First (7 jours) ───────────────────────────────────
   if (isImageRequest(request)) {
     event.respondWith(cacheFirst(request, CACHE_IMAGES));
     return;
   }
 
-  // ── 6. API cacheable → Network First avec fallback ───────────────────────
+  // ── 7. API cacheable → Network First avec fallback ───────────────────────
   if (url.pathname.startsWith('/api/') && isApiCacheable(url.pathname)) {
     const ttl = url.pathname.includes('/store') ? TTL.storeApi : TTL.api;
     event.respondWith(networkFirst(request, CACHE_API, ttl));
     return;
   }
 
-  // ── 7. Pages Next.js / navigations → Network First ──────────────────────
+  // ── 8. Pages Next.js / navigations → Network First ──────────────────────
   if (request.destination === 'document' || request.mode === 'navigate') {
     event.respondWith(networkFirst(request, CACHE_PAGES, TTL.static));
     return;
   }
 
-  // ── 8. Reste → Stale-While-Revalidate ────────────────────────────────────
+  // ── 9. Reste → Stale-While-Revalidate ────────────────────────────────────
   event.respondWith(staleWhileRevalidate(request, CACHE_STATIC));
 });
 
@@ -510,4 +552,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log(`[VesTyle SW] v5.0 chargé 🚀`);
+console.log(`[VesTyle SW] v6.0 chargé 🚀`);

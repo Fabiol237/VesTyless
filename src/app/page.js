@@ -351,7 +351,7 @@ export default function Home() {
             {/* Badge Prestige + Avatars Utilisateurs */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-300/40 bg-amber-400/10 text-amber-200 text-[10px] sm:text-[11px] font-black uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse inline-block"/>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse inline-block" />
                 ✨ #1 Marketplace de Proximité au Cameroun
               </div>
 
@@ -366,7 +366,7 @@ export default function Home() {
 
             {/* Titre MASSIF — dégradé blanc → ambre → orange, pure CSS */}
             <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] ${artFont.className}`}>
-              <span className="text-white">Vise l&apos;objet,</span><br/>
+              <span className="text-white">Vise l&apos;objet,</span><br />
               <span style={{ background: 'linear-gradient(90deg, #ffffff 0%, #fcd34d 55%, #fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 trouve la boutique
               </span>
@@ -383,7 +383,7 @@ export default function Home() {
                 <div style={{ position: 'absolute', inset: '-3px', borderRadius: '18px', background: 'linear-gradient(135deg, rgba(251,191,36,0.35) 0%, rgba(59,130,246,0.25) 100%)', filter: 'blur(6px)', pointerEvents: 'none' }} />
                 <div className="relative flex items-center bg-white rounded-2xl p-1.5 pl-4 shadow-2xl border border-white/90 gap-2 focus-within:ring-2 focus-within:ring-amber-300/60 transition-all">
                   <button type="button" onClick={() => setVisualSearchOpen(true)} className="text-slate-400 hover:text-blue-600 transition-colors p-0.5 shrink-0" title="Recherche par image">
-                    <CameraIcon size={20}/>
+                    <CameraIcon size={20} />
                   </button>
                   <div className="flex-1 min-w-0">
                     <SearchAutocomplete
@@ -428,11 +428,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { triggerFeedback?.('radar'); requestLocation(); scrollToFeed(); }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all border ${
-                  userLocation
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all border ${userLocation
                     ? 'bg-emerald-500 text-white border-emerald-400 shadow-md'
                     : 'bg-white/15 hover:bg-white/25 text-white border-white/25'
-                }`}
+                  }`}
               >
                 <MapPinIcon size={13} className={isGpsLocating ? 'animate-bounce' : ''} />
                 <span>{isGpsLocating ? 'Localisation...' : userLocation ? '📍 Localisé' : 'Autour de moi'}</span>
@@ -469,13 +468,13 @@ export default function Home() {
 
           {/* COLONNE DROITE (CARROUSEL INTERACTIF ANIME — VISIBLE EGALEMENT SUR MOBILE) */}
           <div className="lg:col-span-5 relative flex flex-col items-center justify-center mt-6 lg:mt-0 min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]">
-            
+
             {/* Halo lumineux central */}
             <div className="absolute w-72 sm:w-80 h-72 sm:h-80 rounded-full bg-gradient-to-tr from-amber-400/25 via-blue-500/20 to-indigo-600/25 blur-3xl pointer-events-none" />
 
             {/* CARROUSEL MAIN CONTAINER (Responsive Mobile & Desktop) */}
             <div className="relative w-full max-w-[310px] sm:max-w-[340px] bg-slate-950/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-3.5 sm:p-4 shadow-[0_25px_60px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden">
-              
+
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide}
@@ -493,7 +492,7 @@ export default function Home() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                    
+
                     {/* Badge top left */}
                     <span className={`absolute top-3 left-3 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg ${HERO_VISUAL_SLIDES[currentSlide].badgeBg}`}>
                       {HERO_VISUAL_SLIDES[currentSlide].badge}
@@ -519,7 +518,7 @@ export default function Home() {
 
               {/* CARROUSEL CONTROLS (Pills + Flèches Prev/Next) */}
               <div className="flex items-center justify-between pt-2 px-1 border-t border-white/10">
-                
+
                 {/* Dots / Indicators */}
                 <div className="flex items-center gap-1.5">
                   {HERO_VISUAL_SLIDES.map((slide, idx) => (
@@ -527,11 +526,10 @@ export default function Home() {
                       key={slide.id}
                       type="button"
                       onClick={() => setCurrentSlide(idx)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        currentSlide === idx
+                      className={`h-2 rounded-full transition-all duration-300 ${currentSlide === idx
                           ? 'w-7 bg-amber-400'
                           : 'w-2 bg-white/30 hover:bg-white/50'
-                      }`}
+                        }`}
                       title={slide.title}
                     />
                   ))}

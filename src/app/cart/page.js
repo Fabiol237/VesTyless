@@ -165,17 +165,46 @@ export default function CartPage() {
               }
 
               if (profileData?.email) {
-                // Email (Non critique : fire & forget)
+                // Email Vendeur (Template VeStyle Pro)
                 fetch('/api/emails/notify', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     to: profileData.email,
-                    subject: `Nouvelle vente sur ${storeData.name} !`,
-                    type: 'ORDER',
-                    data: { message: `Le client ${name.trim()} vient de commander.`, amount: storeTotal.toLocaleString(), customer: name.trim() }
+                    type: 'ORDER_VENDOR',
+                    data: {
+                      storeName: storeData.name,
+                      orderId: orderData.id,
+                      amount: storeTotal,
+                      customer: name.trim(),
+                      customerPhone: phone.trim(),
+                      items: storeItems,
+                      hubUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/orders`
+                    }
                   }),
                 }).catch(() => {});
+
+                // Email Client (si connecté avec adresse email)
+                if (session?.user?.email) {
+                  fetch('/api/emails/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      to: session.user.email,
+                      type: 'ORDER_CUSTOMER',
+                      data: {
+                        customerName: name.trim(),
+                        orderId: orderData.id,
+                        storeName: storeData.name,
+                        amount: storeTotal,
+                        items: storeItems,
+                        address: address.trim(),
+                        trackingUrl: `${typeof window !== 'undefined' ? window.location.origin : ''}/suivi/${orderData.id}`
+                      }
+                    }),
+                  }).catch(() => {});
+                }
+              }
 
                 // Insertion de notification avec retry
                 let notifSuccess = false;

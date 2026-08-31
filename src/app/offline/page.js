@@ -1,12 +1,23 @@
 'use client';
 /**
- * VesTyle — Page Offline Enrichie avec Dexie.js
- * Affiche les données mises en cache : boutiques, produits, panier hors-ligne.
+ * VesTyle — Page Offline Enrichie v2
+ * Affiche les données mises en cache : boutiques, produits, panier, wishlist.
+ * Nouveau : onglet Produits avec grille visuelle + badge Mode Avion premium.
  */
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { WifiOff, Home, RefreshCw, ChevronLeft, ShoppingBag, Store, Clock, Heart } from 'lucide-react';
-import { getCart, getAllCachedStores, getProductsByStore, getWishlist } from '@/lib/db';
+import { WifiOff, Home, RefreshCw, ChevronLeft, Clock, Heart, Plane } from 'lucide-react';
+import { getCart, getAllCachedStores, getAllProducts, getWishlist } from '@/lib/db';
+
+// Fallback si getAllProducts n'existe pas encore dans db.js
+async function safeGetAllProducts() {
+  try {
+    const { default: db } = await import('@/lib/db');
+    return await db.products.toArray();
+  } catch {
+    return [];
+  }
+}
 
 export default function OfflinePage() {
   const [cart, setCart] = useState([]);
@@ -14,28 +25,21 @@ export default function OfflinePage() {
   const [wishlist, setWishlist] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stores'); // stores | cart | wishlist
+  const [activeTab, setActiveTab] = useState('stores');
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [cartData, storesData, wishlistData] = await Promise.all([
+        const [cartData, storesData, wishlistData, allProducts] = await Promise.all([
           getCart(),
           getAllCachedStores(),
           getWishlist(),
+          safeGetAllProducts(),
         ]);
         setCart(cartData);
-        setStores(storesData.slice(0, 6));
+        setStores(storesData.slice(0, 8));
         setWishlist(wishlistData);
-
-        // Charger quelques produits depuis les boutiques cachées
-        if (storesData.length > 0) {
-          const firstStoreId = storesData[0]?.id;
-          if (firstStoreId) {
-            const prods = await getProductsByStore(firstStoreId);
-            setProducts(prods.slice(0, 4));
-          }
-        }
+        setProducts(allProducts.slice(0, 20));
       } catch (e) {
         console.warn('[OfflinePage] Erreur lecture Dexie:', e);
       } finally {
@@ -46,18 +50,42 @@ export default function OfflinePage() {
     loadData();
   }, []);
 
-  const hasOfflineData = stores.length > 0 || cart.length > 0 || wishlist.length > 0;
+  const hasOfflineData = stores.length > 0 || cart.length > 0 || wishlist.length > 0 || products.length > 0;
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const tabs = [
+    { id: 'stores', label: '🏪 Boutiques', count: stores.length },
+    { id: 'products', label: '📦 Produits', count: products.length },
+    { id: 'cart', label: '🛍️ Panier', count: cart.length },
+    { id: 'wishlist', label: '❤️ Favoris', count: wishlist.length },
+  ];
 
   return (
     <div style={{
       minHeight: '100dvh',
-      background: '#111B21',
+      background: 'linear-gradient(135deg, #0d1117 0%, #111B21 60%, #0d1117 100%)',
       color: 'white',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       display: 'flex',
       flexDirection: 'column',
     }}>
+
+      {/* ─── Badge Mode Avion premium ──────────────────────────────────────────── */}
+      <style>{`
+        @keyframes floatBadge {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes pulseDot {
+          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+          50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .product-card:active { transform: scale(0.97); transition: transform 0.15s; }
+      `}</style>
 
       {/* ─── Header ──────────────────────────────────────────────────────────── */}
       <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -87,41 +115,62 @@ export default function OfflinePage() {
       </div>
 
       {/* ─── Hero Section ────────────────────────────────────────────────────── */}
-      <div style={{ textAlign: 'center', padding: '32px 20px 24px' }}>
+      <div style={{ textAlign: 'center', padding: '28px 20px 20px' }}>
+        {/* Icône animée */}
         <div style={{
-          width: 72, height: 72,
-          background: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.05) 100%)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
+          width: 80, height: 80,
           margin: '0 auto 16px',
+          animation: 'floatBadge 3s ease-in-out infinite',
         }}>
-          <WifiOff size={32} color="#EF4444" />
+          <div style={{
+            width: '100%', height: '100%',
+            background: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.05) 100%)',
+            border: '1px solid rgba(239,68,68,0.25)',
+            borderRadius: 24,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(10px)',
+          }}>
+            <WifiOff size={34} color="#EF4444" />
+          </div>
+          {/* Badge mode avion */}
+          <div style={{
+            position: 'absolute', top: -6, right: -6,
+            background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+            borderRadius: 10, padding: '2px 6px',
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 10, fontWeight: 700, color: 'white',
+            boxShadow: '0 2px 8px rgba(245,158,11,0.5)',
+          }}>
+            <Plane size={9} />
+            AVION
+          </div>
         </div>
 
         <h1 style={{
           fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px',
           margin: '0 0 8px', color: 'white',
         }}>
-          Vous êtes hors-ligne
+          Mode hors-ligne
         </h1>
         <p style={{
           fontSize: 14, color: 'rgba(255,255,255,0.5)',
           margin: 0, lineHeight: 1.5, maxWidth: 300, marginLeft: 'auto', marginRight: 'auto',
         }}>
           {hasOfflineData
-            ? 'Vos données sont disponibles. Naviguez en mode hors-ligne.'
+            ? `${products.length + stores.length} éléments disponibles en cache`
             : 'Connectez-vous pour accéder à votre contenu mis en cache.'}
         </p>
       </div>
 
-      {/* ─── Stats rapides ───────────────────────────────────────────────────── */}
+      {/* ─── Stats rapides ─────────────────────────────────────────────────────── */}
       {hasOfflineData && (
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8, padding: '0 16px 20px',
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8, padding: '0 16px 16px',
         }}>
           {[
+            { icon: '📦', count: products.length, label: 'Produits' },
             { icon: '🏪', count: stores.length, label: 'Boutiques' },
             { icon: '🛍️', count: cart.length, label: 'Panier' },
             { icon: '❤️', count: wishlist.length, label: 'Favoris' },
@@ -130,12 +179,12 @@ export default function OfflinePage() {
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 14,
-              padding: '12px 8px',
+              padding: '10px 6px',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: 22, marginBottom: 4 }}>{stat.icon}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#25D366' }}>{stat.count}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{stat.label}</div>
+              <div style={{ fontSize: 18, marginBottom: 3 }}>{stat.icon}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#25D366' }}>{stat.count}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{stat.label}</div>
             </div>
           ))}
         </div>
@@ -144,14 +193,11 @@ export default function OfflinePage() {
       {/* ─── Onglets ─────────────────────────────────────────────────────────── */}
       {hasOfflineData && (
         <div style={{
-          display: 'flex', gap: 4, padding: '0 16px 16px',
+          display: 'flex', gap: 6, padding: '0 16px 14px',
           overflowX: 'auto',
+          scrollbarWidth: 'none',
         }}>
-          {[
-            { id: 'stores', label: '🏪 Boutiques', count: stores.length },
-            { id: 'cart', label: '🛍️ Panier', count: cart.length },
-            { id: 'wishlist', label: '❤️ Favoris', count: wishlist.length },
-          ].map(tab => (
+          {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -164,10 +210,12 @@ export default function OfflinePage() {
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s',
+                flexShrink: 0,
                 background: activeTab === tab.id
                   ? 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)'
                   : 'rgba(255,255,255,0.06)',
                 color: activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.5)',
+                boxShadow: activeTab === tab.id ? '0 4px 16px rgba(37,211,102,0.3)' : 'none',
               }}
             >
               {tab.label} {tab.count > 0 && (
@@ -187,21 +235,99 @@ export default function OfflinePage() {
       )}
 
       {/* ─── Contenu des onglets ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto', paddingBottom: 100 }}>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
-            Chargement des données en cache...
+            Chargement du cache...
           </div>
         )}
 
-        {/* Boutiques en cache */}
+        {/* ── Produits en cache (grille visuelle) ──────────────────────────── */}
+        {!loading && activeTab === 'products' && (
+          <>
+            {products.length === 0 ? (
+              <EmptyState icon="📦" label="Aucun produit en cache"
+                sub="Parcourez des boutiques en ligne pour que les produits soient mis en cache." />
+            ) : (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 10,
+              }}>
+                {products.map(product => (
+                  <div
+                    key={product.id}
+                    className="product-card"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Image produit */}
+                    <div style={{
+                      width: '100%', paddingTop: '75%',
+                      position: 'relative',
+                      background: 'rgba(255,255,255,0.06)',
+                    }}>
+                      {product.image_url || product.image ? (
+                        <img
+                          src={product.image_url || product.image}
+                          alt={product.name}
+                          style={{
+                            position: 'absolute', inset: 0,
+                            width: '100%', height: '100%',
+                            objectFit: 'cover',
+                          }}
+                          loading="lazy"
+                          onError={e => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 32,
+                        }}>📦</div>
+                      )}
+                      {/* Badge cache */}
+                      <div style={{
+                        position: 'absolute', top: 6, left: 6,
+                        background: 'rgba(18,140,126,0.85)',
+                        borderRadius: 6, padding: '2px 6px',
+                        fontSize: 9, fontWeight: 700, color: 'white',
+                        backdropFilter: 'blur(4px)',
+                      }}>EN CACHE</div>
+                    </div>
+                    {/* Infos */}
+                    <div style={{ padding: '10px 10px 12px' }}>
+                      <div style={{
+                        fontWeight: 600, fontSize: 12, color: 'white',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        marginBottom: 4,
+                      }}>
+                        {product.name || 'Produit'}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#25D366' }}>
+                        {product.price?.toLocaleString('fr-FR')} FCFA
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Boutiques en cache ────────────────────────────────────────────── */}
         {!loading && activeTab === 'stores' && (
           <>
             {stores.length === 0 ? (
-              <EmptyState icon="🏪" label="Aucune boutique en cache" sub="Visitez des boutiques quand vous êtes connecté." />
+              <EmptyState icon="🏪" label="Aucune boutique en cache"
+                sub="Visitez des boutiques quand vous êtes connecté." />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 100 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {stores.map(store => (
                   <div key={store.id} style={{
                     background: 'rgba(255,255,255,0.04)',
@@ -214,7 +340,7 @@ export default function OfflinePage() {
                       width: 44, height: 44, borderRadius: 12,
                       background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 20, flexShrink: 0,
+                      fontSize: 20, flexShrink: 0, overflow: 'hidden',
                     }}>
                       {store.logo ? (
                         <img src={store.logo} alt={store.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
@@ -236,13 +362,14 @@ export default function OfflinePage() {
           </>
         )}
 
-        {/* Panier local */}
+        {/* ── Panier local ───────────────────────────────────────────────────── */}
         {!loading && activeTab === 'cart' && (
           <>
             {cart.length === 0 ? (
-              <EmptyState icon="🛍️" label="Panier vide" sub="Ajoutez des produits quand vous êtes connecté." />
+              <EmptyState icon="🛍️" label="Panier vide"
+                sub="Ajoutez des produits quand vous êtes connecté." />
             ) : (
-              <div style={{ paddingBottom: 100 }}>
+              <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {cart.map(item => (
                     <div key={item.id} style={{
@@ -275,7 +402,6 @@ export default function OfflinePage() {
                   ))}
                 </div>
 
-                {/* Total panier */}
                 <div style={{
                   marginTop: 16, padding: '14px 16px',
                   background: 'linear-gradient(135deg, rgba(37,211,102,0.1) 0%, rgba(18,140,126,0.1) 100%)',
@@ -305,13 +431,14 @@ export default function OfflinePage() {
           </>
         )}
 
-        {/* Wishlist */}
+        {/* ── Wishlist ───────────────────────────────────────────────────────── */}
         {!loading && activeTab === 'wishlist' && (
           <>
             {wishlist.length === 0 ? (
-              <EmptyState icon="❤️" label="Aucun favori" sub="Ajoutez des articles à vos favoris pour les retrouver ici." />
+              <EmptyState icon="❤️" label="Aucun favori"
+                sub="Ajoutez des articles à vos favoris pour les retrouver ici." />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 100 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {wishlist.map(item => (
                   <div key={item.id} style={{
                     background: 'rgba(255,255,255,0.04)',
@@ -343,33 +470,33 @@ export default function OfflinePage() {
           </>
         )}
 
-        {/* ─── Quand aucune donnée ────────────────────────────────────────────── */}
+        {/* ── Quand aucune donnée ─────────────────────────────────────────────── */}
         {!loading && !hasOfflineData && (
-          <div style={{ paddingTop: 12, paddingBottom: 80 }}>
+          <div style={{ paddingTop: 12 }}>
             <div style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: 20,
-              padding: '24px 20px',
+              padding: '28px 20px',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>💡</div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 8px' }}>
+              <div style={{ fontSize: 44, marginBottom: 14 }}>💡</div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 10px' }}>
                 Conseil Pro
               </p>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, margin: 0 }}>
-                Naviguez dans VesTyle quand vous êtes connecté. Les boutiques et produits que vous consultez seront automatiquement mis en cache pour un accès hors-ligne.
+                Naviguez dans VesTyle quand vous êtes connecté. Les boutiques et produits consultés sont automatiquement mis en cache pour un accès hors-ligne.
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* ─── Bouton Accueil ───────────────────────────────────────────────────── */}
+      {/* ─── Bouton Accueil fixé en bas ─────────────────────────────────────── */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '12px 16px 28px',
-        background: 'linear-gradient(to top, #111B21 60%, transparent)',
+        background: 'linear-gradient(to top, #0d1117 60%, transparent)',
       }}>
         <Link href="/" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

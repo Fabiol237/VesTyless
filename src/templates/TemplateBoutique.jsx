@@ -275,7 +275,17 @@ export default function TemplateBoutique({ store, themeVars, storeId, currency =
                 </div>
                 <div style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {wa !== '#' ? (
-                    <a href={`${wa}?text=${encodeURIComponent(`Commande ${name}\n\n${cart.map(i => `${i.qty}x ${i.name}`).join('\n')}\n\nTotal: ${fmt(cartTotal)}`)}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                    <a
+                      href={`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                        `🛒 *NOUVELLE COMMANDE - ${name.toUpperCase()}*\n───────────────────────\n` +
+                        cart.map((i, idx) => `${idx + 1}. *${i.name}* (x${i.qty}) = ${fmt(i.price * i.qty)}`).join('\n') +
+                        `\n───────────────────────\n💰 *TOTAL : ${fmt(cartTotal)}*\n───────────────────────\n` +
+                        `🚀 *Commande passée via VeStyle*\n👉 Créez votre boutique gratuitement sur https://vestyless.vercel.app`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ textDecoration: 'none' }}
+                    >
                       <button className="ae-btn" style={{ width: '100%' }}>Finaliser sur WhatsApp</button>
                     </a>
                   ) : (
@@ -289,11 +299,39 @@ export default function TemplateBoutique({ store, themeVars, storeId, currency =
         </div>
       )}
 
-      {/* ── FOOTER ── */}
+      {/* ── FOOTER AVEC BADGE VIRAL ── */}
       <footer className="ae-footer">
         <div className="ae-footer-brand">{name}</div>
         <p className="ae-footer-text">© {new Date().getFullYear()} {name}. Tous droits réservés.</p>
-        <p className="ae-footer-text">L'excellence dans chaque détail.</p>
+        <p className="ae-footer-text" style={{ marginBottom: '16px' }}>L'excellence dans chaque détail.</p>
+
+        {/* Badge Viral d'Acquisition VeStyle */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <a
+            href="https://vestyless.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '999px',
+              background: 'rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              color: fg2,
+              textDecoration: 'none',
+              fontSize: '11px',
+              fontWeight: 500,
+              letterSpacing: '0.04em',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span>Propulsé par</span>
+            <strong style={{ color: fg, fontWeight: 700 }}>VeStyle</strong>
+            <span style={{ fontSize: '10px', opacity: 0.7 }}>• Créez votre boutique</span>
+          </a>
+        </div>
       </footer>
     </div>
   );

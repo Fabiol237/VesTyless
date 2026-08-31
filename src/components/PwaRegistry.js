@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useFirebaseNotifications } from '@/hooks/useFirebaseNotifications';
 
 const OfflineStatusBanner = dynamic(() => import('@/components/OfflineStatusBanner'), { ssr: false });
+const NativeAppInstallModal = dynamic(() => import('@/components/NativeAppInstallModal'), { ssr: false });
 
 export default function PwaRegistry() {
   const [isOnline, setIsOnline] = useState(true);
@@ -75,6 +76,7 @@ export default function PwaRegistry() {
   return (
     <>
       <OfflineStatusBanner />
+      <NativeAppInstallModal />
 
       {/* Toast notification premier plan */}
       {toast && (

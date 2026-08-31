@@ -23,6 +23,7 @@ export default function AdminLayout({ children }) {
     { icon: ShoppingBag, label: 'Produits Globaux', href: '/admin/produits' },
     { icon: Users, label: 'Utilisateurs', href: '/admin/utilisateurs' },
     { icon: CircleDollarSign, label: 'Finances & Flux', href: '/admin/finances' },
+    { icon: Bell, label: 'Studio Emails Pro', href: '/admin/emails' },
     { icon: Settings, label: 'Paramètres', href: '/admin/settings' },
   ];
 

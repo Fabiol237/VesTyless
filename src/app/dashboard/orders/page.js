@@ -326,10 +326,31 @@ export default function OrdersPage() {
 
       console.log('Update successful:', data[0]);
 
-      // Email Notification (non-blocking)
+      // Email Notification (non-blocking) avec template VeStyle Pro
       if (order.customer_email && ['processing','shipped','delivered'].includes(newStatus)) {
-        const msgs={processing:'🛠️ Votre commande est en préparation',shipped:'🚚 Votre colis est en route !',delivered:'✅ Livraison confirmée. Merci !'};
-        fetch('/api/emails/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:order.customer_email,subject:msgs[newStatus],type:'status_update'})}).catch(() => {});
+        const statusMeta = {
+          processing: { title: 'Commande en préparation', icon: '🛠️', msg: 'Le commerçant emballe et prépare soigneusement vos articles.' },
+          shipped: { title: 'Votre colis est en route !', icon: '🚚', msg: 'Votre commande a été prise en charge par le service de livraison.' },
+          delivered: { title: 'Commande livrée avec succès !', icon: '✅', msg: 'Votre colis vous a été remis en main propre. Merci pour votre confiance !' }
+        };
+        const meta = statusMeta[newStatus] || { title: `Statut : ${newStatus}`, icon: '📦', msg: 'Mise à jour de commande.' };
+
+        fetch('/api/emails/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: order.customer_email,
+            type: 'STATUS_UPDATE',
+            data: {
+              orderId: order.id,
+              customerName: order.customer_name,
+              statusTitle: meta.title,
+              statusMessage: meta.msg,
+              statusIcon: meta.icon,
+              trackingUrl: `${window.location.origin}/suivi/${order.id}`
+            }
+          })
+        }).catch(() => {});
       }
       
       setOrders(prev=>prev.map(o=>o.id===order.id?{...o,status:newStatus}:o));
