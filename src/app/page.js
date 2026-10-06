@@ -96,6 +96,16 @@ const fmt = (v) => new Intl.NumberFormat('fr-FR').format(v) + ' FCFA';
 
 
 
+// Motif « doodle » façon fond WhatsApp
+const doodle = { backgroundImage: 'radial-gradient(rgba(255,255,255,0.14) 1.5px, transparent 1.5px)', backgroundSize: '22px 22px' };
+
+const SectionHead = ({ title, children }) => (
+  <div className="flex items-center justify-between px-1">
+    <h2 className={`text-lg sm:text-xl font-black tracking-tight text-slate-900 ${artFont.className}`}>{title}</h2>
+    {children}
+  </div>
+);
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [codeQuery, setCodeQuery] = useState('');
@@ -234,7 +244,7 @@ export default function Home() {
       meta.name = 'theme-color';
       document.head.appendChild(meta);
     }
-    meta.content = '#1e3a8a';
+    meta.content = '#075E54';
   }, []);
 
   const handleCodeSearch = async (e) => {
@@ -280,360 +290,304 @@ export default function Home() {
     }))
   ];
 
-  return (
-    <div className="min-h-screen text-slate-900 font-sans antialiased selection:bg-blue-500 selection:text-white"
-      style={{ background: '#F2F5FB' }}>
+  const slide = HERO_VISUAL_SLIDES[currentSlide];
+  const goPrev = () => setCurrentSlide(p => (p - 1 + HERO_VISUAL_SLIDES.length) % HERO_VISUAL_SLIDES.length);
+  const goNext = () => setCurrentSlide(p => (p + 1) % HERO_VISUAL_SLIDES.length);
+  const pickCategory = (id) => { setActiveCategory(id); scrollToFeed(); };
 
-      {/* ── NAVBAR GLOBALE ── */}
+  return (
+    <div className="min-h-screen text-slate-900 antialiased selection:bg-wa-green selection:text-white" style={{ background: '#EFEAE2' }}>
       <Navbar />
 
-      {/* ── HALOS LUMINEUX AMBIANTS ORANGE & BLEU (hors bannière) ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[40%] -right-20 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-amber-400/25 via-orange-300/15 to-transparent blur-[130px]" />
-        <div className="absolute top-[55%] -left-32 w-[500px] h-[500px] rounded-full bg-blue-500/15 blur-[140px]" />
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          HERO BANNER PLEIN BORD AVEC FOND DE DIAPORAMA ANIME (3 IMAGES)
-      ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden w-full text-white"
+      {/* ═══ HERO — style WhatsApp (vert profond + motif doodle) ═══ */}
+      <section
+        className="relative z-20 text-white"
         style={{
-          background: 'linear-gradient(130deg, #1a3fc4 0%, #1e52d6 45%, #2d3fd6 100%)',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 80px)',
-          paddingBottom: '36px',
-          paddingLeft: '20px',
-          paddingRight: '20px',
-          borderBottomLeftRadius: '28px',
-          borderBottomRightRadius: '28px',
-        }}>
-
-        {/* ── IMAGES EN FOND D'ÉCRAN ACCUEIL (COUVERTURE DE BANNIÈRE PLEINE VISIBILITÉ) ── */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={HERO_VISUAL_SLIDES[currentSlide].image}
-              src={HERO_VISUAL_SLIDES[currentSlide].image}
-              alt="VeStyle Hero Background"
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 0.65, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.03 }}
-              transition={{ duration: 1.0, ease: "easeInOut" }}
-              className="w-full h-full object-cover object-center"
-            />
-          </AnimatePresence>
-
-          {/* Vignettage dégradé gauche pour garantir la lisibilité du texte tout en laissant l'image briller */}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-blue-950/65 to-blue-900/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a3fc4] via-transparent to-slate-950/50" />
+          background: 'linear-gradient(160deg,#075E54 0%,#128C7E 62%,#1fa855 125%)',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)',
+          paddingBottom: '60px',
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+        }}
+      >
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+          <div className="absolute inset-0" style={doodle} />
+          <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-wa-green/30 blur-3xl" />
+          <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-emerald-300/10 blur-3xl" />
         </div>
 
-        {/* ☀️ SUNBURST SOLAIRE HAUT-DROITE — pure CSS, zéro JS */}
-        <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '340px', height: '340px', borderRadius: '50%', background: 'radial-gradient(circle at center, rgba(255,210,60,0.85) 0%, rgba(255,140,20,0.55) 35%, rgba(220,80,10,0.25) 60%, transparent 80%)', filter: 'blur(32px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '0px', right: '30px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%, rgba(255,255,220,0.95) 0%, rgba(255,220,80,0.6) 40%, transparent 70%)', filter: 'blur(18px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '20px', right: '70px', width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,240,120,0.8) 50%, transparent 80%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, width: '100%', height: '100%', background: 'radial-gradient(ellipse at 85% 8%, rgba(253,224,71,0.45) 0%, rgba(249,115,22,0.20) 28%, transparent 65%)', pointerEvents: 'none' }} />
-        {/* Étoiles décoratives */}
-        <div style={{ position: 'absolute', top: '28px', right: '14px', pointerEvents: 'none', display: 'flex', gap: '4px', opacity: 0.95 }}>
-          <span style={{ color: 'rgba(255,240,160,1)', fontSize: '11px' }}>✦</span>
-          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '9px' }}>✨</span>
-          <span style={{ color: 'rgba(255,220,100,1)', fontSize: '14px', fontWeight: 900 }}>✦</span>
-          <span style={{ color: 'rgba(255,200,80,0.9)', fontSize: '9px' }}>✨</span>
-        </div>
-        <div style={{ position: 'absolute', top: '52px', right: '90px', pointerEvents: 'none', color: 'rgba(255,230,120,0.85)', fontSize: '9px' }}>✨</div>
-        <div style={{ position: 'absolute', top: '72px', right: '50px', pointerEvents: 'none', color: 'rgba(255,220,100,0.75)', fontSize: '11px' }}>✦</div>
-
-        {/* ── CONTENU HERO — PRÉSENCE FORTE & SHOWCASE VISUEL ── */}
-        <div style={{ position: 'relative', zIndex: 10 }} className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-
-          {/* COLONNE GAUCHE (Texte & Recherche) */}
-          <div className="lg:col-span-7 space-y-5 text-left">
-
-            {/* Badge Prestige + Avatars Utilisateurs */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-300/40 bg-amber-400/10 text-amber-200 text-[10px] sm:text-[11px] font-black uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse inline-block"/>
-                ✨ #1 Marketplace de Proximité au Cameroun
-              </div>
-
-              {/* Stack Avatars Homme, Femme, Robot */}
-              <div className="flex items-center -space-x-2">
-                <img src="/images/hero_woman.png" alt="Utilisatrice VeStyle" className="w-7 h-7 rounded-full border-2 border-white/80 object-cover shadow-sm" />
-                <img src="/images/hero_man.png" alt="Acheteur VeStyle" className="w-7 h-7 rounded-full border-2 border-white/80 object-cover shadow-sm" />
-                <img src="/images/hero_robot.png" alt="Logistique IA" className="w-7 h-7 rounded-full border-2 border-blue-600 object-cover shadow-sm" />
-                <span className="pl-3 text-[10px] font-bold text-amber-300">Recherche visuelle & IA Live</span>
-              </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-5 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Texte + recherche */}
+          <div className="lg:col-span-7 space-y-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-emerald-100 text-[10px] sm:text-[11px] font-black uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-wa-green animate-pulse" />
+              #1 Marketplace de Proximité au Cameroun
             </div>
 
-            {/* Titre MASSIF — dégradé blanc → ambre → orange, pure CSS */}
-            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] ${artFont.className}`}>
-              <span className="text-white">Vise l&apos;objet,</span><br/>
-              <span style={{ background: 'linear-gradient(90deg, #ffffff 0%, #fcd34d 55%, #fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] ${artFont.className}`}>
+              Vise l&apos;objet,<br />
+              <span style={{ background: 'linear-gradient(90deg,#ffffff 0%,#b9f6ca 55%,#25D366 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 trouve la boutique
               </span>
             </h1>
 
-            {/* Sous-titre */}
-            <p className="text-blue-100/85 text-sm sm:text-base font-medium max-w-lg leading-relaxed">
-              Les meilleures boutiques locales à <strong className="text-white font-extrabold">Douala</strong> & <strong className="text-white font-extrabold">Yaoundé</strong> — Recherche photo, deals exclusifs, logistique intelligente.
+            <p className="text-emerald-50/90 text-sm sm:text-base font-medium max-w-lg leading-relaxed">
+              Les meilleures boutiques locales à <strong className="text-white font-extrabold">Douala</strong> &amp; <strong className="text-white font-extrabold">Yaoundé</strong> — Recherche photo, deals exclusifs, discussion directe sur WhatsApp.
             </p>
 
-            {/* BARRE DE RECHERCHE avec halo ambre — pure CSS */}
-            <div className="max-w-lg">
-              <div className="relative">
-                <div style={{ position: 'absolute', inset: '-3px', borderRadius: '18px', background: 'linear-gradient(135deg, rgba(251,191,36,0.35) 0%, rgba(59,130,246,0.25) 100%)', filter: 'blur(6px)', pointerEvents: 'none' }} />
-                <div className="relative flex items-center bg-white rounded-2xl p-1.5 pl-4 shadow-2xl border border-white/90 gap-2 focus-within:ring-2 focus-within:ring-amber-300/60 transition-all">
-                  <button type="button" onClick={() => setVisualSearchOpen(true)} className="text-slate-400 hover:text-blue-600 transition-colors p-0.5 shrink-0" title="Recherche par image">
-                    <CameraIcon size={20}/>
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <SearchAutocomplete
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      suggestions={suggestions}
-                      placeholder="Rechercher un article, une boutique..."
-                      className="w-full"
-                      inputClassName="w-full outline-none bg-transparent text-slate-900 placeholder:text-slate-400 font-semibold text-xs sm:text-sm py-2"
-                    />
-                  </div>
-                  <VoiceSearchButton
-                    onInterimResult={(t) => setSearchQuery(t)}
-                    onResult={(t) => { setSearchQuery(t); scrollToFeed(); }}
-                    className="text-slate-400 hover:text-blue-600 p-1 shrink-0"
-                  />
-                  <button type="button" onClick={scrollToFeed} className="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl transition-all shadow-lg shadow-blue-500/40 shrink-0">
-                    Chercher
-                  </button>
-                </div>
+            {/* Barre de recherche façon Facebook (pilule) */}
+            <div className="relative flex items-center bg-white rounded-full p-1.5 pl-4 shadow-2xl gap-2 max-w-xl text-slate-900 focus-within:ring-4 focus-within:ring-wa-green/40 transition-all">
+              <button type="button" onClick={() => setVisualSearchOpen(true)} className="text-wa-teal hover:text-wa-teal-dark transition-colors p-0.5 shrink-0" title="Recherche par image">
+                <CameraIcon size={20} />
+              </button>
+              <div className="flex-1 min-w-0">
+                <SearchAutocomplete
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  suggestions={suggestions}
+                  placeholder="Rechercher un article, une boutique..."
+                  className="w-full"
+                  inputClassName="w-full outline-none bg-transparent text-slate-900 placeholder:text-slate-400 font-semibold text-xs sm:text-sm py-2"
+                />
               </div>
+              <VoiceSearchButton
+                onInterimResult={(t) => setSearchQuery(t)}
+                onResult={(t) => { setSearchQuery(t); scrollToFeed(); }}
+                className="text-slate-400 hover:text-wa-teal p-1 shrink-0"
+              />
+              <button type="button" onClick={scrollToFeed} className="bg-wa-teal hover:bg-wa-teal-dark active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-full transition-all shadow-lg shrink-0">
+                Chercher
+              </button>
             </div>
 
-            {/* Pills de confiance — 100% statiques */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {[
-                { icon: '📸', label: 'Recherche Image IA' },
-                { icon: '🏪', label: '150+ Boutiques' },
-                { icon: '🤖', label: 'Logistique Robotisée' },
-                { icon: '📍', label: 'Douala & Yaoundé' },
-              ].map(s => (
-                <div key={s.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[11px] font-bold">
-                  <span>{s.icon}</span>
-                  <span>{s.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* ── BARRE D'ACTIONS RAPIDES INTÉGRÉE dans le Hero ── */}
-            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/15 mt-2">
-              {/* GPS */}
+            {/* Actions rapides : GPS + code boutique */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => { triggerFeedback?.('radar'); requestLocation(); scrollToFeed(); }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all border ${
-                  userLocation
-                    ? 'bg-emerald-500 text-white border-emerald-400 shadow-md'
-                    : 'bg-white/15 hover:bg-white/25 text-white border-white/25'
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full font-bold text-xs transition-all border ${
+                  userLocation ? 'bg-wa-green text-slate-950 border-wa-green shadow-md' : 'bg-white/15 hover:bg-white/25 text-white border-white/30'
                 }`}
               >
                 <MapPinIcon size={13} className={isGpsLocating ? 'animate-bounce' : ''} />
                 <span>{isGpsLocating ? 'Localisation...' : userLocation ? '📍 Localisé' : 'Autour de moi'}</span>
               </button>
 
-              {/* Code Boutique */}
-              <form onSubmit={handleCodeSearch} className="flex items-center gap-1.5 bg-white/15 hover:bg-white/20 border border-white/25 rounded-xl px-3 py-2 transition-all">
-                <HashIcon size={12} className="text-amber-300 shrink-0" />
+              <form onSubmit={handleCodeSearch} className="flex items-center gap-1.5 bg-white/15 hover:bg-white/20 border border-white/30 rounded-full pl-3.5 pr-1.5 py-1.5 transition-all">
+                <HashIcon size={12} className="text-emerald-200 shrink-0" />
                 <input
                   type="text"
                   maxLength={5}
                   value={codeQuery}
                   onChange={e => { setCodeQuery(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
                   placeholder="Code Boutique"
-                  className="w-20 bg-transparent outline-none text-xs font-mono font-bold text-white uppercase tracking-widest placeholder:text-white/40"
+                  className="w-24 bg-transparent outline-none text-xs font-mono font-bold text-white uppercase tracking-widest placeholder:text-white/50"
                 />
                 <button
                   type="submit"
                   disabled={codeQuery.length !== 5 || codeLoading}
-                  className="p-1 bg-amber-400/80 text-slate-900 rounded-lg disabled:opacity-40 hover:bg-amber-300 transition-all shrink-0"
+                  className="p-1.5 bg-wa-green text-slate-950 rounded-full disabled:opacity-40 hover:brightness-110 transition-all shrink-0"
                 >
-                  {codeLoading ? <LoaderIcon size={12} /> : <ArrowRightIcon size={11} />}
+                  {codeLoading ? <LoaderIcon size={12} /> : <ArrowRightIcon size={12} />}
                 </button>
               </form>
 
               {codeError && (
-                <span className="text-xs font-bold text-red-300 bg-red-500/20 px-2.5 py-1 rounded-lg border border-red-400/30">
-                  ⚠️ {codeError}
-                </span>
+                <span className="text-xs font-bold text-red-100 bg-red-500/30 px-3 py-1.5 rounded-full border border-red-300/40">⚠️ {codeError}</span>
               )}
             </div>
 
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { icon: '📸', label: 'Recherche Image IA' },
+                { icon: '🏪', label: '150+ Boutiques' },
+                { icon: '🤖', label: 'Logistique Robotisée' },
+                { icon: '📍', label: 'Douala & Yaoundé' },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/15 border border-white/15 text-white text-[11px] font-bold">
+                  <span>{s.icon}</span><span>{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* COLONNE DROITE (CARROUSEL INTERACTIF ANIME — VISIBLE EGALEMENT SUR MOBILE) */}
-          <div className="lg:col-span-5 relative flex flex-col items-center justify-center mt-6 lg:mt-0 min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]">
-            
-            {/* Halo lumineux central */}
-            <div className="absolute w-72 sm:w-80 h-72 sm:h-80 rounded-full bg-gradient-to-tr from-amber-400/25 via-blue-500/20 to-indigo-600/25 blur-3xl pointer-events-none" />
+          {/* Fenêtre de discussion WhatsApp = carrousel */}
+          <div className="lg:col-span-5 w-full max-w-[360px] mx-auto lg:mx-0 lg:ml-auto">
+            <div className="rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.35)] border border-white/20 bg-[#ECE5DD] text-slate-900">
+              <div className="flex items-center gap-3 bg-wa-teal-dark text-white px-4 py-3">
+                <img src="/icon-512.png" alt="VesTyle" className="w-9 h-9 rounded-full object-cover bg-white" />
+                <div className="min-w-0">
+                  <div className="font-extrabold text-sm leading-tight">VesTyle</div>
+                  <div className="text-[11px] text-emerald-200">en ligne · Douala &amp; Yaoundé</div>
+                </div>
+                <span className="ml-auto text-[10px] font-black px-2.5 py-1 rounded-full bg-black/25 text-amber-300 whitespace-nowrap">{slide.stat}</span>
+              </div>
 
-            {/* CARROUSEL MAIN CONTAINER (Responsive Mobile & Desktop) */}
-            <div className="relative w-full max-w-[310px] sm:max-w-[340px] bg-slate-950/60 backdrop-blur-2xl border border-white/20 rounded-3xl p-3.5 sm:p-4 shadow-[0_25px_60px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden">
-              
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlide}
-                  initial={{ opacity: 0, x: 20, scale: 0.96 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -20, scale: 0.96 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="space-y-3"
-                >
-                  {/* IMAGE SLIDE (Hauteur responsive h-48 mobile / h-64 desktop) */}
-                  <div className="relative h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden border border-white/10 group">
-                    <img
-                      src={HERO_VISUAL_SLIDES[currentSlide].image}
-                      alt={HERO_VISUAL_SLIDES[currentSlide].title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                    
-                    {/* Badge top left */}
-                    <span className={`absolute top-3 left-3 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg ${HERO_VISUAL_SLIDES[currentSlide].badgeBg}`}>
-                      {HERO_VISUAL_SLIDES[currentSlide].badge}
-                    </span>
-
-                    {/* Stat top right */}
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-amber-300 border border-white/15 text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
-                      {HERO_VISUAL_SLIDES[currentSlide].stat}
-                    </span>
-
-                    {/* Overlay info bottom */}
-                    <div className="absolute bottom-3 left-3 right-3 text-left">
-                      <h3 className="text-white font-black text-lg leading-tight">
-                        {HERO_VISUAL_SLIDES[currentSlide].title}
-                      </h3>
-                      <p className="text-blue-100/80 text-xs font-medium line-clamp-2 mt-0.5">
-                        {HERO_VISUAL_SLIDES[currentSlide].desc}
-                      </p>
+              <div className="p-3 min-h-[300px]" style={{ backgroundImage: 'radial-gradient(rgba(7,94,84,0.10) 1.5px, transparent 1.5px)', backgroundSize: '20px 20px' }}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    className="space-y-2"
+                  >
+                    <div className="bg-white rounded-2xl rounded-tl-sm p-1.5 shadow-sm max-w-[94%]">
+                      <div className="relative h-44 rounded-xl overflow-hidden">
+                        <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
+                        <span className={`absolute top-2 left-2 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow ${slide.badgeBg}`}>{slide.badge}</span>
+                      </div>
+                      <div className="px-2 pt-2 pb-1">
+                        <div className="font-black text-sm">{slide.title}</div>
+                        <p className="text-xs text-slate-600 leading-snug mt-0.5">{slide.desc}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+                    <div className="ml-auto w-fit max-w-[70%] bg-wa-chat rounded-2xl rounded-tr-sm px-3 py-2 shadow-sm text-xs font-semibold">
+                      Je veux ça ! <span className="text-sky-500">✓✓</span>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
 
-              {/* CARROUSEL CONTROLS (Pills + Flèches Prev/Next) */}
-              <div className="flex items-center justify-between pt-2 px-1 border-t border-white/10">
-                
-                {/* Dots / Indicators */}
+              <div className="flex items-center justify-between bg-white px-4 py-2.5 border-t border-slate-100">
                 <div className="flex items-center gap-1.5">
-                  {HERO_VISUAL_SLIDES.map((slide, idx) => (
+                  {HERO_VISUAL_SLIDES.map((s, idx) => (
                     <button
-                      key={slide.id}
+                      key={s.id}
                       type="button"
                       onClick={() => setCurrentSlide(idx)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        currentSlide === idx
-                          ? 'w-7 bg-amber-400'
-                          : 'w-2 bg-white/30 hover:bg-white/50'
-                      }`}
-                      title={slide.title}
+                      title={s.title}
+                      aria-label={s.title}
+                      className={`h-2 rounded-full transition-all duration-300 ${currentSlide === idx ? 'w-7 bg-wa-green' : 'w-2 bg-slate-300 hover:bg-slate-400'}`}
                     />
                   ))}
                 </div>
-
-                {/* Boutons Flèches Prev & Next */}
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentSlide(prev => (prev - 1 + HERO_VISUAL_SLIDES.length) % HERO_VISUAL_SLIDES.length)}
-                    className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 border border-white/15 flex items-center justify-center text-white text-xs font-black transition-all"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentSlide(prev => (prev + 1) % HERO_VISUAL_SLIDES.length)}
-                    className="w-8 h-8 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-90 text-slate-950 text-xs font-black transition-all shadow-md"
-                  >
-                    ›
-                  </button>
+                  <button type="button" onClick={goPrev} aria-label="Précédent" className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-700 text-sm font-black transition-all">‹</button>
+                  <button type="button" onClick={goNext} aria-label="Suivant" className="w-8 h-8 rounded-full bg-wa-green hover:brightness-110 active:scale-90 text-white text-sm font-black transition-all shadow-md">›</button>
                 </div>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
       </section>
 
-
-
-      {/* ── CONTENU PRINCIPAL — directement après le hero ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12 pb-24 pt-6">
-
-
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            5. 🔥 TOP DEALS DU MOMENT (CARTES AIR-FLOATING)
-        ════════════════════════════════════════════════════════════════════ */}
-        {(dealsLoading || topDeals.length > 0) && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className={`text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 ${artFont.className}`}>
-                <span className="text-orange-500">🔥</span> Top deals du moment
-              </h2>
-              <button onClick={scrollToFeed} className="text-xs font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider">
-                Voir tout →
-              </button>
+      {/* ═══ STATUTS / STORIES — boutiques populaires (style Facebook & WhatsApp) ═══ */}
+      <div className="relative z-10 -mt-8 max-w-7xl mx-auto px-4">
+        <div className="bg-white rounded-3xl shadow-lg border border-black/5 p-3.5 flex gap-4 overflow-x-auto no-scrollbar">
+          <Link href="/login" className="flex flex-col items-center gap-1.5 shrink-0 w-16">
+            <span className="w-14 h-14 rounded-full bg-wa-green text-white flex items-center justify-center text-3xl font-black shadow-md">+</span>
+            <span className="text-[10px] font-bold text-slate-600 text-center leading-tight">Vendre</span>
+          </Link>
+          {dealsLoading && [1, 2, 3, 4].map(i => (
+            <div key={i} className="flex flex-col items-center gap-1.5 shrink-0 w-16 animate-pulse">
+              <span className="w-14 h-14 rounded-full bg-slate-100" />
+              <span className="h-2 w-10 rounded bg-slate-100" />
             </div>
+          ))}
+          {popularStores.map(s => (
+            <Link key={s.id} href={`/boutique/${s.slug}`} className="flex flex-col items-center gap-1.5 shrink-0 w-16">
+              <span className="w-14 h-14 rounded-full p-[2.5px] bg-gradient-to-tr from-wa-green via-emerald-400 to-wa-teal">
+                <span className="block w-full h-full rounded-full bg-white p-[2px]">
+                  {s.logo_url ? (
+                    <img src={s.logo_url} alt={s.name} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-xl">🏪</span>
+                  )}
+                </span>
+              </span>
+              <span className="text-[10px] font-bold text-slate-600 text-center line-clamp-1 w-full">{s.name}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
 
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10 pb-28 pt-5">
+
+        {/* Catégories (auparavant masquées sur l'accueil) */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+          {CATEGORY_PILLS.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => pickCategory(c.id)}
+              className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold border transition-all active:scale-95 ${
+                activeCategory === c.id
+                  ? 'bg-wa-teal text-white border-wa-teal shadow-md'
+                  : 'bg-white text-slate-700 border-black/10 hover:border-wa-teal hover:text-wa-teal'
+              }`}
+            >
+              <span>{c.emoji}</span>{c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Bandeau vendeur — style Shopify */}
+        <section className="relative overflow-hidden rounded-3xl bg-wa-teal-dark text-white p-5 sm:p-7 shadow-xl">
+          <div className="absolute inset-0 pointer-events-none" style={doodle} />
+          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-black uppercase tracking-widest text-wa-green">Pour les vendeurs</div>
+              <h2 className={`text-xl sm:text-2xl font-black leading-tight ${artFont.className}`}>Ouvre ta boutique en ligne sur VesTyle</h2>
+              <p className="text-sm text-emerald-100/85 max-w-xl">Éditeur de boutique, assistant IA, commandes et livraison suivie — avec contact WhatsApp direct pour tes clients.</p>
+            </div>
+            <Link href="/login" className="shrink-0 inline-flex items-center justify-center gap-2 bg-wa-green hover:brightness-110 active:scale-95 text-slate-950 font-black text-sm px-6 py-3.5 rounded-full shadow-lg transition-all">
+              Vendre sur VesTyle <ArrowRightIcon size={16} />
+            </Link>
+          </div>
+        </section>
+
+        {/* Top deals — cartes produit façon Shopify */}
+        {(dealsLoading || topDeals.length > 0) && (
+          <section className="space-y-3">
+            <SectionHead title="🔥 Top deals du moment">
+              <button type="button" onClick={scrollToFeed} className="text-xs font-black text-wa-teal hover:text-wa-teal-dark uppercase tracking-wider">Voir tout →</button>
+            </SectionHead>
             {dealsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-white rounded-3xl p-4 border border-slate-100 animate-pulse space-y-3">
-                    <div className="aspect-[4/3] rounded-2xl bg-slate-100" />
-                    <div className="h-4 bg-slate-100 rounded-lg w-3/4" />
-                    <div className="h-3 bg-slate-50 rounded-lg w-1/2" />
+                  <div key={i} className="bg-white rounded-2xl p-3 animate-pulse space-y-3">
+                    <div className="aspect-square rounded-xl bg-slate-100" />
+                    <div className="h-4 bg-slate-100 rounded w-3/4" />
+                    <div className="h-3 bg-slate-50 rounded w-1/2" />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 {topDeals.slice(0, 6).map(deal => {
                   const disc = discountPct(deal);
                   return (
                     <Link
                       key={deal.id}
                       href={deal.stores?.slug ? `/boutique/${deal.stores.slug}` : '#'}
-                      className="bg-white rounded-3xl p-3.5 sm:p-4 border border-slate-100/90 shadow-[0_10px_30px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.12)] hover:-translate-y-1.5 transition-all duration-300 relative flex flex-col group overflow-hidden"
+                      className="group bg-white rounded-2xl overflow-hidden border border-black/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
                     >
-                      {disc && (
-                        <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl shadow-md z-10">
-                          {disc}
-                        </div>
-                      )}
-
-                      <div className="w-full aspect-[4/3] sm:aspect-square rounded-2xl bg-slate-50 overflow-hidden mb-3.5 flex items-center justify-center relative">
+                      <div className="relative aspect-square bg-slate-100 overflow-hidden flex items-center justify-center">
                         {deal.image_url ? (
-                          <img src={deal.image_url} alt={deal.name} className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500" />
+                          <img src={deal.image_url} alt={deal.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
                           <span className="text-4xl opacity-30">🛍️</span>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        {disc && <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow">{disc}</span>}
                       </div>
-
-                      <div className="space-y-1 mt-auto">
-                        <div className="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-blue-600 transition-colors">{deal.name}</div>
+                      <div className="p-3 space-y-1 flex-1 flex flex-col">
+                        <div className="text-xs font-bold text-slate-800 line-clamp-1">{deal.name}</div>
                         {deal.stores?.name && (
                           <div className="text-[10px] font-semibold text-slate-400 truncate flex items-center gap-1">
-                            <StoreIcon size={10} className="text-slate-400 shrink-0" />
-                            <span>{deal.stores.name}</span>
+                            <StoreIcon size={10} className="shrink-0" /><span>{deal.stores.name}</span>
                           </div>
                         )}
-                        <div className="flex items-baseline gap-1.5 pt-1">
-                          <span className="text-sm sm:text-base font-black text-slate-900">{fmt(deal.price)}</span>
+                        <div className="flex items-baseline gap-1.5 pt-0.5">
+                          <span className="text-sm font-black text-slate-900">{fmt(deal.price)}</span>
                           {deal.original_price && deal.original_price > deal.price && (
                             <span className="text-[10px] font-bold text-slate-400 line-through">{fmt(deal.original_price)}</span>
                           )}
                         </div>
+                        <span className="mt-auto block text-center text-[11px] font-extrabold text-wa-teal bg-wa-teal/10 group-hover:bg-wa-teal group-hover:text-white rounded-full py-2 transition-colors">
+                          Voir la boutique
+                        </span>
                       </div>
                     </Link>
                   );
@@ -643,30 +597,19 @@ export default function Home() {
           </section>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            6. POPULAIRE PRÈS DE VOUS (boutiques réelles Supabase)
-        ════════════════════════════════════════════════════════════════════ */}
+        {/* Boutiques populaires — publications façon Facebook */}
         {(dealsLoading || popularStores.length > 0) && (
           <section className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className={`text-lg font-black text-slate-900 tracking-tight ${artFont.className}`}>
-                Populaire près de vous
-              </h2>
-              <Link href="/boutiques" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
-                Toutes les boutiques →
-              </Link>
-            </div>
-
+            <SectionHead title="Populaire près de vous">
+              <Link href="/boutiques" className="text-xs font-bold text-wa-teal hover:text-wa-teal-dark">Toutes les boutiques →</Link>
+            </SectionHead>
             {dealsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1, 2].map(i => (
-                  <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 animate-pulse space-y-3">
+                  <div key={i} className="bg-white rounded-2xl p-4 animate-pulse space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 bg-slate-100 rounded w-3/4" />
-                        <div className="h-2 bg-slate-50 rounded w-1/2" />
-                      </div>
+                      <div className="w-10 h-10 rounded-full bg-slate-100" />
+                      <div className="flex-1 space-y-2"><div className="h-3 bg-slate-100 rounded w-3/4" /><div className="h-2 bg-slate-50 rounded w-1/2" /></div>
                     </div>
                     <div className="aspect-[4/3] rounded-xl bg-slate-100" />
                   </div>
@@ -675,134 +618,100 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {popularStores.slice(0, 4).map((store, idx) => (
-                  <div key={store.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs hover:shadow-md transition-all space-y-3 group">
-
-                    {/* En-tête boutique */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 shrink-0">
+                  <article key={store.id} className="bg-white rounded-2xl border border-black/5 shadow-sm hover:shadow-lg transition-all overflow-hidden group">
+                    <div className="flex items-center justify-between p-3.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 ring-2 ring-wa-green/60 shrink-0">
                           {store.logo_url ? (
                             <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-lg">🏪</div>
                           )}
                         </div>
-                        <div>
-                          <div className="text-xs font-extrabold text-slate-900 line-clamp-1">{store.name}</div>
-                          <div className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                            <MapPinIcon size={10} />
-                            {store.city || 'Douala'}
-                          </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-extrabold text-slate-900 line-clamp-1">{store.name}</div>
+                          <div className="text-[11px] font-semibold text-slate-400 flex items-center gap-1"><MapPinIcon size={10} />{store.city || 'Douala'}</div>
                         </div>
                       </div>
-                      {store.is_boosted && (
-                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-orange-500 text-white rounded-full">LIVE</span>
-                      )}
+                      {store.is_boosted && <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 bg-wa-green text-slate-950 rounded-full shrink-0">LIVE</span>}
                     </div>
 
-                    {/* Image vitrine boutique */}
-                    <Link href={`/boutique/${store.slug}`}>
-                      <div className="relative aspect-[4/3] rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+                    <Link href={`/boutique/${store.slug}`} className="block">
+                      <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
                         {store.logo_url ? (
                           <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <StoreIcon size={40} className="text-slate-300" />
-                          </div>
+                          <div className="w-full h-full flex items-center justify-center"><StoreIcon size={40} className="text-slate-300" /></div>
                         )}
-                        {/* Badge top / flash */}
-                        <div className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-black text-white shadow-sm flex items-center gap-1 ${idx % 2 === 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
-                          <span>{idx % 2 === 0 ? '🔥' : '⭐'}</span>
-                          <span>{idx % 2 === 0 ? 'Flash' : 'Top'}</span>
+                        <div className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm flex items-center gap-1 ${idx % 2 === 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
+                          <span>{idx % 2 === 0 ? '🔥' : '⭐'}</span><span>{idx % 2 === 0 ? 'Flash' : 'Top'}</span>
                         </div>
-                        {/* Overlay lien visite */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
                           <span className="text-white text-[11px] font-black uppercase tracking-wider">Visiter →</span>
                         </div>
                       </div>
                     </Link>
 
-                    {/* Actions sociales + bouton WhatsApp */}
-                    <div className="flex items-center justify-between pt-0.5">
-                      <div className="flex items-center gap-2.5 text-slate-400 text-xs font-bold">
-                        <span className="flex items-center gap-1 text-slate-500 font-semibold" title="Vues de la boutique">
-                          <HeartIcon size={13} className="text-rose-500" /> {store.daily_views || 0} vues
-                        </span>
-                      </div>
-
-
+                    <div className="flex items-center justify-between p-3.5 border-t border-slate-100">
+                      <span className="flex items-center gap-1.5 text-slate-500 text-xs font-semibold" title="Vues de la boutique">
+                        <HeartIcon size={14} className="text-rose-500" /> {store.daily_views || 0} vues
+                      </span>
                       {store.phone_whatsapp ? (
                         <a
                           href={`https://wa.me/${store.phone_whatsapp}?text=Bonjour%20!%20J'ai%20vu%20votre%20boutique%20sur%20VesTyle.`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs"
+                          className="flex items-center gap-1.5 bg-wa-green hover:brightness-110 active:scale-95 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-full transition-all shadow-sm"
                         >
                           <span>🟢</span><span>Discuter</span>
                         </a>
                       ) : (
-                        <Link
-                          href={`/boutique/${store.slug}`}
-                          className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs"
-                        >
+                        <Link href={`/boutique/${store.slug}`} className="flex items-center gap-1.5 bg-[#1877F2] hover:brightness-110 active:scale-95 text-white font-extrabold text-xs px-4 py-2 rounded-full transition-all shadow-sm">
                           <span>→</span><span>Voir</span>
                         </Link>
                       )}
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             )}
           </section>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            7. 🔥 OFFRES & PRIX RÉDUITS (Produits réels en promotion)
-        ════════════════════════════════════════════════════════════════════ */}
+        {/* Offres & prix réduits */}
         {flashSales.length > 0 && (
-          <section className="relative overflow-hidden rounded-[24px] p-5 sm:p-6 border border-orange-500/20 bg-slate-900 text-white shadow-xl">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.12),transparent_60%)] pointer-events-none" />
-
+          <section className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-wa-teal-dark text-white shadow-xl">
+            <div className="absolute inset-0 pointer-events-none" style={doodle} />
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
-                  <h2 className={`text-xl font-black text-white flex items-center gap-2 ${artFont.className}`}>
-                    <span className="text-orange-500 text-2xl">🔥</span>
-                    Offres & Prix Réduits
-                  </h2>
-                  <p className="text-slate-400 text-xs mt-0.5">Sélection de produits en promotion directe enregistrés par nos marchands vérifiés.</p>
+                  <h2 className={`text-xl font-black flex items-center gap-2 ${artFont.className}`}><span className="text-2xl">🔥</span> Offres &amp; Prix Réduits</h2>
+                  <p className="text-emerald-100/70 text-xs mt-0.5">Sélection de produits en promotion directe enregistrés par nos marchands vérifiés.</p>
                 </div>
-                <div className="bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-xl flex items-center gap-2 self-start sm:self-auto">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-[11px] text-orange-300 font-bold uppercase tracking-wider">🏷️ Remises Actives</span>
+                <div className="bg-black/20 border border-white/15 px-3.5 py-1.5 rounded-full flex items-center gap-2 self-start sm:self-auto">
+                  <span className="w-2 h-2 rounded-full bg-wa-green animate-ping" />
+                  <span className="text-[11px] text-emerald-100 font-bold uppercase tracking-wider">🏷️ Remises Actives</span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {flashSales.map(product => {
                   const disc = discountPct(product);
                   return (
-                    <Link href={`/produit/${product.id}`} key={product.id} className="flex gap-3 items-center bg-white/5 border border-white/10 hover:border-orange-500/40 rounded-2xl p-4 transition-all group">
-                      <div className="w-20 h-20 rounded-xl bg-slate-950/60 overflow-hidden relative shrink-0 border border-white/5">
+                    <Link href={`/produit/${product.id}`} key={product.id} className="flex gap-3 items-center bg-white/10 hover:bg-white/15 border border-white/10 hover:border-wa-green/60 rounded-2xl p-3.5 transition-all group">
+                      <div className="w-20 h-20 rounded-xl bg-black/20 overflow-hidden relative shrink-0">
                         {product.image_url ? (
                           <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-500 text-2xl">📦</div>
+                          <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                         )}
-                        {disc && (
-                          <div className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg shadow-sm">
-                            {disc}
-                          </div>
-                        )}
+                        {disc && <div className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg">{disc}</div>}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white text-sm line-clamp-1 group-hover:text-orange-400 transition-colors">{product.name}</h3>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{product.stores?.name} • {product.stores?.city}</p>
+                        <h3 className="font-bold text-sm line-clamp-1 group-hover:text-wa-green transition-colors">{product.name}</h3>
+                        <p className="text-[11px] text-emerald-100/70 line-clamp-1 mt-0.5">{product.stores?.name} • {product.stores?.city}</p>
                         <div className="mt-2 flex items-baseline gap-2">
-                          <span className="text-base font-black text-orange-400 font-mono">{fmt(product.price)}</span>
-                          {product.original_price > product.price && (
-                            <span className="text-[11px] text-slate-500 line-through font-mono">{fmt(product.original_price)}</span>
-                          )}
+                          <span className="text-base font-black text-wa-green font-mono">{fmt(product.price)}</span>
+                          {product.original_price > product.price && <span className="text-[11px] text-emerald-100/50 line-through font-mono">{fmt(product.original_price)}</span>}
                         </div>
                       </div>
                     </Link>
@@ -813,9 +722,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            8. CATALOGUE COMPLET & FEED INTERACTIF (ClientDiscovery)
-        ════════════════════════════════════════════════════════════════════ */}
+        {/* Catalogue complet & fil interactif */}
         <section id="discovery-feed-section" className="pt-2">
           <ClientDiscovery
             externalSearchQuery={searchQuery}
@@ -829,36 +736,40 @@ export default function Home() {
           />
         </section>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            9. FOOTER PREMIUM
-        ════════════════════════════════════════════════════════════════════ */}
-        <footer className="mt-16 pt-10 pb-4 border-t border-slate-200/60">
+        {/* Pied de page */}
+        <footer className="mt-12 pt-10 pb-4 border-t border-black/10">
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
               <img src="/icon-512.png" className="w-10 h-10 rounded-xl shadow-sm object-cover" alt="VesTyle Logo" />
               <h2 className={`text-3xl sm:text-4xl font-black tracking-tight text-slate-900 ${artFont.className}`}>
-                Ves<span className="text-orange-600">Tyle</span>
+                Ves<span className="text-wa-teal">Tyle</span>
               </h2>
             </div>
-            <p className="text-xs text-slate-400 font-medium">Marketplace social local — Douala & Yaoundé</p>
-            <div className="flex flex-wrap justify-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-400">
-              <Link href="/login" className="hover:text-blue-600 transition-colors">Vendre sur VesTyle</Link>
-              <Link href="/boutiques" className="hover:text-blue-600 transition-colors">Boutiques</Link>
-              <Link href="/mes-commandes" className="hover:text-blue-600 transition-colors">Mes Commandes</Link>
-              <Link href="#" className="hover:text-blue-600 transition-colors">Aide</Link>
+            <p className="text-xs text-slate-500 font-medium">Marketplace social local — Douala &amp; Yaoundé</p>
+            <div className="flex flex-wrap justify-center gap-6 text-[11px] font-black uppercase tracking-widest text-slate-500">
+              <Link href="/login" className="hover:text-wa-teal transition-colors">Vendre sur VesTyle</Link>
+              <Link href="/boutiques" className="hover:text-wa-teal transition-colors">Boutiques</Link>
+              <Link href="/mes-commandes" className="hover:text-wa-teal transition-colors">Mes Commandes</Link>
+              <Link href="#" className="hover:text-wa-teal transition-colors">Aide</Link>
             </div>
-            <div className="w-full max-w-xs mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">
-              Cameroun Excellence • {new Date().getFullYear()}
-            </p>
+            <div className="w-full max-w-xs mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Cameroun Excellence • {new Date().getFullYear()}</p>
           </div>
         </footer>
-
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MODAL RECHERCHE VISUELLE (IA)
-      ════════════════════════════════════════════════════════════════════ */}
+      {/* Bouton flottant WhatsApp : recherche par photo */}
+      <button
+        type="button"
+        onClick={() => setVisualSearchOpen(true)}
+        title="Recherche par image"
+        aria-label="Recherche par image"
+        className="fixed right-4 bottom-5 z-40 w-14 h-14 rounded-full bg-wa-green text-white shadow-[0_10px_30px_rgba(37,211,102,0.55)] flex items-center justify-center active:scale-90 hover:brightness-110 transition-all"
+      >
+        <CameraIcon size={24} />
+      </button>
+
+      {/* Modal recherche visuelle (IA) */}
       {visualSearchOpen && (
         <VisualSearchModal
           onClose={() => setVisualSearchOpen(false)}
