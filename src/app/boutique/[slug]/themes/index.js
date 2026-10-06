@@ -1,56 +1,10 @@
 /**
- * Registre des thèmes de boutique VesTyle
- * 20 thèmes couvrant tous les secteurs d'activité de manière 100% unique.
+ * Registre des thèmes de boutique VesTyle / Vestin
+ * 22 thèmes déclaratifs couvrant tous les secteurs d'activité de manière 100% unique.
+ * (Design Tokens purs : couleurs, typographies, styles)
  */
 
-import Theme00_Classic    from './Theme00_Classic';
-import Theme01_Luxury     from './Theme01_Luxury';
-import Theme02_Beauty     from './Theme02_Beauty';
-import Theme03_Market     from './Theme03_Market';
-import Theme04_Restaurant from './Theme04_Restaurant';
-import Theme05_Pro        from './Theme05_Pro';
-import Theme06_Street     from './Theme06_Street';
-import Theme07_Tech       from './Theme07_Tech';
-import Theme08_Editorial  from './Theme08_Editorial';
-import Theme09_Artisan    from './Theme09_Artisan';
-import Theme10_Sport      from './Theme10_Sport';
-import Theme11_Health     from './Theme11_Health';
-import Theme12_Event      from './Theme12_Event';
-import Theme13_Kids       from './Theme13_Kids';
-import Theme14_Cyber      from './Theme14_Cyber';
-import Theme15_Retro      from './Theme15_Retro';
-import Theme16_Deco       from './Theme16_Deco';
-import Theme17_Garage     from './Theme17_Garage';
-import Theme18_Book       from './Theme18_Book';
-import Theme19_Jewel      from './Theme19_Jewel';
-import Theme20_Afro      from './Theme20_Afro';
-import Theme21_Paper     from './Theme21_Paper';
 
-export const THEME_COMPONENTS = {
-  theme_00: Theme00_Classic,
-
-  theme_01: Theme01_Luxury,
-  theme_02: Theme02_Beauty,
-  theme_03: Theme03_Market,
-  theme_04: Theme04_Restaurant,
-  theme_05: Theme05_Pro,
-  theme_06: Theme06_Street,
-  theme_07: Theme07_Tech,
-  theme_08: Theme08_Editorial,
-  theme_09: Theme09_Artisan,
-  theme_10: Theme10_Sport,
-  theme_11: Theme11_Health,
-  theme_12: Theme12_Event,
-  theme_13: Theme13_Kids,
-  theme_14: Theme14_Cyber,
-  theme_15: Theme15_Retro,
-  theme_16: Theme16_Deco,
-  theme_17: Theme17_Garage,
-  theme_18: Theme18_Book,
-  theme_19: Theme19_Jewel,
-  theme_20: Theme20_Afro,
-  theme_21: Theme21_Paper,
-};
 
 export const THEMES = [
   {

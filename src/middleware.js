@@ -51,9 +51,6 @@ const BLOCKED_USER_AGENTS = [
   /exabot/i,
   /sogou/i,
   /yandexbot/i,
-  // ⛔ ANTIGRAVITY PRO — outil détecté comme scraper de VeStyle
-  /antigravity/i,
-  /antigravity-pro/i,
   /notrack/i,
   // Outils de sécurité offensifs
   /zgrab/i,
@@ -94,6 +91,10 @@ export async function middleware(req) {
   const userAgent = req.headers.get('user-agent') || '';
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown';
 
+  // ── 0. BYPASS LOCALHOST / DÉVELOPPEMENT ────────────────────────────────────
+  const host = req.headers.get('host') || '';
+  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1') || process.env.NODE_ENV === 'development';
+
   // ── 0. HONEYPOT — Piège invisible pour les scrapers automatiques ─────────────
   // Ces routes n'existent pas dans l'interface, seuls les bots les visitent
   const HONEYPOT_PATHS = ['/sitemap-products.xml', '/api/v1/export', '/api/data/dump', '/api/internal'];
@@ -107,7 +108,7 @@ export async function middleware(req) {
   }
 
   // ── 1. BANNISSEMENT IP ───────────────────────────────────────────────────────
-  if (BANNED_IPS.has(ip)) {
+  if (!isLocal && BANNED_IPS.has(ip)) {
     console.warn(`[SECURITY SHIELD] IP bannie bloquée: ${ip}`);
     return new NextResponse('', { status: 444 }); // 444 = pas de réponse (comme nginx)
   }
@@ -123,19 +124,21 @@ export async function middleware(req) {
   }
 
   // ── 3. BLOQUER LES ROBOTS VOLEURS DE CODE & SCRAPERS VIA USER-AGENT ─────────
-  const isBadBot = BLOCKED_USER_AGENTS.some(pattern => pattern.test(userAgent));
-  if (isBadBot) {
-    console.warn(`[SECURITY SHIELD] Robot/Scraper bloqué: ${userAgent.slice(0, 80)} depuis IP: ${ip}`);
-    return new NextResponse('Accès refusé. Les robots et scrapers automatiques sont interdits sur VeStyle.', {
-      status: 403,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
-  }
+  if (!isLocal) {
+    const isBadBot = BLOCKED_USER_AGENTS.some(pattern => pattern.test(userAgent));
+    if (isBadBot) {
+      console.warn(`[SECURITY SHIELD] Robot/Scraper bloqué: ${userAgent.slice(0, 80)} depuis IP: ${ip}`);
+      return new NextResponse('Accès refusé. Les robots et scrapers automatiques sont interdits sur VeStyle.', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      });
+    }
 
-  // ── 4. DÉTECTER LES NAVIGATEURS SANS USER-AGENT (bots furtifs) ──────────────
-  if (!userAgent || userAgent.length < 10) {
-    console.warn(`[SECURITY SHIELD] Requête sans User-Agent depuis IP: ${ip}`);
-    return new NextResponse('Accès refusé.', { status: 403 });
+    // ── 4. DÉTECTER LES NAVIGATEURS SANS USER-AGENT (bots furtifs) ──────────────
+    if (!userAgent || userAgent.length < 10) {
+      console.warn(`[SECURITY SHIELD] Requête sans User-Agent depuis IP: ${ip}`);
+      return new NextResponse('Accès refusé.', { status: 403 });
+    }
   }
 
   // ── 3. RATE LIMITING POUR LES APIS (Protection Anti-BruteForce & DDoSBots) ───
@@ -166,9 +169,9 @@ export async function middleware(req) {
     if (basicAuth) {
       const authValue = basicAuth.split(' ')[1];
       const [user, pwd] = atob(authValue).split(':');
-      const adminPassword = process.env.ADMIN_PASSWORD || 'vestyle2026';
+      const adminPassword = process.env.ADMIN_PASSWORD;
 
-      if (user === 'superadmin' && pwd === adminPassword) {
+      if (adminPassword && user === 'superadmin' && pwd === adminPassword) {
         return applySecurityHeaders(NextResponse.next());
       }
     }

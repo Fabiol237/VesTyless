@@ -10,6 +10,14 @@ import { useEffect } from 'react';
 
 export default function SecurityShield() {
   useEffect(() => {
+    // ── En environnement de développement ou localhost : Ne pas bloquer ──
+    if (
+      process.env.NODE_ENV === 'development' ||
+      (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ) {
+      return;
+    }
+
     // ── 1. DÉTECTION DES ROBOTS DE NAVIGATEUR AUTOMATISÉ (Selenium / Puppeteer) ──
     const checkAutomatedBot = () => {
       const isWebDriver = navigator.webdriver || window.__nightmare || window.callPhantom || window._phantom;
@@ -54,7 +62,7 @@ export default function SecurityShield() {
 
     // ── 3. BLOQUER LE CLIC DROIT CONTEXTUEL SUR BUILDER / DASHBOARD / ADMIN ──────
     const handleContextMenu = (e) => {
-      const isSensitivePage = window.location.pathname.includes('/builder') ||
+      const isSensitivePage = window.location.pathname.includes('/mes-sites') ||
                               window.location.pathname.includes('/dashboard') ||
                               window.location.pathname.includes('/admin');
       if (isSensitivePage) {

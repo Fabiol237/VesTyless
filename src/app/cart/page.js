@@ -85,6 +85,14 @@ export default function CartPage() {
 
     setSubmitError('');
     setLoading(true);
+
+    // ── Idempotency Key : générée une seule fois par tentative de checkout ──
+    // Un retry réseau de la même tentative CONSERVE la même clé.
+    // Un nouveau checkout déclenche une nouvelle clé.
+    const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     try {
       let lat = null, lng = null;
       if (navigator.geolocation) {
@@ -109,30 +117,48 @@ export default function CartPage() {
         let insertAttempts = 0;
         const maxInsertAttempts = 3;
 
-        // 1. Insertion de la commande avec retry
+        // 1. Validation et création sécurisée de la commande côté serveur
         while (insertAttempts < maxInsertAttempts && !orderData) {
           insertAttempts++;
           try {
-            const { data, error: orderError } = await supabase.from('orders').insert([{
-              store_id:       storeId,
-              customer_name:  name.trim(),
-              customer_phone: phone.replace(/\D/g, ''),
-              shipping_address: address.trim() || null,
-              total_amount:   storeTotal,
-              order_items:    storeItems,
-              delivery_lat:   lat,
-              delivery_lng:   lng,
-              status:         'status' in storeItems[0] ? storeItems[0].status : 'pending',
-            }]).select('id, created_at, store_id').single();
+            const checkoutRes = await fetch('/api/orders/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                storeId,
+                items: storeItems.map(item => ({
+                  productId: item.id,
+                  quantity: item.quantity,
+                  selectedOptions: item.selectedOptions || {},
+                })),
+                customer: {
+                  name: name.trim(),
+                  phone: phone.replace(/\D/g, ''),
+                  address: address.trim() || '',
+                  lat,
+                  lng,
+                },
+                delivery: {
+                  city: address.trim() || 'Douala',
+                  isPickup: false,
+                },
+                // Clé d'idempotence : protège contre les double-soumissions
+                idempotencyKey,
+              }),
+            });
 
-            if (orderError) throw orderError;
-            orderData = data;
+            const checkoutJson = await checkoutRes.json();
+            if (!checkoutRes.ok) {
+              throw new Error(checkoutJson.error || 'Erreur lors de la validation de la commande');
+            }
+
+            orderData = checkoutJson.order;
           } catch (err) {
-            console.warn(`[Order] Échec insertion commande (tentative ${insertAttempts}/${maxInsertAttempts}):`, err.message);
+            console.warn(`[Order] Échec validation commande (tentative ${insertAttempts}/${maxInsertAttempts}):`, err.message);
             if (insertAttempts < maxInsertAttempts) {
               await delay(1500 * insertAttempts);
             } else {
-              throw new Error("La plateforme est très occupée. Votre commande n'a pas pu être validée immédiatement. Veuillez réessayer.");
+              throw new Error(err.message || "La plateforme est très occupée. Votre commande n'a pas pu être validée immédiatement. Veuillez réessayer.");
             }
           }
         }
@@ -221,53 +247,16 @@ export default function CartPage() {
                     if (!error) notifSuccess = true;
                   } catch (_) { if (notifAttempts < 3) await delay(1000); }
                 }
+
+                // ── NOTE 5.0 : La décrémentation du stock est maintenant
+                // 100% gérée par la RPC PostgreSQL `process_order_checkout`.
+                // Elle est atomique, transactionnelle et accompagne la création
+                // de commande dans une même unité PostgreSQL ACID.
+                // Ce code client NE décrémente PLUS le stock directement.
               }
-
-              // Modification des stocks avec retry (RPC atomique)
-              for (const item of storeItems) {
-                let stockSuccess = false;
-                let stockAttempts = 0;
-                let newStockVal = null;
-
-                while (stockAttempts < 3 && !stockSuccess) {
-                  stockAttempts++;
-                  try {
-                    const { data: newStock, error: stockError } = await supabase.rpc('decrement_stock', {
-                      product_id: item.id,
-                      quantity_to_decrement: item.quantity
-                    });
-
-                    if (stockError) throw stockError;
-                    newStockVal = newStock;
-                    stockSuccess = true;
-                  } catch (err) {
-                    console.warn(`[Stock] Échec décrémentation stock de ${item.name} (tentative ${stockAttempts}):`, err.message);
-                    if (stockAttempts < 3) await delay(1000);
-                  }
-                }
-
-                // Alerte si stock devient faible
-                if (stockSuccess && newStockVal !== null && newStockVal < 5 && storeData?.owner_id) {
-                  const { data: pd } = await supabase.from('profiles').select('email').eq('id', storeData.owner_id).single();
-                  if (pd?.email) {
-                    fetch('/api/emails/notify', {
-                      method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ to: pd.email, subject: `Alerte Stock : ${item.name}`, type: 'STOCK', data: { productName: item.name, stock: newStockVal, message: 'Stock faible !' } })
-                    }).catch(() => {});
-
-                    await supabase.from('notifications').insert([{
-                      user_id: storeData.owner_id, store_id: storeId, type: 'stock_alert',
-                      title: 'Stock Faible',
-                      message: `Il reste ${newStockVal} exemplaire(s) de "${item.name}".`,
-                      related_product_id: item.id
-                    }]).catch(() => {});
-                  }
-                }
-              }
-            }
-          } catch (e) { console.error('Post-order non-critical error:', e); }
+            } catch (e) { console.error('Post-order non-critical error:', e); }
+          }
         }
-      }
 
       if (newOrders.length > 0) {
         const existing = JSON.parse(localStorage.getItem('vestyle_orders') || '[]');

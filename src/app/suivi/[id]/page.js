@@ -268,7 +268,7 @@ export default function OrderTrackingPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-6 sm:pb-12 mb-6 sm:mb-12 gap-6">
                 <div className="space-y-4 sm:space-y-6">
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <img src="/icon-512.png" className="w-10 h-10 sm:w-12 sm:h-12 grayscale" alt="" />
+                    <img src="/vestyle-logo.png" className="w-10 h-10 sm:w-12 sm:h-12 grayscale" alt="" />
                     <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">VESTYLE <span className="font-light text-slate-400">PRO</span></h1>
                   </div>
                   <div className="space-y-1">

@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { Outfit } from 'next/font/google';
 
-const artFont = Outfit({ subsets: ['latin'], weight: ['800', '900'] });
+const artFontClass = 'font-black tracking-tight';
 
 // ── Icônes SVG bulletproof ────────────────────────────────────────────────────
 const ShoppingCartIcon = ({ size = 22 }) => (
@@ -72,18 +71,16 @@ const HomeIcon = ({ size = 18, className = "" }) => (
 function NavLogo() {
   return (
     <Link href="/" className="flex items-center gap-3 group z-50">
-      {/* Icône carrée */}
-      <div className="relative w-10 h-10 rounded-[14px] bg-gradient-to-tr from-blue-600 via-indigo-500 to-teal-400 p-[2px] shadow-md transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg">
-        <div className="w-full h-full bg-white rounded-[12px] flex items-center justify-center overflow-hidden">
-          <img src="/icon-512.png" className="w-full h-full object-cover rounded-[12px]" alt="VesTyle Logo" />
-        </div>
+      {/* Icône logo VeStyle */}
+      <div className="relative w-11 h-11 rounded-[14px] overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl">
+        <img src="/vestyle-logo.png" className="w-full h-full object-cover" alt="VesTyle Logo" />
         {/* Lueur hover */}
-        <div className="absolute -inset-1 rounded-[16px] bg-gradient-to-tr from-blue-500/30 to-teal-500/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+        <div className="absolute -inset-1 rounded-[16px] bg-gradient-to-tr from-blue-500/40 to-purple-500/40 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
       </div>
 
       {/* Texte */}
       <div className="flex flex-col leading-none">
-        <span className={`text-[22px] font-extrabold tracking-tight text-slate-900 group-hover:text-slate-700 transition-colors duration-200 ${artFont.className}`}>
+        <span className={`text-[22px] font-extrabold tracking-tight text-slate-900 group-hover:text-slate-700 transition-colors duration-200 ${artFontClass}`}>
           Ves<span className="text-orange-600">Tyle</span>
         </span>
         <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-600/80">Live Marketplace</span>
@@ -278,8 +275,8 @@ export default function Navbar() {
         >
           {/* En-tête menu mobile */}
           <div className="flex items-center justify-between mb-8 pb-5 border-b border-white/10">
-            <Link href="/" onClick={closeMenu} className={`flex items-center gap-3 ${artFont.className}`}>
-              <img src="/icon-512.png" className="w-9 h-9 rounded-xl shadow-md object-cover border border-white/10" alt="VesTyle" />
+            <Link href="/" onClick={closeMenu} className={`flex items-center gap-3 ${artFontClass}`}>
+              <img src="/vestyle-logo.png" className="w-9 h-9 rounded-xl shadow-md object-cover border border-white/10" alt="VesTyle" />
               <div>
                 <span className="text-2xl font-extrabold text-white">Ves<span className="text-orange-500">Tyle</span></span>
                 <span className="block text-[9px] font-black uppercase tracking-widest text-emerald-400/90 leading-tight">Live Marketplace</span>

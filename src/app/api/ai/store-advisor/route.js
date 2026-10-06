@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { COMPONENT_REGISTRY } from '@/lib/componentRegistry';
 
 // ─── Scoring et analyse de boutique ──────────────────────────────────────────
 function analyzeStore(store, modules, products) {
@@ -333,9 +332,13 @@ export async function POST(request) {
 
     // Si l'orchestrateur ne supporte pas _directToolCall, appliquer directement
     if (!res.ok) {
-      const { createBlock } = await import('@/lib/blockPatcher');
       const args = suggestion.action.args;
-      const newBlock = createBlock(args.type, args.config || {});
+      const newBlock = {
+        id: `sec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        type: args.type || 'hero',
+        label: args.config?.title || 'Nouvelle section',
+        config: args.config || {},
+      };
       const { data: lastModule } = await supabase
         .from('store_modules')
         .select('position')

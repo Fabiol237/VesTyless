@@ -5,34 +5,33 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, 
+  Globe, 
+  Plus, 
   Package, 
   ShoppingCart, 
+  TrendingUp, 
   Settings, 
   X, 
   ExternalLink, 
   ChevronRight,
-  Truck
+  Truck,
+  Sparkles,
+  HelpCircle,
+  Search
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import ThemeToggle from '@/components/ThemeToggle';
 
-export default function DashboardSidebar({ isOpen, onClose }) {
+export default function VestyleSidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const { store } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [isLivreur, setIsLivreur] = useState(false);
+  const { session } = useAuth();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const links = [
-    { name: 'Vue d’ensemble', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Produits', href: '/dashboard/products', icon: Package },
-    { name: 'Commandes', href: '/dashboard/orders', icon: ShoppingCart },
-    { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
-  ];
-
-  const [isLivreur, setIsLivreur] = useState(false);
-  const { session } = useAuth();
 
   useEffect(() => {
     if (session?.id) {
@@ -44,96 +43,171 @@ export default function DashboardSidebar({ isOpen, onClose }) {
     }
   }, [session]);
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-wa-teal/20 group-hover:scale-105 transition-transform">
-            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle Logo" />
-          </div>
-          <span className="text-2xl font-black tracking-tight text-gray-900 uppercase">VesTyle</span>
-        </Link>
-        <button onClick={onClose} className="lg:hidden p-2 text-gray-400 hover:text-gray-900 transition-colors">
-          <X size={20} />
-        </button>
-      </div>
+  const links = [
+    { name: 'Vue d’ensemble', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Mes sites', href: '/mes-sites', icon: Globe },
+    { name: 'Créer un site', href: '/creer-mon-site', icon: Plus },
+    { name: 'Produits', href: '/dashboard/products', icon: Package },
+    { name: 'Commandes', href: '/dashboard/orders', icon: ShoppingCart },
+    { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
+  ];
 
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-4">
-        {links.map((link) => {
-          const isActive = pathname === link.href;
-          const Icon = link.icon;
-          return (
+  const sidebarInner = (
+    <div className="flex flex-col h-full vs-bg-sidebar justify-between p-5 overflow-y-auto">
+      {/* Haut : Logo + Liens */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <Link href="/" onClick={() => onClose && onClose()} className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
+              <img src="/vestyle-logo.png" className="w-full h-full object-contain" alt="VesTyle Logo" />
+            </div>
+            <span className="text-xl font-black tracking-tight vs-text-primary uppercase">
+              Ves<span style={{ color: 'var(--accent-green)' }}>Tyle</span>
+            </span>
+          </Link>
+
+          {/* Bouton de fermeture sur mobile */}
+          {onClose && (
+            <button 
+              onClick={onClose} 
+              className="lg:hidden p-2 rounded-xl vs-btn-secondary transition-colors"
+              aria-label="Fermer le menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Menu Navigation */}
+        <nav className="space-y-1.5">
+          {links.map((link) => {
+            const isActive = pathname === link.href || (link.href === '/mes-sites' && pathname?.startsWith('/mes-sites'));
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => onClose && onClose()}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group ${
+                  isActive 
+                    ? 'vs-sidebar-link-active font-bold shadow-sm' 
+                    : 'vs-sidebar-link hover:vs-bg-input'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 ${
+                    isActive 
+                      ? 'text-emerald-500' 
+                      : 'vs-text-muted group-hover:vs-text-primary'
+                  } transition-colors`} />
+                  <span>{link.name}</span>
+                </div>
+                {isActive && (
+                  <ChevronRight className="w-3.5 h-3.5 text-emerald-500" />
+                )}
+              </Link>
+            );
+          })}
+
+          {isLivreur && (
             <Link
-              key={link.name}
-              href={link.href}
+              href="/delivery"
               onClick={() => onClose && onClose()}
-              className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                isActive 
-                  ? 'bg-wa-teal text-white shadow-xl shadow-wa-teal/20' 
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all group ${
+                pathname === '/delivery'
+                  ? 'vs-sidebar-link-active font-bold shadow-sm' 
+                  : 'vs-sidebar-link hover:vs-bg-input'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon size={20} className={`${isActive ? 'text-white' : 'text-gray-400 group-hover:text-wa-teal'} transition-colors`} />
-                <span className="font-semibold text-sm">{link.name}</span>
+                <Truck className={`w-4 h-4 ${pathname === '/delivery' ? 'text-emerald-500' : 'vs-text-muted'}`} />
+                <span>Hub Livreur</span>
               </div>
-              {isActive && (
-                <div>
-                  <ChevronRight size={14} className="text-white/70" />
-                </div>
-              )}
             </Link>
-          );
-        })}
+          )}
+        </nav>
+      </div>
 
-        {isLivreur && (
+      {/* Bas : Widget Créer mon site + Aide + Boutique */}
+      <div className="space-y-3 pt-4 border-t vs-border mt-4">
+        {/* Widget CTA Promotionnel */}
+        <div className="vs-sidebar-cta-card relative rounded-2xl p-4 overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 mb-1.5">
+            <img
+              src="/vestyle-logo.png"
+              alt="VesTyle"
+              className="w-5 h-5 rounded-md object-contain shadow-sm"
+            />
+            <h4 className="text-xs font-bold vs-sidebar-cta-title leading-tight">
+              Créer mon site
+            </h4>
+          </div>
+          <p className="text-[10px] vs-sidebar-cta-text mb-3 leading-snug">
+            Lancez votre vitrine en 5 minutes chrono !
+          </p>
           <Link
-            href="/delivery"
+            href="/creer-mon-site"
             onClick={() => onClose && onClose()}
-            className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-              pathname === '/delivery'
-                ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200/50' 
-                : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
-            }`}
+            className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl text-xs font-bold text-white transition-all shadow-md active:scale-95 bg-gradient-to-r from-[#10B981] to-[#059669] hover:brightness-110"
           >
-            <div className="flex items-center gap-3">
-              <Truck size={20} className={pathname === '/delivery' ? 'text-white' : 'text-emerald-600'} />
-              <span className="font-black text-xs uppercase tracking-widest">Hub Livreur</span>
-            </div>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nouveau site</span>
           </Link>
-        )}
-      </nav>
+        </div>
 
-      {store?.slug && (
-        <div className="p-4 mt-auto border-t border-gray-50">
+        {/* Lien Besoin d'aide */}
+        <Link
+          href="/faq"
+          onClick={() => onClose && onClose()}
+          className="flex items-center justify-between px-3 py-2 text-xs font-medium vs-text-secondary hover:vs-text-primary transition-colors rounded-xl hover:vs-bg-input border vs-border"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <span className="font-bold block vs-text-primary text-[11px]">Besoin d'aide ?</span>
+              <span className="text-[9px] vs-text-muted">Centre d'assistance</span>
+            </div>
+          </div>
+          <ChevronRight className="w-3 h-3 vs-text-muted" />
+        </Link>
+
+        {/* Bouton Ma Boutique si présent */}
+        {store?.slug && (
           <Link
             href={`/boutique/${store.slug}`}
             target="_blank"
-            className="flex items-center justify-center gap-2 w-full py-4 px-4 bg-gray-900 text-white text-sm font-bold rounded-2xl hover:bg-black transition-all hover:shadow-xl active:scale-95"
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 vs-btn-secondary text-xs font-bold rounded-xl transition-all"
           >
-            <ExternalLink size={16} />
-            <span>Ma Boutique</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Voir ma boutique</span>
           </Link>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
-  // Note: Root <div> is matches the 'loading' component in dashboard/layout.js
   return (
-    <div className="relative">
-      <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0 border-r border-gray-200 bg-white">
-        {mounted ? sidebarContent : null}
-      </div>
+    <>
+      {/* Sidebar Desktop Fixe */}
+      <aside className="hidden lg:block w-64 h-screen sticky top-0 shrink-0 vs-border border-r vs-bg-sidebar z-30">
+        {mounted ? sidebarInner : null}
+      </aside>
 
+      {/* Drawer Mobile Coulissant */}
       {mounted && isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white shadow-2xl">
-            {sidebarContent}
+        <div className="lg:hidden fixed inset-0 z-50 flex animate-in fade-in duration-200">
+          <div 
+            onClick={onClose} 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+            aria-hidden="true"
+          />
+          <div className="relative w-[280px] max-w-[85vw] h-full vs-bg-sidebar shadow-2xl border-r vs-border z-10 animate-in slide-in-from-left duration-200">
+            {sidebarInner}
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

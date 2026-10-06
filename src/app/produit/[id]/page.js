@@ -25,14 +25,14 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      images: [product.image_url || '/icon-512.png'],
+      images: [product.image_url || '/vestyle-logo.png'],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [product.image_url || '/icon-512.png'],
+      images: [product.image_url || '/vestyle-logo.png'],
     },
   };
 }

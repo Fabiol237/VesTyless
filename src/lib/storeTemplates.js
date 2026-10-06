@@ -275,6 +275,10 @@ export const STORE_TEMPLATES = [
   }
 ];
 
+/**
+ * @deprecated Remplacé par BusinessTypeRegistry (source de vérité unique).
+ * Conservé pour la rétrocompatibilité des sélecteurs de presets de templates historiques.
+ */
 export const SECTORS = [
   { id: 'all', label: 'Tous les Métiers', emoji: '✨' },
   { id: 'gastronomie', label: 'Restauration & Food', emoji: '🍽️' },
@@ -287,6 +291,21 @@ export const SECTORS = [
   { id: 'services', label: 'Services & Agence', emoji: '💼' },
   { id: 'education', label: 'Librairie & Éducation', emoji: '📚' },
 ];
+
+/**
+ * Pont explicite de normalisation pour les anciens identifiants de secteurs
+ */
+export const LEGACY_SECTOR_TO_BUSINESS_TYPE = {
+  gastronomie: 'restaurant',
+  high_tech: 'product',
+  mode_luxe: 'product',
+  sante: 'product',
+  supermarche: 'product',
+  beaute: 'beauty',
+  boutique: 'product',
+  services: 'service',
+  education: 'education',
+};
 
 export function getTemplateById(id) {
   return STORE_TEMPLATES.find(t => t.id === id) || STORE_TEMPLATES[0];

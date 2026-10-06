@@ -4,13 +4,12 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 const AuthContext = createContext();
 
-// Global lock to prevent race conditions when multiple auth state events fire concurrently
-let isCreatingStoreForUser = null;
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [store, setStore] = useState(null);
+  const [stores, setStores] = useState([]);
+  const [activeStoreId, setActiveStoreId] = useState(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
   const mountedRef = useRef(false);
@@ -37,17 +36,41 @@ export function AuthProvider({ children }) {
     try {
       const cachedProfile = localStorage.getItem(`vestyle_profile_${userId}`);
       const cachedStore = localStorage.getItem(`vestyle_store_${userId}`);
+      const cachedStores = localStorage.getItem(`vestyle_stores_${userId}`);
+      const cachedActiveId = localStorage.getItem(`vestyle_active_store_${userId}`);
+
       if (cachedProfile) setProfile(JSON.parse(cachedProfile));
-      if (cachedStore) setStore(JSON.parse(cachedStore));
+      if (cachedStores) {
+        const parsedStores = JSON.parse(cachedStores);
+        if (Array.isArray(parsedStores)) {
+          setStores(parsedStores);
+          const active = parsedStores.find(s => s.id === cachedActiveId) || parsedStores[0] || null;
+          if (active) {
+            setStore(active);
+            setActiveStoreId(active.id);
+          }
+        }
+      } else if (cachedStore) {
+        const parsedStore = JSON.parse(cachedStore);
+        setStore(parsedStore);
+        setStores([parsedStore]);
+        setActiveStoreId(parsedStore.id);
+      }
     } catch (e) {
       console.warn('[AuthContext] Erreur lecture cache local:', e);
     }
   };
 
-  const saveToLocalCache = (userId, profileData, storeData) => {
+  const saveToLocalCache = (userId, profileData, storeData, storesList = []) => {
     try {
       if (profileData) localStorage.setItem(`vestyle_profile_${userId}`, JSON.stringify(profileData));
-      if (storeData) localStorage.setItem(`vestyle_store_${userId}`, JSON.stringify(storeData));
+      if (storeData) {
+        localStorage.setItem(`vestyle_store_${userId}`, JSON.stringify(storeData));
+        localStorage.setItem(`vestyle_active_store_${userId}`, storeData.id);
+      }
+      if (Array.isArray(storesList) && storesList.length > 0) {
+        localStorage.setItem(`vestyle_stores_${userId}`, JSON.stringify(storesList));
+      }
     } catch (e) {}
   };
 
@@ -99,6 +122,8 @@ export function AuthProvider({ children }) {
         setUser(null);
         setProfile(null);
         setStore(null);
+        setStores([]);
+        setActiveStoreId(null);
       }
       setLoading(false);
     });
@@ -128,65 +153,59 @@ export function AuthProvider({ children }) {
         console.warn('[AuthContext] Profil réseau non dispo');
       }
 
-      // 2. Fetch Store
-      let storeData = null;
-      let storeError = null;
+      // 2. Fetch All Stores (1 -> N)
+      let storesList = [];
+      let storesError = null;
 
       try {
         const res = await supabase
           .from('stores')
           .select('*')
           .eq('owner_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        storeData = res.data;
-        storeError = res.error;
+          .order('created_at', { ascending: false });
+        storesList = res.data || [];
+        storesError = res.error;
       } catch (e) {
-        storeError = e;
+        storesError = e;
       }
 
-      if (!storeError && storeData) {
-        setStore(storeData);
-        saveToLocalCache(userId, fetchedProfile, storeData);
-      } else if (storeError) {
-        console.warn("⚠️ Réseau instable/offline lors de la vérification de la boutique. Utilisation du cache.");
-        // NE PAS mettre store à null en cas d'erreur réseau ! Conserver le cache local.
-      } else if (!storeError && !storeData && (typeof navigator === 'undefined' || navigator.onLine)) {
-        // Aucune boutique trouvée et VRAIMENT en ligne → Création automatique
-        if (isCreatingStoreForUser === userId) return;
-        isCreatingStoreForUser = userId;
-
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const storeNameFromMeta = user?.user_metadata?.store_name;
-
-          const randomString = Math.random().toString(36).substring(2, 8);
-          const defaultName = storeNameFromMeta || `Boutique de ${fetchedProfile?.full_name?.split(' ')[0] || 'Utilisateur'}`;
-          const defaultSlug = (storeNameFromMeta ? storeNameFromMeta.toLowerCase().replace(/\s+/g, '-') : 'boutique') + `-${randomString}`;
-
-          const { data: newStore, error: insertError } = await supabase
-            .from('stores')
-            .insert([{
-                owner_id: userId,
-                name: defaultName,
-                slug: defaultSlug,
-                is_active: true,
-            }])
-            .select()
-            .single();
-
-          if (!insertError && newStore) {
-            setStore(newStore);
-            saveToLocalCache(userId, fetchedProfile, newStore);
-            console.log('✅ Boutique créée', newStore.id);
-          }
-        } finally {
-          isCreatingStoreForUser = null;
-        }
+      if (!storesError && Array.isArray(storesList) && storesList.length > 0) {
+        setStores(storesList);
+        // Vérifier si un activeStoreId était mémorisé
+        const savedActiveId = localStorage.getItem(`vestyle_active_store_${userId}`);
+        const selected = storesList.find(s => s.id === savedActiveId) || storesList[0];
+        setStore(selected);
+        setActiveStoreId(selected.id);
+        saveToLocalCache(userId, fetchedProfile, selected, storesList);
+      } else if (storesError) {
+        console.warn("⚠️ Réseau instable/offline lors de la vérification des boutiques. Utilisation du cache.");
+      } else {
+        // Aucune boutique trouvée
+        setStore(null);
+        setStores([]);
+        setActiveStoreId(null);
+        saveToLocalCache(userId, fetchedProfile, null, []);
       }
     } catch (err) {
       console.error('Error fetching user data:', err);
+    }
+  };
+
+  /**
+   * Bascule la boutique active vers un autre store de l'utilisateur
+   */
+  const switchStore = (storeId) => {
+    if (!storeId || !stores.length) return;
+    const targetStore = stores.find(s => s.id === storeId);
+    if (targetStore) {
+      setStore(targetStore);
+      setActiveStoreId(targetStore.id);
+      if (user?.id) {
+        try {
+          localStorage.setItem(`vestyle_store_${user.id}`, JSON.stringify(targetStore));
+          localStorage.setItem(`vestyle_active_store_${user.id}`, targetStore.id);
+        } catch (e) {}
+      }
     }
   };
 
@@ -195,6 +214,8 @@ export function AuthProvider({ children }) {
       try {
         localStorage.removeItem(`vestyle_profile_${user.id}`);
         localStorage.removeItem(`vestyle_store_${user.id}`);
+        localStorage.removeItem(`vestyle_stores_${user.id}`);
+        localStorage.removeItem(`vestyle_active_store_${user.id}`);
       } catch (e) {}
     }
     await supabase.auth.signOut();
@@ -206,6 +227,9 @@ export function AuthProvider({ children }) {
     session: user,
     profile,
     store,
+    stores,
+    activeStoreId,
+    switchStore,
     loading,
     logout,
     signOut: logout,

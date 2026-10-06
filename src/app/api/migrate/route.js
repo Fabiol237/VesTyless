@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   const authHeader = request.headers.get('x-migration-key');
-  if (authHeader !== 'vestyle-migrate-2026') {
+  const migrationKey = process.env.MIGRATION_SECRET_KEY;
+  if (!migrationKey || authHeader !== migrationKey) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

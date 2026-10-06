@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+// leaflet.css est chargé dynamiquement via CDN dans useEffect
+// pour éviter l'erreur Webpack "Can't resolve './images/layers.png'
 import L from 'leaflet';
 
 if (typeof window !== 'undefined') {
@@ -94,6 +95,20 @@ export default function InteractiveMap({ initialPos, stores = [], userPos, userA
       mapRef.flyTo(userPos, 19, { animate: true, duration: 1.5 }); // Zoom total sur la position
     }
   }, [mapRef, userPos]);
+
+  // Injection du CSS Leaflet via CDN (évite l'erreur Webpack sur les images relatives)
+  useEffect(() => {
+    const linkId = 'leaflet-cdn-css';
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+    }
+  }, []);
 
   return (
     <div className="relative w-full h-full rounded-[32px] overflow-hidden shadow-2xl border-4 border-white group bg-slate-100">

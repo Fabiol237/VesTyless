@@ -1,8 +1,9 @@
 'use client';
-import React from 'react';
+
+import React, { Component } from 'react';
 import { RefreshCw, Home, ShieldAlert } from 'lucide-react';
 
-export default class GlobalErrorBoundary extends React.Component {
+export default class GlobalErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null };
@@ -74,9 +75,32 @@ export default class GlobalErrorBoundary extends React.Component {
               VeStyle Reste Protégé
             </h2>
 
-            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '24px' }}>
+            <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '16px' }}>
               Une perturbation temporaire a été neutralisée par le système de sécurité. Vos données locales et votre panier sont conservés en toute sécurité.
             </p>
+
+            {this.state.error && (
+              <div style={{
+                textAlign: 'left',
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid rgba(248, 113, 113, 0.3)',
+                borderRadius: '12px',
+                padding: '12px',
+                marginBottom: '20px',
+                fontSize: '12px',
+                color: '#fca5a5',
+                maxHeight: '160px',
+                overflowY: 'auto',
+                fontFamily: 'monospace'
+              }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>Erreur : {this.state.error.message || String(this.state.error)}</p>
+                {this.state.errorInfo?.componentStack && (
+                  <pre style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'pre-wrap' }}>
+                    {this.state.errorInfo.componentStack.slice(0, 400)}
+                  </pre>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button

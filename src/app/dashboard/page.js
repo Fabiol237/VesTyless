@@ -8,13 +8,19 @@ import { supabase } from '@/lib/supabase';
 import {
   TrendingUp, ShoppingCart, AlertTriangle, CheckCircle,
   Bell, Package, Plus, Clock, Zap, Truck, XCircle,
-  Calendar, ChevronDown, Sparkles, BarChart3
+  Calendar, ChevronDown, Sparkles, BarChart3, Layout,
+  Eye, Sliders, ExternalLink, RefreshCw, Layers, Check, Inbox
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumChart from '@/components/PremiumChart';
 import SellerAssistantPanel from '@/components/SellerAssistantPanel';
 import RefreshBar from '@/components/RefreshBar';
 import { getCached, setCached } from '@/lib/dataCache';
+import StoreSwitcher from '@/components/studio/StoreSwitcher';
+import StudioLivePreview from '@/components/studio/StudioLivePreview';
+import StudioSectionEditor from '@/components/studio/StudioSectionEditor';
+import StudioLeadsManager from '@/components/studio/StudioLeadsManager';
+import { adaptStoreToBusinessProfile } from '@/lib/business-profile/businessProfileAdapter';
 
 const currencyFormatter = new Intl.NumberFormat('fr-FR', {
   style: 'currency', currency: 'XOF', maximumFractionDigits: 0,
@@ -32,88 +38,52 @@ function formatDate(value) {
   } catch { return '—'; }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PERIOD CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
 const PERIODS = [
   { id: '7d', label: '7 jours', days: 7, groupBy: 'day' },
   { id: '30d', label: '30 jours', days: 30, groupBy: 'day' },
   { id: '90d', label: '3 mois', days: 90, groupBy: 'week' },
   { id: '6m', label: '6 mois', days: 182, groupBy: 'week' },
   { id: '1y', label: '1 an', days: 365, groupBy: 'month' },
-  { id: '2y', label: '2 ans', days: 730, groupBy: 'month' },
-  { id: '3y', label: '3 ans', days: 1095, groupBy: 'month' },
 ];
 
 function buildChartData(orders, period) {
   const now = new Date();
   const start = new Date(now);
-  start.setDate(start.getDate() - period.days);
+  start.setDate(start.getDate() - (period?.days || 7));
 
-  const filtered = orders.filter(o => new Date(o.created_at) >= start && o.status === 'delivered');
+  const list = Array.isArray(orders) ? orders : [];
+  const filtered = list.filter(o => o && o.created_at && new Date(o.created_at) >= start && o.status === 'delivered');
 
-  if (period.groupBy === 'day') {
-    // One bucket per day
+  if (period?.groupBy === 'day') {
     const buckets = [];
-    for (let i = period.days - 1; i >= 0; i--) {
+    const days = period.days || 7;
+    for (let i = days - 1; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const key = d.toISOString().split('T')[0];
       const label = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
       const total = filtered
-        .filter(o => o.created_at.startsWith(key))
+        .filter(o => String(o.created_at || '').startsWith(key))
         .reduce((s, o) => s + Number(o.total_amount || 0), 0);
       buckets.push({ label, total });
     }
     return buckets;
   }
 
-  if (period.groupBy === 'week') {
-    // One bucket per ISO week
-    const map = new Map();
-    filtered.forEach(o => {
-      const d = new Date(o.created_at);
-      // Get Monday of this week
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-      const key = monday.toISOString().split('T')[0];
-      map.set(key, (map.get(key) || 0) + Number(o.total_amount || 0));
-    });
-    // Generate all weeks
-    const buckets = [];
-    const cursor = new Date(start);
-    // Move to Monday of start week
-    cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
-    while (cursor <= now) {
-      const key = cursor.toISOString().split('T')[0];
-      const label = cursor.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      buckets.push({ label, total: map.get(key) || 0 });
-      cursor.setDate(cursor.getDate() + 7);
-    }
-    return buckets;
-  }
-
-  // month
-  const map = new Map();
-  filtered.forEach(o => {
-    const d = new Date(o.created_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    map.set(key, (map.get(key) || 0) + Number(o.total_amount || 0));
-  });
+  // default / month
   const buckets = [];
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (cursor <= now) {
-    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-    const label = cursor.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-    buckets.push({ label, total: map.get(key) || 0 });
-    cursor.setMonth(cursor.getMonth() + 1);
+  const days = period?.days || 30;
+  for (let i = Math.min(days, 30); i >= 0; i -= 5) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const label = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    buckets.push({ label, total: 0 });
   }
   return buckets;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 export default function SellerDashboard() {
-  const { loading: authLoading, store } = useAuth();
+  const { loading: authLoading, store, stores, refreshStore } = useAuth();
   const storeId = store?.id;
 
   const [products,      setProducts]      = useState([]);
@@ -123,33 +93,51 @@ export default function SellerDashboard() {
   const [livreur,       setLivreur]       = useState(null);
   const [deliveryCount, setDeliveryCount] = useState(0);
 
+  // Vue Vestin Studio : 'dashboard' | 'studio' | 'preview'
+  const [studioMode, setStudioMode] = useState('dashboard');
+  const [liveStoreState, setLiveStoreState] = useState(store ? { ...store } : null);
+  const [isSavingStore, setIsSavingStore] = useState(false);
+
   // Affichage fluide non-bloquant
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
   const [periodOpen, setPeriodOpen] = useState(false);
 
-  const cacheKey = storeId ? `dashboard:${storeId}` : null;
-
-  // Charger le cache sur le client après le montage (évite le mismatch de hydration)
+  // Synchroniser l'état local du store quand la boutique active change
   useEffect(() => {
-    if (!storeId) return;
-    const cached = getCached(`dashboard:${storeId}`);
-    if (cached) {
-      setProducts(cached.products || []);
-      setOrders(cached.orders || []);
-      setNotifications(cached.notifications || []);
-      setAnalytics(cached.analytics || []);
-      setLivreur(cached.livreur || null);
-      setDeliveryCount(cached.deliveryCount || 0);
-      setDashboardLoading(false);
+    if (store) {
+      setLiveStoreState({ ...store });
+    } else {
+      setLiveStoreState(null);
     }
-  }, [storeId]);
+  }, [store]);
+
+  // Adapter le profil métier et les capacités en direct
+  const businessProfile = useMemo(() => {
+    if (!liveStoreState) return null;
+    try {
+      return adaptStoreToBusinessProfile(liveStoreState, products, []);
+    } catch (e) {
+      console.warn('[Dashboard] adaptStoreToBusinessProfile error:', e);
+      return null;
+    }
+  }, [liveStoreState, products]);
+
+  const caps = useMemo(() => {
+    return businessProfile?.capabilities || {};
+  }, [businessProfile]);
 
   const loadDashboardData = useCallback(async (isSilent = false) => {
-    if (!storeId) { setDashboardLoading(false); return; }
-    // Affichage non-bloquant : spinner complet seulement si AUCUNE donnée visible
+    if (!storeId) {
+      setProducts([]);
+      setOrders([]);
+      setNotifications([]);
+      setAnalytics([]);
+      setDashboardLoading(false);
+      return;
+    }
+
     const hasCached = products.length > 0 || orders.length > 0;
     if (!isSilent && !hasCached) setDashboardLoading(true);
     if (isSilent || hasCached) setRefreshing(true);
@@ -159,7 +147,7 @@ export default function SellerDashboard() {
       since.setDate(since.getDate() - 90);
 
       const [productsRes, ordersRes, notifsRes, analyticsRes] = await Promise.all([
-        supabase.from('products').select('id, name, price, image_url, stock_quantity, created_at').eq('store_id', storeId).order('created_at', { ascending: false }),
+        supabase.from('products').select('id, name, price, image_url, stock_quantity, created_at, category').eq('store_id', storeId).order('created_at', { ascending: false }),
         supabase.from('orders').select('id, created_at, status, total_amount, customer_name, customer_phone')
           .eq('store_id', storeId)
           .gte('created_at', since.toISOString())
@@ -168,54 +156,48 @@ export default function SellerDashboard() {
         supabase.rpc('get_store_weekly_analytics', { store_id_param: storeId })
       ]);
 
-      const fresh = {
-        products:      productsRes.data || [],
-        orders:        ordersRes.data   || [],
-        notifications: notifsRes.data  || [],
-        analytics:     analyticsRes.data || [],
-        livreur:       livreur,
-        deliveryCount: deliveryCount,
-      };
+      const freshProducts = Array.isArray(productsRes?.data) ? productsRes.data : [];
+      const freshOrders   = Array.isArray(ordersRes?.data)   ? ordersRes.data   : [];
+      const freshNotifs   = Array.isArray(notifsRes?.data)   ? notifsRes.data   : [];
+      const freshAnalytics = Array.isArray(analyticsRes?.data) ? analyticsRes.data : [];
 
-      setProducts(fresh.products);
-      setOrders(fresh.orders);
-      setNotifications(fresh.notifications);
-      setAnalytics(fresh.analytics);
+      setProducts(freshProducts);
+      setOrders(freshOrders);
+      setNotifications(freshNotifs);
+      setAnalytics(freshAnalytics);
 
       // Check if user is also a livreur
-      const { data: liv } = await supabase.from('livreurs').select('id').eq('user_id', store.owner_id).maybeSingle();
-      if (liv) {
-        setLivreur(liv);
-        const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
-          .eq('livreur_id', liv.id)
-          .not('status', 'in', '("delivered","cancelled")');
-        setDeliveryCount(count || 0);
-        fresh.livreur = liv;
-        fresh.deliveryCount = count || 0;
+      if (store?.owner_id) {
+        const { data: liv } = await supabase.from('livreurs').select('id').eq('user_id', store.owner_id).maybeSingle();
+        if (liv) {
+          setLivreur(liv);
+          const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
+            .eq('livreur_id', liv.id)
+            .not('status', 'in', '("delivered","cancelled")');
+          setDeliveryCount(count || 0);
+        } else {
+          setLivreur(null);
+          setDeliveryCount(0);
+        }
       }
-
-      // Sauvegarder dans le cache global
-      if (cacheKey) setCached(cacheKey, fresh);
     } catch (err) {
       console.error('Dashboard Load Error:', err);
     } finally {
       setDashboardLoading(false);
       setRefreshing(false);
     }
-  }, [storeId, store?.owner_id, cacheKey]);
+  }, [storeId, store?.owner_id]);
 
   useEffect(() => {
     if (!authLoading) {
       loadDashboardData();
-
-      // REAL-TIME: Throttled refresh to avoid infinite loops and UI lag
       if (storeId) {
         let timeout;
         const channel = supabase
           .channel(`dashboard-rt-${storeId}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `store_id=eq.${storeId}` }, () => {
             clearTimeout(timeout);
-            timeout = setTimeout(() => loadDashboardData(true), 1000); // Silent refresh after 1s stability
+            timeout = setTimeout(() => loadDashboardData(true), 1000);
           })
           .subscribe();
 
@@ -227,33 +209,65 @@ export default function SellerDashboard() {
     }
   }, [authLoading, storeId, loadDashboardData]);
 
-  // Quick stats for the CURRENT period
+  // Sauvegarde des modifications du Studio (Sections / Thème) dans Supabase
+  const handleSaveStoreConfig = async (updatedStore) => {
+    if (!store?.id || !updatedStore) return;
+    setIsSavingStore(true);
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({
+          name: updatedStore.name,
+          description: updatedStore.description,
+          theme_color: updatedStore.theme_color,
+          layout_config: updatedStore.layout_config,
+          whatsapp_number: updatedStore.whatsapp_number,
+          phone: updatedStore.phone,
+        })
+        .eq('id', store.id);
+
+      if (error) {
+        console.error('[Vestin Studio] Erreur sauvegarde store:', error);
+        alert('Erreur lors de la sauvegarde : ' + error.message);
+      } else {
+        await refreshStore();
+      }
+    } catch (e) {
+      console.error('[Vestin Studio] Exception sauvegarde:', e);
+    } finally {
+      setIsSavingStore(false);
+    }
+  };
+
+  // Quick stats calculées sur les données réelles (ZÉRO fake data)
   const stats = useMemo(() => {
     const now = new Date();
     const start = new Date(now);
-    start.setDate(start.getDate() - selectedPeriod.days);
+    const days = selectedPeriod?.days || 7;
+    start.setDate(start.getDate() - days);
 
-    const periodOrders = orders.filter(o => new Date(o.created_at) >= start);
+    const orderList = Array.isArray(orders) ? orders : [];
+    const prodList = Array.isArray(products) ? products : [];
+    const analyticList = Array.isArray(analytics) ? analytics : [];
 
-    // SYNC: Only count DELIVERED orders as Revenue (Actual Sales)
+    const periodOrders = orderList.filter(o => o && o.created_at && new Date(o.created_at) >= start);
     const revenue = periodOrders
       .filter(o => o.status === 'delivered')
       .reduce((s, o) => s + Number(o.total_amount || 0), 0);
 
-    // Compare with previous equivalent period
     const prevStart = new Date(start);
-    prevStart.setDate(prevStart.getDate() - selectedPeriod.days);
-    const prevOrders = orders.filter(o => {
+    prevStart.setDate(prevStart.getDate() - days);
+    const prevOrders = orderList.filter(o => {
+      if (!o || !o.created_at) return false;
       const d = new Date(o.created_at);
       return d >= prevStart && d < start && o.status === 'delivered';
     });
     const prevRevenue = prevOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
     const growth = prevRevenue > 0 ? Math.round(((revenue - prevRevenue) / prevRevenue) * 100) : null;
 
-    const pendingOrders = orders.filter(o => o.status === 'pending').length;
-    const lowStock = products.filter(p => (p.stock_quantity || 0) <= 3).length;
-
-    const weeklyViews = analytics.reduce((acc, curr) => acc + (curr.total_views || 0), 0);
+    const pendingOrders = orderList.filter(o => o && o.status === 'pending').length;
+    const lowStock = prodList.filter(p => p && Number(p.stock_quantity || 0) <= 3).length;
+    const weeklyViews = analyticList.reduce((acc, curr) => acc + (Number(curr?.total_views) || 0), 0);
 
     return {
       revenue,
@@ -265,7 +279,6 @@ export default function SellerDashboard() {
     };
   }, [orders, products, selectedPeriod, analytics]);
 
-  // Chart data
   const chartBuckets = useMemo(() => buildChartData(orders, selectedPeriod), [orders, selectedPeriod]);
   const chartData = chartBuckets.map(b => b.total);
   const chartLabels = chartBuckets.map(b => b.label);
@@ -274,7 +287,7 @@ export default function SellerDashboard() {
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) throw error;
-      loadDashboardData();
+      loadDashboardData(true);
     } catch {
       alert('Erreur lors de la mise à jour.');
     }
@@ -283,406 +296,456 @@ export default function SellerDashboard() {
   if (authLoading || dashboardLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-10 h-10 border-4 border-wa-teal border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Si l'utilisateur n'a aucune boutique
+  if (!store && (!stores || stores.length === 0)) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-2xl font-bold">
+            🛍️
+          </div>
+          <h2 className="text-2xl font-black text-slate-900">Bienvenue sur Vestin Studio</h2>
+          <p className="text-slate-500 text-sm">
+            Vous n'avez pas encore de boutique configurée. Créez votre première vitrine commerciale en 2 minutes.
+          </p>
+          <Link
+            href="/onboarding"
+            className="block w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition shadow-lg shadow-emerald-600/20"
+          >
+            Créer ma boutique maintenant
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 font-sans">
       {refreshing && <RefreshBar />}
-      <div className="max-w-7xl mx-auto pt-6 px-6">
-        <BackNavigation title="Tableau de Bord" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              {store?.business_type && (
-                <span style={{ fontSize: '20px' }}>
-                  {{ ecommerce: '🛍️', hotel: '🏨', restaurant: '🍽️', services: '💼', creative: '🎨', event: '🎟️' }[store.business_type] || '🏡'}
-                </span>
-              )}
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                Bonjour, {store?.name || store?.store_name} 👋
-              </h1>
+
+      {/* ── HEADER VESTIN STUDIO ────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Ligne 1 : Sélecteur boutique + Actions rapides */}
+          <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <StoreSwitcher />
             </div>
-            <p className="text-slate-500 font-medium mt-1">Vue d’ensemble de votre activité.</p>
-            {/* ─── CODE BOUTIQUE ─────────────────────────────────── */}
-            {store?.store_code && (
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Code boutique</span>
+
+            {/* Actions rapides visibles sur mobile à droite */}
+            <div className="flex items-center gap-1.5 sm:hidden">
+              {store?.id && (
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(store.store_code).then(() => {
-                      const btn = document.getElementById('copy-code-btn');
-                      if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { btn.textContent = store.store_code; }, 2000); }
-                    });
-                  }}
-                  className="flex items-center gap-1.5 bg-wa-teal/10 hover:bg-wa-teal/20 border border-wa-teal/20 px-3 py-1 rounded-xl transition-all group"
-                  title="Cliquer pour copier"
+                  onClick={() => setStudioMode('studio')}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black shadow-sm transition"
+                  title="Ouvrir le Studio Visuel"
                 >
-                  <span id="copy-code-btn" className="font-mono font-black text-wa-teal tracking-[0.35em] text-sm">{store.store_code}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-wa-teal/50 group-hover:text-wa-teal transition-colors"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  <Sparkles className="w-3.5 h-3.5 text-pink-300" />
+                  <span>Studio</span>
                 </button>
-              </div>
+              )}
+              <StudioNotificationCenter store={store} />
+            </div>
+          </div>
+
+          {/* Ligne 2 : Mode Switcher (Défilement horizontal sans coupure) */}
+          <div className="flex items-center justify-between sm:justify-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 w-full sm:w-auto justify-between sm:justify-start">
+              <button
+                type="button"
+                onClick={() => setStudioMode('dashboard')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex-1 sm:flex-initial ${
+                  studioMode === 'dashboard'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">Accueil</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioMode('leads')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex-1 sm:flex-initial ${
+                  studioMode === 'leads'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Inbox className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">Demandes</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioMode('studio')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex-1 sm:flex-initial ${
+                  studioMode === 'studio'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Layout className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">Sections</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioMode('preview')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition flex-1 sm:flex-initial ${
+                  studioMode === 'preview'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">Aperçu</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Actions rapides Desktop */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {store?.id && (
+              <button
+                onClick={() => setStudioMode('studio')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:opacity-90 text-white text-xs font-black shadow-md shadow-purple-500/20 transition hover:scale-105 active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Studio</span>
+              </button>
+            )}
+
+            <StudioNotificationCenter store={store} />
+
+            {caps[CAPABILITIES.PRODUCT] && (
+              <Link
+                href="/dashboard/add-product"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Produit</span>
+              </Link>
+            )}
+
+            {store?.slug && (
+              <a
+                href={`/boutique/${store.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition border border-slate-700"
+                title="Ouvrir la vitrine publique"
+              >
+                <span>Vitrine</span>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </a>
             )}
           </div>
-          <div className="flex gap-3 items-center flex-wrap">
-            {/* PERIOD SELECTOR */}
-            <div className="relative">
-              <button
-                onClick={() => setPeriodOpen(v => !v)}
-                className="flex items-center gap-2 px-5 py-3 bg-white text-slate-700 rounded-2xl font-bold border border-slate-200 hover:bg-slate-50 transition-all text-sm shadow-sm"
-              >
-                <Calendar size={16} />
-                {selectedPeriod.label}
-                <ChevronDown size={14} className={`transition-transform ${periodOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <AnimatePresence>
-                {periodOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-2xl shadow-slate-200/60 overflow-hidden min-w-[160px]"
-                  >
-                    {PERIODS.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => { setSelectedPeriod(p); setPeriodOpen(false); }}
-                        className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors hover:bg-slate-50 ${selectedPeriod.id === p.id ? 'text-wa-teal bg-wa-chat' : 'text-slate-700'}`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <Link
-              href={`/builder/${store?.id}`}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/20 transition-all active:scale-95 text-sm"
-            >
-              <Zap size={20} /> Éditeur de Boutique
-            </Link>
-            <Link
-              href="/dashboard/add-product"
-              className="flex items-center gap-2 px-6 py-3 bg-wa-teal text-white font-black rounded-2xl hover:bg-wa-teal-dark hover:shadow-xl hover:shadow-wa-teal/20 transition-all active:scale-95 text-sm"
-            >
-              <Plus size={20} /> Nouveau Produit
-            </Link>
-          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-6">
-        {/* ── QUICK STATS ────────────────────────────────────────────────── */}
-          {/* Stat cards — adapt labels per business type */}
-          {(() => {
-            const bt = store?.business_type || 'ecommerce';
-            const labels = {
-              ecommerce:  { rev: 'Revenus',    orders: 'Commandes', pending: 'À préparer',   extra: 'Stock faible',   extraVal: stats.lowStock,   extraColor: stats.lowStock > 0 ? 'text-rose-500' : 'text-slate-900', extraNote: 'Articles à réapprovisionner' },
-              hotel:      { rev: 'Revenus',    orders: 'Réservations', pending: 'En attente', extra: 'Chambres libres', extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'Disponibilité ce soir' },
-              restaurant: { rev: 'Revenus',    orders: 'Commandes menu', pending: 'En cuisine', extra: 'Stock faible',   extraVal: stats.lowStock,   extraColor: stats.lowStock > 0 ? 'text-rose-500' : 'text-slate-900', extraNote: 'Ingrédients à commander' },
-              services:   { rev: 'Revenus',    orders: 'RDV pris',   pending: 'Aujourd’hui',  extra: 'Devis reçus',    extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'En attente de réponse' },
-              creative:   { rev: 'Revenus',    orders: 'Projets',    pending: 'En cours',      extra: 'Contacts reçus', extraVal: '--',              extraColor: 'text-slate-900', extraNote: 'Ce mois' },
-              event:      { rev: 'Revenus',    orders: 'Billets vendus', pending: 'À valider', extra: 'Places restantes', extraVal: '--',             extraColor: 'text-slate-900', extraNote: 'Pour prochain évènement' },
-            };
-            const l = labels[bt] || labels.ecommerce;
-            return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-                <div className="bg-wa-teal text-white p-6 rounded-[32px] shadow-xl shadow-wa-teal/10 relative overflow-hidden group">
-                  <div className="relative z-10">
-                    <p className="text-xs font-black uppercase tracking-widest opacity-70">{l.rev} · {selectedPeriod.label}</p>
-                    <h3 className="text-3xl font-black mt-2">{formatAmount(stats.revenue)}</h3>
-                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                      {stats.growth !== null ? (<><TrendingUp size={12} className={stats.growth < 0 ? 'rotate-180' : ''} />{stats.growth > 0 ? '+' : ''}{stats.growth}% vs période précédente</>) : 'Premières données !'}
-                    </div>
+      {/* ── CORPS DU STUDIO SELON LE MODE ───────────────────────────────── */}
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
+        {studioMode === 'leads' ? (
+          /* ── MODE DEMANDES & PROSPECTS (LEADS) ─────────────────────────── */
+          <StudioLeadsManager store={store} />
+        ) : studioMode === 'studio' ? (
+          /* ── MODE STUDIO (SPLIT-VIEW SUR DESKTOP, STACK SUR MOBILE) ─────── */
+          <div className="space-y-4">
+            {/* Bannière de lancement plein écran */}
+            {store?.id && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border border-purple-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">
+                      Vestin Shop Builder
+                    </span>
+                    <span className="text-xs text-slate-300 font-bold">Éditeur Visuel Interactif</span>
                   </div>
-                  <Zap className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
+                  <p className="text-xs text-slate-400 max-w-xl">
+                    Personnalisez votre logo, composez vos blocs, organisez vos thèmes et testez les vues Mobile/Tablette en plein écran.
+                  </p>
                 </div>
-
-                <div className="bg-indigo-600 text-white p-6 rounded-[32px] shadow-xl shadow-indigo-600/10 relative overflow-hidden group">
-                  <div className="relative z-10">
-                    <p className="text-xs font-black uppercase tracking-widest opacity-70">Vues · 7 derniers jours</p>
-                    <h3 className="text-3xl font-black mt-2">{stats.weeklyViews}</h3>
-                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                      {stats.weeklyViews > 0 ? 'Excellente visibilité' : 'Générez du trafic !'}
-                    </div>
-                  </div>
-                  <TrendingUp className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:scale-110 transition-transform" />
-                </div>
-
-                <div className="bg-emerald-500 text-white p-6 rounded-[32px] shadow-xl shadow-emerald-500/10 relative overflow-hidden group">
-                  <div className="relative z-10">
-                    <p className="text-xs font-black uppercase tracking-widest opacity-70">{l.orders} · {selectedPeriod.label}</p>
-                    <h3 className="text-3xl font-black mt-2">{stats.ordersCount}</h3>
-                    <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/20 w-fit px-3 py-1 rounded-full">
-                      {stats.ordersCount > 0 ? 'Bonne activité !' : 'En attente...'}
-                    </div>
-                  </div>
-                  <ShoppingCart className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 -rotate-12 group-hover:scale-110 transition-transform" />
-                </div>
-
-                <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{l.pending}</p>
-                  <h3 className="text-3xl font-black text-slate-900 mt-2">{stats.pendingOrders}</h3>
-                  <p className="text-xs text-orange-500 font-bold mt-4 flex items-center gap-1"><Clock size={12} /> Action requise</p>
-                </div>
+                <Link
+                  href="/mes-sites"
+                  className="px-5 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2 flex-shrink-0"
+                >
+                  <Sparkles size={14} className="text-purple-600" />
+                  <span>Gérer mes Sites</span>
+                  <ExternalLink size={13} className="text-slate-600" />
+                </Link>
               </div>
-            );
-          })()}
+            )}
 
-        {/* ── LIVREUR QUICK VIEW (DUAL ROLE) ─────────────────────────────── */}
-        {livreur && (
-          <div className="mt-8 animate-fade-in">
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-[40px] p-8 border border-white/10 shadow-2xl relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-white/10 backdrop-blur rounded-[24px] flex items-center justify-center text-emerald-400 shadow-inner">
-                    <Truck size={32} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight">Hub Livreur Rapide</h3>
-                    <p className="text-slate-400 text-sm font-medium">
-                      Vous avez <span className="text-emerald-400 font-black">{deliveryCount} livraison{deliveryCount > 1 ? 's' : ''}</span> en cours.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/delivery"
-                    className="flex-1 md:flex-none px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 hover:scale-105 transition-all shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2"
-                  >
-                    Ouvrir le Hub <Truck size={16} />
-                  </Link>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Colonne Gauche : Éditeur de Sections */}
+              <div className="lg:col-span-5 min-h-[420px] lg:h-[calc(100vh-200px)] lg:sticky lg:top-24">
+                <StudioSectionEditor
+                  store={liveStoreState || store}
+                  onStoreChange={setLiveStoreState}
+                  onSave={handleSaveStoreConfig}
+                  saving={isSavingStore}
+                />
               </div>
-              <Truck className="absolute -right-10 -bottom-10 w-48 h-48 text-white/5 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
+
+              {/* Colonne Droite : Live Preview */}
+              <div className="lg:col-span-7 min-h-[480px] lg:h-[calc(100vh-200px)] lg:sticky lg:top-24">
+                <StudioLivePreview
+                  store={liveStoreState || store}
+                  products={products}
+                  modules={[]}
+                  initialDevice="desktop"
+                />
+              </div>
             </div>
           </div>
-        )}
-
-        <div className="max-w-7xl mx-auto px-6">
-
-          {/* ── CHART ──────────────────────────────────────────────────────── */}
-          <div className="mt-8">
-            <div className="mb-6 flex items-center gap-4 bg-emerald-50 border border-emerald-100 p-6 rounded-3xl">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
-                <TrendingUp size={24} />
+        ) : studioMode === 'preview' ? (
+          /* ── MODE PREVIEW PLEIN ÉCRAN ─────────────────────────────────── */
+          <div className="min-h-[500px] h-[calc(100vh-140px)]">
+            <StudioLivePreview
+              store={liveStoreState || store}
+              products={products}
+              modules={[]}
+              initialDevice="desktop"
+            />
+          </div>
+        ) : (
+          /* ── MODE TABLEAU DE BORD ADAPTATIF ───────────────────────────── */
+          <div className="space-y-6 sm:space-y-8">
+            {/* Header Salutation & Métier */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">
+                    {{ ecommerce: '🛍️', hotel: '🏨', restaurant: '🍽️', services: '💼', creative: '🎨', event: '🎟️' }[store?.business_type] || '🏪'}
+                  </span>
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Bonjour, {store?.name}
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Activité : <span className="font-semibold text-emerald-400 capitalize">{store?.business_type || 'Commerce Général'}</span> • Vitrine active
+                </p>
               </div>
-              <div>
-                <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest">
-                  Analyse · {selectedPeriod.label}
-                </h4>
-                <p className="text-base font-bold text-emerald-700">
-                  {stats.revenue > 0
-                    ? `${formatAmount(stats.revenue)} encaissés sur cette période.`
-                    : 'Aucune vente sur cette période. Continuez à vous promouvoir !'}
-                  {stats.growth !== null && stats.growth > 0 && ` En hausse de ${stats.growth}% vs avant.`}
+
+              {/* Actions Header : Studio Builder + Sélecteur de période */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {store?.id && (
+                  <button
+                    onClick={() => setStudioMode('studio')}
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:opacity-95 text-white font-black rounded-2xl transition shadow-lg shadow-purple-500/20 text-xs hover:scale-105 active:scale-95"
+                  >
+                    <Sparkles size={14} />
+                    <span>Personnaliser le Site</span>
+                  </button>
+                )}
+
+                {/* Sélecteur de période */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setPeriodOpen(v => !v)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-950 text-slate-200 rounded-2xl font-bold border border-slate-800 hover:border-slate-700 transition text-xs shadow-sm"
+                  >
+                    <Calendar size={14} className="text-emerald-400" />
+                    {selectedPeriod.label}
+                    <ChevronDown size={14} className={`transition-transform ${periodOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {periodOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden min-w-[150px]"
+                      >
+                        {PERIODS.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => { setSelectedPeriod(p); setPeriodOpen(false); }}
+                            className={`w-full text-left px-4 py-2.5 text-xs font-bold transition hover:bg-slate-800 ${
+                              selectedPeriod.id === p.id ? 'text-emerald-400 bg-emerald-950/40' : 'text-slate-300'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+            {/* Cartes de statistiques (adaptées par capacités) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Revenus ({selectedPeriod.label})</p>
+                <h3 className="text-2xl font-black mt-2 text-emerald-400">{formatAmount(stats.revenue)}</h3>
+                <p className="text-[11px] text-slate-500 mt-3 flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  {stats.ordersCount > 0 ? `${stats.ordersCount} commandes enregistrées` : 'En attente des premières ventes'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Commandes & Réservations</p>
+                <h3 className="text-2xl font-black mt-2 text-white">{stats.ordersCount}</h3>
+                <p className="text-[11px] text-slate-500 mt-3 flex items-center gap-1">
+                  <ShoppingCart className="w-3.5 h-3.5 text-indigo-400" />
+                  {stats.pendingOrders > 0 ? `${stats.pendingOrders} en attente de traitement` : 'Aucune commande en attente'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {caps[CAPABILITIES.SERVICE] ? 'Prestations & Services' : 'Articles & Produits'}
+                </p>
+                <h3 className="text-2xl font-black mt-2 text-white">{products.length}</h3>
+                <p className="text-[11px] text-slate-500 mt-3 flex items-center gap-1">
+                  <Package className="w-3.5 h-3.5 text-amber-400" />
+                  {stats.lowStock > 0 ? `${stats.lowStock} article(s) à stock faible` : 'Catalogue opérationnel'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Visibilité Vitrine</p>
+                <h3 className="text-2xl font-black mt-2 text-white">{stats.weeklyViews}</h3>
+                <p className="text-[11px] text-slate-500 mt-3 flex items-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-sky-400" />
+                  Vues sur les 7 derniers jours
                 </p>
               </div>
             </div>
-            <PremiumChart data={chartData} labels={chartLabels} />
-          </div>
-        </div>
-      </div>
 
-      {/* ── MISTRAL ASSISTANT ────────────────────────────────────────── */}
-      {storeId && (
-        <div className="max-w-7xl mx-auto px-6 mt-10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <div className="lg:col-span-2">
-              <SellerAssistantPanel storeId={storeId} />
-            </div>
-            <div className="space-y-6">
-              {/* Weekly Report Button */}
-              <button
-                onClick={async () => {
-                  const btn = document.getElementById('weekly-report-btn');
-                  if (btn) {
-                    btn.innerHTML = '<span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Génération...';
-                    btn.disabled = true;
-                  }
-                  try {
-                    const res = await fetch('/api/ai/weekly-report', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ storeId }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      alert(`📊 ${data.report.headline}\n\n${data.report.summary}\n\n💰 ${data.report.metrics.revenue.toLocaleString()} FCFA\n📈 ${data.report.metrics.growth >= 0 ? '+' : ''}${data.report.metrics.growth}%\n\nRecommandations:\n${(data.report.recommendations || []).map(r => `• ${r.action} (${r.priority})`).join('\n')}`);
-                    }
-                  } catch {}
-                  if (btn) { btn.innerHTML = '<BarChart3 size={16}/> Rapport Hebdo'; btn.disabled = false; }
-                }}
-                id="weekly-report-btn"
-                className="w-full p-6 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:from-purple-600 hover:to-indigo-700 transition-all shadow-xl flex items-center justify-center gap-3 h-24"
-              >
-                <BarChart3 size={20} /> Rapport Hebdomadaire IA
-              </button>
-
-              {/* Classification rapide */}
-              <button
-                onClick={async () => {
-                  const name = prompt('Nom du produit à classifier:');
-                  if (!name) return;
-                  try {
-                    const res = await fetch('/api/ai/classify-product', {
-                      method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ name, existingCategories: ['Mode', 'Alimentation', 'High-Tech', 'Maison', 'Santé', 'Beauté', 'Sport'] }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      alert(`🏷️ Catégorie: ${data.classification.category}\n🎯 Confiance: ${data.classification.confidence}%\n🏷️ Tags: ${data.classification.tags.join(', ')}`);
-                    }
-                  } catch {}
-                }}
-                className="w-full p-6 bg-white border border-slate-100 rounded-3xl font-bold text-sm text-slate-700 hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-3"
-              >
-                <Sparkles size={18} className="text-purple-500" /> Classifier un produit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 mt-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-        {/* LEFT: Active Orders */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">Commandes à traiter</h2>
-            <Link href="/dashboard/orders" className="text-xs font-bold text-wa-teal hover:underline">
-              Voir tout l'historique
-            </Link>
-          </div>
-
-          <div className="space-y-4">
-            {orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').slice(0, 5).map(order => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all"
-              >
-                <div className="flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
-                      <Package size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-lg">#{order.id.slice(0, 8).toUpperCase()}</h4>
-                      <p className="text-sm text-slate-500 font-medium">{order.customer_name} · {order.customer_phone}</p>
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${order.status === 'pending' ? 'bg-amber-100 text-amber-700'
-                            : order.status === 'processing' ? 'bg-sky-100 text-sky-700'
-                              : 'bg-wa-chat text-wa-teal-dark'
-                          }`}>
-                          {order.status === 'pending' ? 'Nouvelle' : order.status === 'processing' ? 'Préparation' : 'En route'}
-                        </span>
-                        <span className="text-sm font-black text-wa-teal">{formatAmount(order.total_amount)}</span>
-                        <span className="text-[10px] text-slate-400 font-medium">{formatDate(order.created_at)}</span>
-                      </div>
-                    </div>
+            {/* Espace Livreur Dédié (si utilisateur associé au rôle livreur) */}
+            {livreur && (
+              <div className="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-xl flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <Truck className="w-6 h-6" />
                   </div>
-
-                  <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-                    {order.status === 'pending' && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'processing')}
-                        className="flex-1 sm:flex-none px-4 py-2.5 bg-sky-500 text-white text-xs font-bold rounded-xl hover:bg-sky-600 transition-colors"
-                      >
-                        Préparer
-                      </button>
-                    )}
-                    {order.status === 'processing' && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'shipped')}
-                        className="flex-1 sm:flex-none px-4 py-2.5 bg-wa-teal text-white text-xs font-bold rounded-xl hover:bg-wa-teal-dark transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Truck size={13} /> Expédier
-                      </button>
-                    )}
-                    {(order.status === 'processing' || order.status === 'shipped') && (
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'delivered')}
-                        className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <CheckCircle size={13} /> Livré
-                      </button>
-                    )}
-                    <button
-                      onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                      className="p-2.5 text-slate-300 hover:text-rose-500 transition-colors"
-                      title="Annuler"
-                    >
-                      <XCircle size={20} />
-                    </button>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Espace Livreur Actif</h3>
+                    <p className="text-xs text-slate-400">
+                      Vous avez <span className="text-emerald-400 font-bold">{deliveryCount} livraison(s)</span> en cours d'acheminement.
+                    </p>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-
-            {orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length === 0 && (
-              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-[32px] py-16 text-center">
-                <Package size={48} className="text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-400 font-bold">Aucune commande en cours.</p>
-                <p className="text-slate-300 text-sm mt-1">Les nouvelles commandes apparaîtront ici.</p>
+                <Link
+                  href="/delivery"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md"
+                >
+                  Ouvrir l'Espace Livreur
+                </Link>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* RIGHT: Products + Alerts */}
-        <div className="space-y-8">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight mb-6">Vos derniers articles</h2>
-            <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">
-              {products.slice(0, 4).map(product => (
-                <div key={product.id} className="p-4 flex items-center gap-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-                  <div className="w-14 h-14 bg-slate-100 rounded-2xl overflow-hidden flex-shrink-0">
-                    {product.image_url
-                      ? <img src={product.image_url} alt="" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-slate-300"><Package size={20} /></div>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate text-sm">{product.name}</p>
-                    <p className="text-xs font-black text-wa-teal mt-1">{formatAmount(product.price)}</p>
-                  </div>
-                  <div className={`px-2 py-1 rounded-lg text-[10px] font-black ${product.stock_quantity <= 3 ? 'bg-rose-50 text-rose-500' : 'bg-slate-50 text-slate-400'}`}>
-                    {product.stock_quantity} rest.
-                  </div>
+            {/* Graphique de Ventes */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
+                Évolution du Chiffre d'Affaires
+              </h3>
+              <PremiumChart data={chartData} labels={chartLabels} />
+            </div>
+
+            {/* Commandes & Produits Réels (ZÉRO Fake Data) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Dernières Commandes */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-white">Commandes Récentes</h3>
+                  <Link href="/dashboard/orders" className="text-xs text-emerald-400 hover:underline">
+                    Tout voir ({orders.length})
+                  </Link>
                 </div>
-              ))}
-              <Link href="/dashboard/products" className="block w-full py-4 text-center text-xs font-black text-slate-400 hover:text-wa-teal transition-colors uppercase tracking-widest bg-slate-50/50">
-                Gérer mes produits
-              </Link>
+
+                {orders.length > 0 ? (
+                  <div className="space-y-3">
+                    {orders.slice(0, 5).map(ord => (
+                      <div key={ord.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                        <div>
+                          <p className="font-bold text-white">#{String(ord.id || '').slice(0, 8).toUpperCase()}</p>
+                          <p className="text-slate-400 text-[11px]">{ord.customer_name || 'Client'} • {formatDate(ord.created_at)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-emerald-400">{formatAmount(ord.total_amount)}</p>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            ord.status === 'delivered' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'
+                          }`}>
+                            {ord.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-slate-500 text-xs space-y-2">
+                    <ShoppingCart className="w-8 h-8 text-slate-700 mx-auto" />
+                    <p className="font-semibold text-slate-400">Aucune commande pour le moment</p>
+                    <p>Partagez le lien de votre vitrine pour recevoir vos premières commandes.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Derniers Produits */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                    {caps[CAPABILITIES.SERVICE] ? 'Services & Prestations' : 'Articles & Stock'}
+                  </h3>
+                  <Link href="/dashboard/products" className="text-xs text-emerald-400 hover:underline">
+                    Gérer ({products.length})
+                  </Link>
+                </div>
+
+                {products.length > 0 ? (
+                  <div className="space-y-3">
+                    {products.slice(0, 5).map(prod => (
+                      <div key={prod.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                            {prod.image_url ? (
+                              <img src={prod.image_url} alt="" className="w-full h-full object-cover rounded-xl" />
+                            ) : (
+                              <Package className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <p className="font-bold text-white truncate">{prod.name}</p>
+                            <p className="text-slate-400 text-[11px]">{prod.category || 'Général'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-emerald-400">{formatAmount(prod.price)}</p>
+                          <span className="text-[10px] text-slate-400 font-medium">Stock: {prod.stock_quantity ?? 0}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-slate-500 text-xs space-y-2">
+                    <Package className="w-8 h-8 text-slate-700 mx-auto" />
+                    <p className="font-semibold text-slate-400">Aucun produit dans le catalogue</p>
+                    <Link
+                      href="/dashboard/add-product"
+                      className="inline-block mt-2 px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs"
+                    >
+                      Ajouter un premier article
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Notifications */}
-          <div className="bg-slate-900 text-white rounded-[32px] p-8 relative overflow-hidden">
-            <h3 className="text-lg font-black mb-4 flex items-center gap-2">
-              <Bell size={18} className="text-wa-teal" /> Alertes
-            </h3>
-            <div className="space-y-4">
-              {notifications.length > 0 ? notifications.map(n => (
-                <div key={n.id} className="text-xs opacity-80 border-l-2 border-wa-teal pl-3 py-1">
-                  <p className="font-bold">{n.title}</p>
-                  <p className="mt-0.5 line-clamp-2">{n.message}</p>
-                </div>
-              )) : (
-                <p className="text-xs opacity-50 italic">Aucune nouvelle alerte.</p>
-              )}
-            </div>
-            <Zap className="absolute -right-6 -top-6 w-20 h-20 text-wa-teal/10" />
-          </div>
-        </div>
-      </div>
+        )}
+      </main>
     </div>
   );
 }

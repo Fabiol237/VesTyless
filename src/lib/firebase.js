@@ -80,7 +80,7 @@ export async function onForegroundMessage(onNotification) {
     onNotification({
       title: notification?.title || 'VeStyle',
       body:  notification?.body  || '',
-      icon:  notification?.icon  || '/icon-192.png',
+      icon:  notification?.icon  || '/vestyle-logo.png',
       data:  data || {},
     });
   });

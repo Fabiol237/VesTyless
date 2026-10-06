@@ -1,22 +1,10 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
-import dynamic from 'next/dynamic';
-
-const Loader2Icon = ({ size = 40, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 2v4" /><path d="m16.2 7.8 2.9-2.9" /><path d="M18 12h4" /><path d="m16.2 16.2 2.9 2.9" />
-    <path d="M12 18v4" /><path d="m4.9 19.1 2.9-2.9" /><path d="M2 12h4" /><path d="m4.9 4.9 2.9 2.9" />
-  </svg>
-);
-
-const DashboardSidebar = dynamic(() => import('@/components/Navigation/VestyleSidebar'), { 
-  ssr: false,
-  loading: () => <div className="hidden lg:block w-72 h-screen sticky top-0 shrink-0 border-r border-gray-200 bg-white" />
-});
+import VestyleSidebar from '@/components/Navigation/VestyleSidebar';
+import { Loader2 } from 'lucide-react';
 
 export default function DashboardShell({ children }) {
   const { session, loading, user } = useAuth();
@@ -38,7 +26,6 @@ export default function DashboardShell({ children }) {
     }
   }, [session, user, loading, router, isClient]);
 
-  // Safety fallback: débloque l'UI après 800ms max
   useEffect(() => {
     const t = setTimeout(() => setRoleChecked(true), 800);
     return () => clearTimeout(t);
@@ -46,9 +33,9 @@ export default function DashboardShell({ children }) {
 
   if (!isClient || (loading && !roleChecked)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <Loader2Icon className="animate-spin text-indigo-500 mb-4" size={40} />
-        <p className="text-gray-400 font-medium">Chargement de votre espace...</p>
+      <div className="min-h-screen vs-bg-page flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+        <p className="vs-text-secondary text-xs font-semibold">Chargement de votre espace…</p>
       </div>
     );
   }
@@ -56,8 +43,8 @@ export default function DashboardShell({ children }) {
   if (session === null) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="flex min-h-screen vs-bg-page vs-text-primary">
+      <VestyleSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />

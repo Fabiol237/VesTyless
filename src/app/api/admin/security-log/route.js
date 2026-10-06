@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   // Vérification clé admin
   const authHeader = req.headers.get('authorization');
-  const adminKey = process.env.ADMIN_SECRET_KEY || 'vestyle-admin-2026';
+  const adminKey = process.env.ADMIN_SECRET_KEY;
 
-  if (authHeader !== `Bearer ${adminKey}`) {
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 

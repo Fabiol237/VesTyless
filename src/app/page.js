@@ -10,11 +10,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDistance } from '@/hooks/useDistance';
 import { useOfflineData } from '@/hooks/useOfflineData';
-import { Outfit } from 'next/font/google';
 import { triggerFeedback } from '@/lib/haptic';
 import Navbar from '@/components/Navbar';
 
-const artFont = Outfit({ subsets: ['latin'], weight: ['800', '900'] });
+const artFontClass = 'font-black tracking-tight';
 
 
 // ── SVG Icons ────────────────────────────────────────────────────────────────
@@ -365,7 +364,7 @@ export default function Home() {
             </div>
 
             {/* Titre MASSIF — dégradé blanc → ambre → orange, pure CSS */}
-            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] ${artFont.className}`}>
+            <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] ${artFontClass}`}>
               <span className="text-white">Vise l&apos;objet,</span><br />
               <span style={{ background: 'linear-gradient(90deg, #ffffff 0%, #fcd34d 55%, #fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 trouve la boutique
@@ -575,7 +574,7 @@ export default function Home() {
         {(dealsLoading || topDeals.length > 0) && (
           <section className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h2 className={`text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 ${artFont.className}`}>
+              <h2 className={`text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 ${artFontClass}`}>
                 <span className="text-orange-500">🔥</span> Top deals du moment
               </h2>
               <button onClick={scrollToFeed} className="text-xs font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider">
@@ -647,7 +646,7 @@ export default function Home() {
         {(dealsLoading || popularStores.length > 0) && (
           <section className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h2 className={`text-lg font-black text-slate-900 tracking-tight ${artFont.className}`}>
+              <h2 className={`text-lg font-black text-slate-900 tracking-tight ${artFontClass}`}>
                 Populaire près de vous
               </h2>
               <Link href="/boutiques" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
@@ -764,7 +763,7 @@ export default function Home() {
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
-                  <h2 className={`text-xl font-black text-white flex items-center gap-2 ${artFont.className}`}>
+                  <h2 className={`text-xl font-black text-white flex items-center gap-2 ${artFontClass}`}>
                     <span className="text-orange-500 text-2xl">🔥</span>
                     Offres & Prix Réduits
                   </h2>
@@ -833,8 +832,8 @@ export default function Home() {
         <footer className="mt-16 pt-10 pb-4 border-t border-slate-200/60">
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
-              <img src="/icon-512.png" className="w-10 h-10 rounded-xl shadow-sm object-cover" alt="VesTyle Logo" />
-              <h2 className={`text-3xl sm:text-4xl font-black tracking-tight text-slate-900 ${artFont.className}`}>
+              <img src="/vestyle-logo.png" className="w-10 h-10 rounded-xl shadow-sm object-cover" alt="VesTyle Logo" />
+              <h2 className={`text-3xl sm:text-4xl font-black tracking-tight text-slate-900 ${artFontClass}`}>
                 Ves<span className="text-orange-600">Tyle</span>
               </h2>
             </div>

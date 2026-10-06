@@ -32,8 +32,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = title || 'VeStyle';
   const notificationOptions = {
     body:   body   || 'Vous avez une nouvelle notification.',
-    icon:   icon   || '/icon-192.png',
-    badge:  '/icon-192.png',
+    icon:   icon   || '/vestyle-logo.png',
+    badge:  '/vestyle-logo.png',
     image:  image  || undefined,
     tag:    data.type || 'vestyle-notif',
     data:   {

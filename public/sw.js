@@ -20,7 +20,7 @@
  */
 
 // ─── Versions & Noms des caches ──────────────────────────────────────────────
-const SW_VERSION = 'vestyle-v6.0'; // ← incrémenté pour forcer la mise à jour
+const SW_VERSION = 'vestyle-v6.1'; // ← incrémenté pour builder offline-first
 const CACHE_STATIC  = `${SW_VERSION}-static`;
 const CACHE_IMAGES  = `${SW_VERSION}-images`;
 const CACHE_PAGES   = `${SW_VERSION}-pages`;
@@ -33,6 +33,8 @@ const APP_SHELL = [
   '/',
   '/offline',
   '/boutiques',
+  '/dashboard',
+  '/dashboard/settings',
   '/login',
   '/signup',
   '/search',
@@ -41,8 +43,8 @@ const APP_SHELL = [
   '/profile',
   '/manifest.json',
   '/favicon.ico',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/vestyle-logo.png',
+  '/vestyle-logo.png',
   '/hero-bg.png',
 ];
 
@@ -434,8 +436,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: '🛍️ VesTyle',
     body: 'Vous avez une nouvelle notification.',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/vestyle-logo.png',
+    badge: '/vestyle-logo.png',
     url: '/',
     tag: 'vestyle-notif',
     actions: [],
@@ -452,15 +454,15 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: data.icon || '/vestyle-logo.png',
+    badge: '/vestyle-logo.png',
     vibrate: [200, 100, 200, 100, 200],
     tag: data.tag || 'vestyle-notif',
     renotify: true,
     requireInteraction: data.requireInteraction || false,
     data: { url: data.url || '/', ...data.extra },
     actions: data.actions?.length > 0 ? data.actions : [
-      { action: 'open', title: '👀 Voir', icon: '/icon-192.png' },
+      { action: 'open', title: '👀 Voir', icon: '/vestyle-logo.png' },
       { action: 'dismiss', title: '✕ Fermer' },
     ],
     silent: data.silent || false,

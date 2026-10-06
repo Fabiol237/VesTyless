@@ -49,22 +49,18 @@ const STYLE_TO_THEME = {
   tech: { primaryColor: '#00f5ff', secondaryColor: '#0f0f23', accentColor: '#7b2ff7', fontFamily: 'Space Grotesk', mode: 'dark' },
 };
 
-// ─── Map activityType (onboarding) → business_type (builder) ──────────────
-const ACTIVITY_TO_BT = {
-  ecommerce: 'ecommerce', services: 'services', restaurant: 'restaurant',
-  creative: 'creative', events: 'event', wellness: 'services',
-  education: 'services', content: 'creative', real_estate: 'services',
-  hotel: 'hotel', other: 'ecommerce',
-};
+import { businessTypeRegistry } from '@/lib/business-types/BusinessTypeRegistry';
 
 // ─── Modules auto-suggérés par secteur si pas de features ──────────────────
 const BT_DEFAULT_MODULES = {
-  ecommerce: ['products', 'reviews', 'newsletter', 'contact'],
+  product: ['products', 'reviews', 'newsletter', 'contact'],
   hotel: ['services', 'booking', 'reviews', 'contact'],
   restaurant: ['restaurant', 'booking', 'reviews', 'contact'],
-  services: ['services', 'booking', 'devis', 'reviews', 'contact'],
-  creative: ['portfolio', 'services', 'reviews', 'contact'],
+  service: ['services', 'booking', 'devis', 'reviews', 'contact'],
+  digital_service: ['portfolio', 'services', 'reviews', 'contact'],
   event: ['events', 'newsletter', 'contact'],
+  beauty: ['services', 'booking', 'reviews', 'contact'],
+  hair_salon: ['services', 'booking', 'reviews', 'contact'],
 };
 
 // ─── Générateur de slug ─────────────────────────────────────────────────────
@@ -83,9 +79,23 @@ export async function POST(request) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
     );
 
-    // ─── 1. Construire la config du thème ─────────────────────────────────
-    const themeConfig = STYLE_TO_THEME[formData.style] || STYLE_TO_THEME.elegant;
-    const businessType = ACTIVITY_TO_BT[formData.activityType] || 'ecommerce';
+    // ─── 1. Construire la config du thème & valider strictement le type métier ─────
+    const themeConfig = STYLE_TO_THEME[formData?.style] || STYLE_TO_THEME.elegant;
+    const rawActivity = formData?.businessType || formData?.activityType;
+    const analysis = businessTypeRegistry.analyze(rawActivity);
+
+    if (analysis.status === 'MISSING' || analysis.status === 'UNKNOWN' || analysis.status === 'AMBIGUOUS') {
+      return NextResponse.json(
+        {
+          error: `Type d'activité non résolu (${analysis.status}) : ${analysis.reason}`,
+          status: analysis.status,
+          candidates: analysis.candidates || [],
+        },
+        { status: 400 }
+      );
+    }
+
+    const businessType = analysis.canonicalId;
 
     // If no features selected, use defaults for the business type
     if (!formData.selectedFeatures || formData.selectedFeatures.length === 0) {
@@ -138,11 +148,52 @@ export async function POST(request) {
       });
     }
 
-    // ─── 3. Créer ou mettre à jour la boutique ────────────────────────────
+    // ─── 3. Créer ou mettre à jour la boutique & draft_config ────────────
     let finalStoreId = storeId;
 
+    const initialDraftConfig = {
+      industry: businessType || 'general',
+      theme: {
+        mode: themeConfig.mode || 'light',
+        isDark: themeConfig.mode === 'dark',
+        primaryColor: themeConfig.primaryColor || '#128C7E',
+        accentColor: themeConfig.accentColor || '#25D366',
+        bgColor: themeConfig.secondaryColor || '#FFFFFF',
+        textColor: themeConfig.mode === 'dark' ? '#FAF7F2' : '#0F172A',
+        font: themeConfig.fontFamily || 'Inter',
+        headingFont: themeConfig.fontFamily || 'Inter',
+      },
+      sections: [
+        { id: 'sec_header_1', type: 'HEADER', variant: 'header_001', order: 0, config: { isSticky: true } },
+        { id: 'sec_hero_1', type: 'HERO', variant: 'hero_001', order: 1, config: { headline, subheadline, ctaText: 'Découvrir', layout: 'split' } },
+        { id: 'sec_products_1', type: 'PRODUCT', variant: 'grid_2_card', order: 2, config: { title: 'Nos Produits' } },
+        { id: 'sec_reviews_1', type: 'TESTIMONIAL', variant: 'testimonial_001', order: 3, config: { title: 'Avis Clients' } },
+        { id: 'sec_contact_1', type: 'CONTACT', variant: 'contact_whatsapp_first', order: 4, config: { phone: formData.phone, showPhone: !!formData.phone } },
+        { id: 'sec_footer_1', type: 'FOOTER', variant: 'footer_001', order: 5, config: {} },
+      ],
+      conversionHooks: {
+        whatsappFloatingEnabled: true,
+        whatsappPhone: formData.phone || '',
+        whatsappDefaultMessage: `Bonjour ! Je souhaite commander sur votre boutique ${formData.businessName || ''}.`,
+      },
+    };
+
+    const canonicalDesignMap = {
+      restaurant: 'vst_dsn_resto_terroir_002',
+      food: 'vst_dsn_resto_terroir_002',
+      product: 'vst_dsn_prestige_atelier_001',
+      physical_product: 'vst_dsn_prestige_atelier_001',
+      beauty: 'vst_dsn_services_vip_003',
+      hair_salon: 'vst_dsn_services_vip_003',
+      service: 'vst_dsn_services_vip_003',
+      agropastoral: 'vst_dsn_agro_elevage_004',
+      livestock_product: 'vst_dsn_agro_elevage_004',
+      hotel: 'vst_dsn_location_standing_005',
+    };
+    initialDraftConfig.activeVstCode = canonicalDesignMap[businessType?.toLowerCase()] || 'vst_dsn_prestige_atelier_001';
+
     if (storeId) {
-      const { data: currentStore } = await supabase.from('stores').select('status').eq('id', storeId).single();
+      const { data: currentStore } = await supabase.from('stores').select('status, draft_config').eq('id', storeId).single();
       const newStatus = currentStore?.status === 'published' ? 'published' : 'draft';
 
       // Mettre à jour la boutique existante sans changer le statut si déjà publié
@@ -151,6 +202,7 @@ export async function POST(request) {
         activity_type: formData.activityType,
         business_type: businessType,
         theme_config: themeConfig,
+        draft_config: currentStore?.draft_config || initialDraftConfig,
         status: newStatus,
         phone: formData.phone || null,
         city: formData.location || null,
@@ -168,6 +220,7 @@ export async function POST(request) {
         activity_type: formData.activityType,
         business_type: businessType,
         theme_config: themeConfig,
+        draft_config: initialDraftConfig,
         status: 'draft',
         phone: formData.phone || null,
         city: formData.location || null,
@@ -176,6 +229,7 @@ export async function POST(request) {
       if (storeError) throw storeError;
       finalStoreId = newStore.id;
     }
+
 
     // ─── 4. Gestion des modules existants ──────────
     if (storeId) {

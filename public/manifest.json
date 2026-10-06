@@ -12,13 +12,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/vestyle-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/vestyle-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -37,12 +37,12 @@
     {
       "name": "Explorer les Boutiques",
       "url": "/boutiques",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/vestyle-logo.png", "sizes": "192x192" }]
     },
     {
       "name": "Mon Panier",
       "url": "/cart",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/vestyle-logo.png", "sizes": "192x192" }]
     }
   ],
   "categories": ["shopping", "business"],

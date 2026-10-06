@@ -5,7 +5,7 @@
  */
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vestyless.vercel.app';
-const LOGO_URL = `${SITE_URL}/icon-512.png`;
+const LOGO_URL = `${SITE_URL}/vestyle-logo.png`;
 
 /**
  * Layout de base unifié pour tous les emails VeStyle

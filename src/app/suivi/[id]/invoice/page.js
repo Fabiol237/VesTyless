@@ -269,7 +269,7 @@ export default function InvoicePage() {
             {/* 5. VESTYLE LOGO IN LOWER FOOTER (Centered, Elegant) */}
             <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col items-center gap-1">
               <div className="flex items-center gap-2">
-                <img src="/icon-512.png" className="w-6 h-6 grayscale opacity-40 shrink-0" alt="VeStyle" />
+                <img src="/vestyle-logo.png" className="w-6 h-6 grayscale opacity-40 shrink-0" alt="VeStyle" />
                 <span className="text-[10px] font-black tracking-widest text-slate-400">VE<span className="text-slate-300 font-light">STYLE</span></span>
               </div>
               <p className="text-[7px] font-bold text-slate-300 uppercase tracking-[0.4em] text-center">

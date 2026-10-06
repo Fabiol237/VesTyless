@@ -37,7 +37,10 @@ export default function PremiumChart({ data = [], labels = [] }) {
     }));
   }, [data, labels]);
 
-  const maxVal = Math.max(...data, 1);
+  const maxVal = useMemo(() => {
+    const valid = (Array.isArray(data) ? data : []).map(Number).filter(n => !isNaN(n) && isFinite(n));
+    return valid.length > 0 ? Math.max(...valid, 1) : 1;
+  }, [data]);
 
   return (
     <motion.div 

@@ -43,7 +43,7 @@ export async function sendFCMNotification(fcmToken, notification, data = {}) {
       notification: {
         title: notification.title,
         body:  notification.body,
-        imageUrl: notification.icon || 'https://ves-tyless.vercel.app/icon-192.png',
+        imageUrl: notification.icon || 'https://ves-tyless.vercel.app/vestyle-logo.png',
       },
       data: Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, String(v)])
@@ -53,8 +53,8 @@ export async function sendFCMNotification(fcmToken, notification, data = {}) {
           link: notification.link || 'https://ves-tyless.vercel.app',
         },
         notification: {
-          icon:  notification.icon  || '/icon-192.png',
-          badge: '/icon-192.png',
+          icon:  notification.icon  || '/vestyle-logo.png',
+          badge: '/vestyle-logo.png',
           vibrate: [200, 100, 200],
           requireInteraction: true,
         },
@@ -97,8 +97,8 @@ export async function sendFCMMulticast(fcmTokens, notification, data = {}) {
           link: notification.link || 'https://ves-tyless.vercel.app',
         },
         notification: {
-          icon:  '/icon-192.png',
-          badge: '/icon-192.png',
+          icon:  '/vestyle-logo.png',
+          badge: '/vestyle-logo.png',
           requireInteraction: true,
         },
       },

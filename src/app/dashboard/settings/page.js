@@ -2,503 +2,319 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { deleteCloudinaryByUrl, uploadImage } from '@/lib/cloudinary';
 import { useRouter } from 'next/navigation';
 import {
   Settings, ArrowLeft, Globe, Palette, Megaphone,
-  Bot, Truck, Loader2, CheckCircle2, Eye, Sparkles, ExternalLink
+  Truck, Loader2, CheckCircle2, Eye, Sparkles, ExternalLink,
+  MapPin, Phone, MessageCircle, Sliders, ShieldCheck, Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDistance } from '@/hooks/useDistance';
-
-// Composants du nouveau Store Customizer Studio
-import StoreLivePreview from '@/components/store-studio/StoreLivePreview';
-import StoreDesignTab from '@/components/store-studio/StoreDesignTab';
-import StoreSpatialTab from '@/components/store-studio/StoreSpatialTab';
-import StoreIdentityTab from '@/components/store-studio/StoreIdentityTab';
-import StoreSectionsTab from '@/components/store-studio/StoreSectionsTab';
-import StoreAITab from '@/components/store-studio/StoreAITab';
-import StoreLogisticsTab from '@/components/store-studio/StoreLogisticsTab';
-import { Move } from 'lucide-react';
-
-const STUDIO_TABS = [
-  { id: 'design', label: 'Design & Thème', icon: Palette, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { id: 'spatial', label: 'Disposition Spatiale', icon: Move, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  { id: 'identity', label: 'Identité & Médias', icon: Globe, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { id: 'sections', label: 'Sections & Blocs', icon: Megaphone, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { id: 'ai', label: 'IA & Confiance', icon: Bot, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-  { id: 'logistics', label: 'GPS & Livreurs', icon: Truck, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-];
+import { businessTypeRegistry } from '@/lib/business-types/BusinessTypeRegistry';
 
 export default function StoreSettingsPage() {
   const { session } = useAuth();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState('design');
   const [storeId, setStoreId] = useState(null);
-  const [uploadingField, setUploadingField] = useState('');
-  const [storeSchema, setStoreSchema] = useState({ hasCity: false, hasPhone: false });
-  const [initialMedia, setInitialMedia] = useState({ logo_url: '', banner_url: '' });
-  const tempUploadedUrlsRef = useRef(new Set());
-  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
-  const saveTimeoutRef = useRef(null);
-  const pendingChangesRef = useRef({});
+  const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    city: '',
+    city: 'Douala',
     phone: '',
-    slug: '',
-    logo_url: '',
-    banner_url: '',
-    theme_color: '#128C7E',
-    secondary_color: '#F3F4F6',
-    font_family: 'Inter',
-    custom_message: '',
     whatsapp_number: '',
+    slug: '',
+    business_type: 'product',
     latitude: '',
     longitude: '',
-    ai_enabled: false,
-    ai_name: 'Assistant VesTyle',
-    ai_prompt: 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client à trouver ce qu\'il cherche.',
-    supplier_level: 'Fournisseur Or',
-    positive_rating: 100,
-    response_time: '< 1h',
-    shop_theme: 'boutique_pro',
-    store_template: 'boutique_pro',
-    layout_config: {},
-    shop_tabs: { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
   });
 
   const { requestLocation, userLocation, isLocating, error: gpsError } = useDistance();
 
-  // Contact picker pour Android Chrome
-  const pickContact = async () => {
-    if (!('contacts' in navigator && 'ContactsManager' in window)) {
-      alert('L\'API Contacts n\'est pas disponible sur ce navigateur/appareil (Android Chrome requis).');
-      return;
-    }
-    try {
-      const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
-      if (contacts.length > 0) {
-        const contact = contacts[0];
-        const phone = contact.tel?.[0]?.replace(/\s/g, '') || '';
-        handleChange({ target: { name: 'whatsapp_number', value: phone } });
-      }
-    } catch (err) {
-      console.error('Contact Picker error:', err);
-    }
-  };
-
-  const updateStore = async (fieldsToUpdate) => {
-    if (!storeId) return;
-    setAutoSaveStatus('saving');
-
-    const validFields = { ...fieldsToUpdate };
-    if (!storeSchema.hasCity) delete validFields.city;
-    if (!storeSchema.hasPhone) delete validFields.phone;
-
-    const { data, error } = await supabase.from('stores').update(validFields).eq('id', storeId).select().single();
-
-    if (error) {
-      console.error("Erreur de sauvegarde:", error);
-      setAutoSaveStatus('error');
-    } else {
-      setAutoSaveStatus('saved');
-      setTimeout(() => setAutoSaveStatus('idle'), 2500);
-    }
-  };
-
-  // Synchronisation des coordonnées GPS
+  // Chargement des données de la boutique
   useEffect(() => {
-    if (userLocation && storeId) {
-      setFormData(prev => ({
-        ...prev,
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude
-      }));
-      updateStore({
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude
-      });
-    }
-  }, [userLocation, storeId]);
+    async function loadStore() {
+      if (!session?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('owner_id', session.id)
+          .single();
 
-  // Chargement initial des données de la boutique
-  useEffect(() => {
-    if (!session?.id) return;
-    async function fetchStore() {
-      const { data } = await supabase.from('stores').select('*').eq('owner_id', session.id).single();
-      if (data) {
-        setStoreSchema({
-          hasCity: Object.prototype.hasOwnProperty.call(data, 'city'),
-          hasPhone: Object.prototype.hasOwnProperty.call(data, 'phone'),
-        });
-        setStoreId(data.id);
-        setInitialMedia({
-          logo_url: data.logo_url || '',
-          banner_url: data.banner_url || '',
-        });
-        setFormData({
-          name: data.name || '',
-          description: data.description || '',
-          city: data.city || '',
-          phone: data.phone || '',
-          slug: data.slug || '',
-          logo_url: data.logo_url || '',
-          banner_url: data.banner_url || '',
-          theme_color: data.theme_color || '#128C7E',
-          secondary_color: data.secondary_color || '#F3F4F6',
-          font_family: data.font_family || 'Inter',
-          custom_message: data.custom_message || '',
-          whatsapp_number: data.whatsapp_number || '',
-          latitude: data.latitude || '',
-          longitude: data.longitude || '',
-          ai_enabled: data.ai_enabled || false,
-          ai_name: data.ai_name || 'Assistant VesTyle',
-          ai_prompt: data.ai_prompt || 'Vous êtes l\'assistant virtuel de cette boutique. Soyez poli, concis et aidez le client.',
-          supplier_level: data.supplier_level || 'Fournisseur Or',
-          positive_rating: data.positive_rating !== undefined ? data.positive_rating : 100,
-          response_time: data.response_time || '< 1h',
-          shop_theme: data.shop_theme || 'boutique_pro',
-          store_template: data.store_template || data.shop_theme || 'boutique_pro',
-          layout_config: data.layout_config || {},
-          shop_tabs: data.shop_tabs || { accueil: 'Accueil', produits: 'Catalogue', promotions: 'Promotions', profil: 'Profil' }
-        });
+        if (data && !error) {
+          setStoreId(data.id);
+          const loadedType = businessTypeRegistry.normalize(data.business_type || data.activity_type);
+          setFormData({
+            name: data.name || '',
+            description: data.description || '',
+            city: data.city || 'Douala',
+            phone: data.phone || '',
+            whatsapp_number: data.whatsapp_number || data.phone || '',
+            slug: data.slug || '',
+            business_type: loadedType || data.business_type || data.activity_type || 'product',
+            latitude: data.latitude || '',
+            longitude: data.longitude || '',
+          });
+        }
+      } catch (err) {
+        console.error('Erreur chargement boutique:', err);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchStore();
+
+    loadStore();
   }, [session]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const finalValue = type === 'checkbox' ? checked : value;
-
-    if (name.startsWith('tab_')) {
-      const tabKey = name.split('_')[1];
-      setFormData(prev => ({
-        ...prev,
-        shop_tabs: { ...prev.shop_tabs, [tabKey]: finalValue }
-      }));
-      pendingChangesRef.current['shop_tabs'] = { ...formData.shop_tabs, [tabKey]: finalValue };
-    } else {
-      setFormData(prev => ({ ...prev, [name]: finalValue }));
-      pendingChangesRef.current[name] = finalValue;
-    }
-
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      updateStore({ ...pendingChangesRef.current });
-      pendingChangesRef.current = {};
-    }, 600);
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleTemplateSelect = (tmplId) => {
-    setFormData(prev => ({ ...prev, store_template: tmplId, shop_theme: tmplId }));
-    updateStore({ store_template: tmplId, shop_theme: tmplId });
-  };
-
-  const handleFileUpload = async (fieldName, file) => {
-    if (!file) return;
-    try {
-      setUploadingField(fieldName);
-      const previousUrl = formData[fieldName];
-      const { secureUrl } = await uploadImage(file, { folder: 'vestyle/stores' });
-      if (!secureUrl) throw new Error("Upload invalide");
-      if (previousUrl && previousUrl !== secureUrl && tempUploadedUrlsRef.current.has(previousUrl)) {
-        await deleteCloudinaryByUrl(previousUrl);
-        tempUploadedUrlsRef.current.delete(previousUrl);
-      }
-      setFormData((prev) => ({ ...prev, [fieldName]: secureUrl }));
-      tempUploadedUrlsRef.current.add(secureUrl);
-      updateStore({ [fieldName]: secureUrl });
-    } catch (err) {
-      alert("Erreur upload image: " + (err?.message || "Impossible de téléverser l'image"));
-    } finally {
-      setUploadingField('');
-    }
-  };
-
-  const handleRemoveImage = async (fieldName) => {
-    const currentUrl = formData[fieldName];
-    if (!currentUrl) return;
-    if (tempUploadedUrlsRef.current.has(currentUrl)) {
-      await deleteCloudinaryByUrl(currentUrl);
-      tempUploadedUrlsRef.current.delete(currentUrl);
-    }
-    setFormData((prev) => ({ ...prev, [fieldName]: null }));
-    updateStore({ [fieldName]: null });
-  };
-
-  const handleHoursChange = (dayKey, field, value) => {
-    const prevHours = formData.layout_config?.opening_hours || {};
-    const updatedHours = {
-      ...prevHours,
-      [dayKey]: {
-        ...prevHours[dayKey],
-        [field]: value
-      }
-    };
-    const updatedLayoutConfig = {
-      ...formData.layout_config,
-      opening_hours: updatedHours
-    };
-    setFormData(prev => ({ ...prev, layout_config: updatedLayoutConfig }));
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      updateStore({ layout_config: updatedLayoutConfig });
-    }, 600);
-  };
-
-  // Gestion des livreurs
-  const [livreurs, setLivreurs] = useState([]);
-  const [newLivreur, setNewLivreur] = useState({ name: '', phone: '', email: '' });
-  const [addingLivreur, setAddingLivreur] = useState(false);
-
-  useEffect(() => {
-    if (storeId) {
-      const fetchLivreurs = async () => {
-        const { data } = await supabase.from('livreurs').select('*').eq('store_id', storeId);
-        setLivreurs(data || []);
-      };
-      fetchLivreurs();
-    }
-  }, [storeId]);
-
-  const handleAddLivreur = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!newLivreur.name || !newLivreur.phone) return;
-    setAddingLivreur(true);
+    if (!storeId) return;
+
+    setSaveStatus('saving');
     try {
-      let userId = null;
-      if (newLivreur.email) {
-        const { data: userData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', newLivreur.email.trim().toLowerCase())
-          .single();
-        if (userData) userId = userData.id;
+      const analysis = businessTypeRegistry.analyze(formData.business_type);
+      if (!analysis.canonicalId) {
+        throw new Error(`Type d'activité non résolu (${analysis.status}) : ${analysis.reason || 'Veuillez sélectionner un type d\'activité valide dans la liste.'}`);
       }
+      const canonicalBusinessType = analysis.canonicalId;
+      const { error } = await supabase
+        .from('stores')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          city: formData.city,
+          phone: formData.phone,
+          whatsapp_number: formData.whatsapp_number,
+          business_type: canonicalBusinessType,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', storeId);
 
-      const { data, error } = await supabase.from('livreurs').insert([{
-        store_id: storeId,
-        user_id: userId,
-        name: newLivreur.name,
-        phone: newLivreur.phone
-      }]).select().single();
-
-      if (!error && data) {
-        setLivreurs([...livreurs, data]);
-        setNewLivreur({ name: '', phone: '', email: '' });
-        alert("Livreur ajouté avec succès !");
-      }
-    } catch {
-      alert("Erreur lors de l'ajout du livreur.");
-    } finally {
-      setAddingLivreur(false);
+      if (error) throw error;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    } catch (err) {
+      console.error('Erreur sauvegarde:', err);
+      setSaveStatus('error');
     }
   };
 
-  const handleRemoveLivreur = async (id) => {
-    const { error } = await supabase.from('livreurs').delete().eq('id', id);
-    if (!error) {
-      setLivreurs(livreurs.filter(l => l.id !== id));
-    }
-  };
-
-  const handleAddSelfLivreur = async () => {
-    if (!session?.id || !storeId) return;
-    if (livreurs.some(l => l.user_id === session.id)) {
-      alert("Vous êtes déjà enregistré dans la flotte de livraison.");
-      return;
-    }
-    setAddingLivreur(true);
-    try {
-      const { data, error } = await supabase.from('livreurs').insert([{
-        store_id: storeId,
-        user_id: session.id,
-        name: (formData.name || 'Gérant') + ' (Gérant)',
-        phone: formData.whatsapp_number || formData.phone || ''
-      }]).select().single();
-
-      if (!error && data) {
-        setLivreurs([...livreurs, data]);
-        alert("Ajouté avec succès comme coursier !");
-      }
-    } catch {
-      alert("Erreur d'association.");
-    } finally {
-      setAddingLivreur(false);
-    }
-  };
-
-  if (session === undefined) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] flex justify-center items-center">
-        <Loader2 className="animate-spin text-[#059669]" size={48} />
+      <div className="min-h-screen bg-slate-950 flex justify-center items-center">
+        <Loader2 className="animate-spin text-purple-500" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1550px] mx-auto space-y-6 pb-20 px-3 sm:px-6">
-      {/* 🚀 Header Supérieur du Studio avec Indicateur d'Auto-Save */}
-      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8 shadow-2xl text-left border border-white/10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
+    <div className="min-h-screen bg-slate-950 text-white font-sans p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* ── EN-TÊTE PRINCIPAL ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Store Studio V2
-              </span>
-              {autoSaveStatus === 'saving' && (
-                <span className="flex items-center gap-1 text-xs text-amber-400 font-bold animate-pulse">
-                  <Loader2 size={13} className="animate-spin" /> Synchronisation...
-                </span>
-              )}
-              {autoSaveStatus === 'saved' && (
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-bold">
-                  <CheckCircle2 size={13} /> Sauvegardé
-                </span>
-              )}
+              <Link
+                href="/dashboard"
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+              >
+                <ArrowLeft size={16} />
+              </Link>
+              <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                <Settings size={22} className="text-purple-400" />
+                Paramètres de la Boutique
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-              <Settings className="text-emerald-400" size={28} />
-              Studio de Personnalisation
-            </h1>
-            <p className="text-slate-400 text-xs sm:text-sm font-medium">
-              Modifiez l'apparence, l'identité et les blocs de votre boutique en visualisant chaque retouche en temps réel.
+            <p className="text-xs text-slate-400">
+              Gérez les informations fondamentales de votre établissement.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            {storeId && (
+              <Link
+                href="/dashboard"
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-black shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
+              >
+                <Sliders size={14} />
+                <span>Ouvrir le Studio Visuel</span>
+              </Link>
+            )}
             {formData.slug && (
               <a
                 href={`/boutique/${formData.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+                title="Voir la vitrine publique"
               >
-                <Eye size={15} /> Voir la boutique
+                <Eye size={16} />
               </a>
             )}
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 px-4 py-3 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs uppercase tracking-wider border border-white/10 transition-all active:scale-95"
-            >
-              <ArrowLeft size={15} /> Dashboard
-            </Link>
           </div>
         </div>
-      </div>
 
-      {/* 🧭 Barre de Navigation par Onglets Ergonomiques */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
-        {STUDIO_TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-extrabold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                isActive
-                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-gray-50'
-              }`}
+        {/* ── BANNIÈRE ACCÈS STUDIO CRÉATEUR ── */}
+        {storeId && (
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="space-y-1 text-center sm:text-left">
+              <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 bg-pink-500/10 px-2.5 py-1 rounded-full border border-pink-500/20">
+                Nouveau Moteur Vestine v2
+              </span>
+              <h3 className="text-base font-black text-white">Studio de Personnalisation Visuelle & IA</h3>
+              <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                Personnalisez votre logo, agencez vos sections, configurez vos formulaires dynamiques et visualisez le rendu en temps réel.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="px-5 py-3 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2 flex-shrink-0"
             >
-              <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20 text-white' : `${tab.bg} ${tab.color}`}`}>
-                <Icon size={16} />
-              </div>
-              <span>{tab.label}</span>
+              <Sparkles size={15} className="text-purple-600" />
+              <span>Lancer le Studio</span>
+            </Link>
+          </div>
+        )}
+
+        {/* ── FORMULAIRE D'INFORMATIONS PRINCIPALES ── */}
+        <form onSubmit={handleSave} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 shadow-2xl">
+          <h2 className="text-sm font-black text-white uppercase tracking-wider pb-2 border-b border-slate-800 flex items-center gap-2">
+            <Globe size={16} className="text-blue-400" />
+            Informations Générales & Contact
+          </h2>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300">Nom de la Boutique</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300">Ville / Localisation</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="Ex: Douala, Yaoundé..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <Briefcase size={13} className="text-purple-400" />
+              Secteur d&apos;Activité & Identité Métier
+            </label>
+            <select
+              name="business_type"
+              value={formData.business_type}
+              onChange={handleChange}
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              {businessTypeRegistry.getAll().map((bt) => (
+                <option key={bt.id} value={bt.id}>
+                  {bt.emoji} {bt.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Adapte automatiquement les fonctionnalités et modules recommandés pour votre activité. Vos produits et données existants sont intégralement préservés.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300">Description de l'Établissement</label>
+            <textarea
+              rows={3}
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Présentez brièvement vos prestations et articles..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <MessageCircle size={13} className="text-emerald-400" />
+                Numéro WhatsApp Commandes
+              </label>
+              <input
+                type="text"
+                name="whatsapp_number"
+                value={formData.whatsapp_number}
+                onChange={handleChange}
+                placeholder="Ex: 237690000000"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Phone size={13} className="text-blue-400" />
+                Téléphone Appel Direct
+              </label>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Ex: 237670000000"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+            {saveStatus === 'saved' && (
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 size={14} /> Modifications enregistrées avec succès !
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-xs font-bold text-rose-400">
+                Erreur lors de l'enregistrement.
+              </span>
+            )}
+            {saveStatus === 'idle' && <span />}
+
+            <button
+              type="submit"
+              disabled={saveStatus === 'saving'}
+              className="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-black transition-all flex items-center gap-2 shadow-lg"
+            >
+              {saveStatus === 'saving' ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Enregistrement...</span>
+                </>
+              ) : (
+                <span>Sauvegarder les Paramètres</span>
+              )}
             </button>
-          );
-        })}
-      </div>
-
-      {/* ⚡ Contenu Principal Split-Screen (Contrôles à gauche / Live Preview à droite) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Colonne Gauche : Panneau de Contrôle Actif */}
-        <div className="lg:col-span-7 xl:col-span-6 space-y-6">
-          {activeTab === 'design' && (
-            <StoreDesignTab
-              formData={formData}
-              onChange={handleChange}
-              onTemplateSelect={handleTemplateSelect}
-            />
-          )}
-
-          {activeTab === 'spatial' && (
-            <StoreSpatialTab
-              formData={formData}
-              onChange={handleChange}
-              onConfigChange={(newConfig) => {
-                setFormData(prev => ({ ...prev, layout_config: newConfig }));
-                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                saveTimeoutRef.current = setTimeout(() => {
-                  updateStore({ layout_config: newConfig });
-                }, 600);
-              }}
-            />
-          )}
-
-          {activeTab === 'identity' && (
-            <StoreIdentityTab
-              formData={formData}
-              onChange={handleChange}
-              onFileUpload={handleFileUpload}
-              onRemoveImage={handleRemoveImage}
-              uploadingField={uploadingField}
-              onPickContact={pickContact}
-            />
-          )}
-
-          {activeTab === 'sections' && (
-            <StoreSectionsTab
-              formData={formData}
-              onChange={handleChange}
-              onHoursChange={handleHoursChange}
-            />
-          )}
-
-          {activeTab === 'ai' && (
-            <StoreAITab
-              formData={formData}
-              onChange={handleChange}
-            />
-          )}
-
-          {activeTab === 'logistics' && (
-            <StoreLogisticsTab
-              formData={formData}
-              onRequestLocation={requestLocation}
-              isLocating={isLocating}
-              gpsError={gpsError}
-              userLocation={userLocation}
-              onPositionChange={(pos) => {
-                setFormData(prev => ({ ...prev, latitude: pos[0], longitude: pos[1] }));
-                updateStore({ latitude: pos[0], longitude: pos[1] });
-              }}
-              livreurs={livreurs}
-              newLivreur={newLivreur}
-              setNewLivreur={setNewLivreur}
-              onAddLivreur={handleAddLivreur}
-              addingLivreur={addingLivreur}
-              onRemoveLivreur={handleRemoveLivreur}
-              onAddSelfLivreur={handleAddSelfLivreur}
-              session={session}
-            />
-          )}
-        </div>
-
-        {/* Colonne Droite : Simulateur Interactif Live Preview */}
-        <div className="lg:col-span-5 xl:col-span-6 lg:sticky lg:top-4">
-          <StoreLivePreview
-            formData={formData}
-            storeId={storeId}
-          />
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

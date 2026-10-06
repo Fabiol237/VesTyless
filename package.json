@@ -1,6 +1,7 @@
 {
   "name": "vestyle",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +14,25 @@
     "fill-embeddings": "node fill-embeddings.mjs",
     "verify-setup": "node verify-setup.mjs",
     "seed:categories": "node scripts/seed-global-categories.js",
-    "insert:test-product": "node scripts/insert-test-product.js"
+    "insert:test-product": "node scripts/insert-test-product.js",
+    "test:fidelity": "node scripts/test-composition-engine-fidelity.js",
+    "test:design-intelligence": "node scripts/test-design-intelligence.js",
+    "test:design-intelligence:proof": "node scripts/test-design-intelligence-proof.js",
+    "design-intelligence:ingest": "node scripts/run-design-intelligence-ingest.js",
+    "design-intelligence:retrieve": "node scripts/run-design-intelligence-retrieve.js",
+    "design-intelligence:learn-loop": "node scripts/run-full-design-learning-loop.js",
+    "design-intelligence:compose": "node scripts/test-intelligent-design-composer.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "vitest": {
+    "environment": "node",
+    "resolve": {
+      "alias": {
+        "@": "./src"
+      }
+    }
   },
   "bin": {
     "seed-global-categories": "scripts/seed-global-categories.js",
@@ -60,14 +79,19 @@
     "resend": "^6.12.3",
     "tailwind-merge": "^3.5.0",
     "three": "^0.184.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.3.0",
     "autoprefixer": "^10.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "pg": "^8.21.0",
     "postcss": "^8.5.10",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
   }
 }

@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request) {
+  const authHeader = request.headers.get('x-migration-key');
+  const migrationKey = process.env.MIGRATION_SECRET_KEY;
+  if (!migrationKey || authHeader !== migrationKey) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,

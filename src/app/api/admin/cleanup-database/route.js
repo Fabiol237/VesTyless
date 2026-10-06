@@ -13,14 +13,14 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { NextResponse } from 'next/server';
 
-const ADMIN_TOKEN = process.env.ADMIN_CLEANUP_TOKEN || 'ADMIN_SECRET_KEY_12345';
+const ADMIN_TOKEN = process.env.ADMIN_CLEANUP_TOKEN;
 
 export async function POST(req) {
   try {
     const { adminToken, action = 'status' } = await req.json();
 
     // Verify admin token
-    if (!adminToken || adminToken !== ADMIN_TOKEN) {
+    if (!ADMIN_TOKEN || !adminToken || adminToken !== ADMIN_TOKEN) {
       return NextResponse.json(
         { error: 'Unauthorized. Invalid or missing admin token.' },
         { status: 401 }

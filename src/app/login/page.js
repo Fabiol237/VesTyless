@@ -172,7 +172,7 @@ export default function Login() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md">
-            <img src="/icon-512.png" className="w-full h-full object-cover" alt="Vestyle" />
+            <img src="/vestyle-logo.png" className="w-full h-full object-cover" alt="Vestyle" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-wa-teal-dark">
