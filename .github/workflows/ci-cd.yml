@@ -66,12 +66,12 @@ jobs:
     name: Deploy to Vercel (Preview)
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && secrets.VERCEL_TOKEN != ''
     steps:
       - uses: actions/checkout@v4
       
       - name: Deploy to Vercel (Preview)
-        uses: vercel/action@master
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -84,12 +84,12 @@ jobs:
     name: Deploy to Vercel (Production)
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.VERCEL_TOKEN != ''
     steps:
       - uses: actions/checkout@v4
       
       - name: Deploy to Vercel (Production)
-        uses: vercel/action@master
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -102,7 +102,7 @@ jobs:
     name: Create Sentry Release
     runs-on: ubuntu-latest
     needs: deploy-production
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.SENTRY_AUTH_TOKEN != ''
     steps:
       - uses: actions/checkout@v4
         with:
